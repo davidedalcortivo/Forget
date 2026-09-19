@@ -14,7 +14,8 @@ namespace Forget.Tests.PostgreSql
     /// container per test.
     /// </para>
     /// </summary>
-    public class CrudIntegrationTests : IClassFixture<PostgreSqlFixture>
+    [Collection(PostgreSqlCollection.Name)]
+    public class CrudIntegrationTests
     {
         private readonly PostgreSqlFixture _fixture;
 

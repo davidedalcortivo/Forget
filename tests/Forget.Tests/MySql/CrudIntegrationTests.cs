@@ -14,7 +14,8 @@ namespace Forget.Tests.MySql
     /// container per test.
     /// </para>
     /// </summary>
-    public class CrudIntegrationTests : IClassFixture<MySqlFixture>
+    [Collection(MySqlCollection.Name)]
+    public class CrudIntegrationTests
     {
         private readonly MySqlFixture _fixture;
 

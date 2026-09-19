@@ -73,4 +73,16 @@ namespace Forget.Tests.MySql
             await _container.DisposeAsync();
         }
     }
+
+    /// <summary>
+    /// Every MySql integration test class shares one <see cref="MySqlFixture"/>, so one container serves them all
+    /// instead of one per class. The classes of a collection run one after the other, which is what keeps the
+    /// number of containers alive at the same time at one per provider; tests stay apart by using their own tables
+    /// or disjoint <c>Id</c> ranges.
+    /// </summary>
+    [CollectionDefinition(Name)]
+    public sealed class MySqlCollection : ICollectionFixture<MySqlFixture>
+    {
+        public const string Name = "MySql";
+    }
 }

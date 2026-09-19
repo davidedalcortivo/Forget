@@ -54,7 +54,6 @@ namespace Forget.PostgreSql.Strategies
 
             string tableName = EntityInfoCache<TEntity>.TableName;
             string schemaName = EntityInfoCache<TEntity>.SchemaName ?? SqlDialectStrategy.DefaultSchemaName;
-            ImmutableArray<PropertyInfo> properties = EntityInfoCache<TEntity>.Properties;
             ImmutableDictionary<string, PropertyInfo> propertiesByColumnName = EntityInfoCache<TEntity>.PropertiesByColumnName;
             ImmutableDictionary<string, Func<TEntity, object?>> propertyGettersByPropertyName = EntityInfoCache<TEntity>.PropertyGettersByPropertyName;
             SqlTemplate updateRangeSql = SqlBuilderCache<TEntity, SqlBuilderStrategy>.UpdateRangeSql;
@@ -64,10 +63,10 @@ namespace Forget.PostgreSql.Strategies
             string connectionId = SqlDialectStrategy.GetConnectionId(connection);
             IReadOnlyList<DbColumnInfo> columns = DbColumnInfoCache<TEntity>.GetListValue(connectionId);
 
-            PropertyInfo[] sortProperties = new PropertyInfo[properties.Length];
+            PropertyInfo?[] sortProperties = new PropertyInfo?[columns.Count];
 
             for (int i = 0; i < sortProperties.Length; i++)
-                sortProperties[i] = propertiesByColumnName[columns[i].Name];
+                sortProperties[i] = propertiesByColumnName.GetValueOrDefault(columns[i].Name);
 
             if (batchSize <= 0)
                 batchSize = entityArray.Length;
@@ -85,10 +84,20 @@ namespace Forget.PostgreSql.Strategies
 
                     for (int k = 0; k < sortProperties.Length; k++)
                     {
-                        string parameterName = sortProperties[k].Name;
-                        object? parameterValue = propertyGettersByPropertyName[parameterName](entityArray[j]);
+                        PropertyInfo? property = sortProperties[k];
 
-                        sqlBuffer.AppendAndBindParameter(SqlDialectStrategy, parameters, parameterName + j, parameterValue);
+                        if (property is null)
+                        {
+                            sqlBuffer.Append("NULL");
+                        }
+                        else
+                        {
+                            string parameterName = property.Name;
+                            object? parameterValue = propertyGettersByPropertyName[parameterName](entityArray[j]);
+
+                            sqlBuffer.AppendAndBindParameter(SqlDialectStrategy, parameters, parameterName + j, parameterValue);
+                        }
+
                         sqlBuffer.AppendSeparator(k, sortProperties.Length, true);
                     }
 

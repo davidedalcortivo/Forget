@@ -41,17 +41,18 @@ namespace Forget.Core.Caching
         public static void Add(string connectionId, IReadOnlyList<DbColumnInfo> columns)
         {
             ImmutableArray<PropertyInfo> properties = EntityInfoCache<TEntity>.Properties;
-            ImmutableDictionary<string, PropertyInfo> propertiesByColumnName = EntityInfoCache<TEntity>.PropertiesByColumnName;
-
-            if (properties.Length != columns.Count)
-                throw new InvalidOperationException($"Database table schema mismatch for entity '{typeof(TEntity).Name}'. Expected {properties.Length} mapped properties but found {columns.Count} database columns.");
+            ImmutableDictionary<string, string> columnNamesByPropertyName = EntityInfoCache<TEntity>.ColumnNamesByPropertyName;
+            HashSet<string> columnNames = new(columns.Count, StringComparer.OrdinalIgnoreCase);
 
             foreach (DbColumnInfo column in columns)
-            {
-                string columnName = column.Name;
+                columnNames.Add(column.Name);
 
-                if (!propertiesByColumnName.TryGetValue(columnName, out PropertyInfo? _))
-                    throw new InvalidOperationException($"Database column mapping mismatch for entity '{typeof(TEntity).Name}'. Database column '{columnName}' is not mapped to any entity property.");
+            foreach (PropertyInfo property in properties)
+            {
+                string columnName = columnNamesByPropertyName[property.Name];
+
+                if (!columnNames.Contains(columnName))
+                    throw new InvalidOperationException($"Database column mapping mismatch for entity '{typeof(TEntity).Name}'. The property '{property.Name}' is mapped to the column '{columnName}', which does not exist in the database table.");
             }
 
             _ = _listCache.TryAdd(connectionId, columns);
@@ -62,15 +63,12 @@ namespace Forget.Core.Caching
             ImmutableArray<PropertyInfo> properties = EntityInfoCache<TEntity>.Properties;
             ImmutableDictionary<string, string> columnNamesByPropertyName = EntityInfoCache<TEntity>.ColumnNamesByPropertyName;
 
-            if (properties.Length != columns.Count)
-                throw new InvalidOperationException($"Database table schema mismatch for entity '{typeof(TEntity).Name}'. Expected {properties.Length} mapped properties but found {columns.Count} database columns.");
-
             foreach (PropertyInfo property in properties)
             {
                 string columnName = columnNamesByPropertyName[property.Name];
 
-                if (!columns.TryGetValue(columnName, out DbColumnInfo? _))
-                    throw new InvalidOperationException($"Database column mapping mismatch for entity '{typeof(TEntity).Name}'. Database column '{columnName}' is not mapped to any entity property.");
+                if (!columns.ContainsKey(columnName))
+                    throw new InvalidOperationException($"Database column mapping mismatch for entity '{typeof(TEntity).Name}'. The property '{property.Name}' is mapped to the column '{columnName}', which does not exist in the database table.");
             }
 
             _ = _dictCache.TryAdd(connectionId, columns);

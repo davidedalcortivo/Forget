@@ -37,6 +37,13 @@ namespace Forget.Tests.SqlServer
                     Price DECIMAL(18,2) NOT NULL
                 );
 
+                CREATE TABLE dbo.PartialRow (
+                    Id INT PRIMARY KEY,
+                    Legacy NVARCHAR(50) NOT NULL DEFAULT 'legacy',
+                    Qty INT NOT NULL,
+                    Audit DATETIME2 NULL
+                );
+
                 CREATE TABLE dbo.TypeMatrix (
                     Id INT PRIMARY KEY,
                     BigValue BIGINT NOT NULL,
@@ -68,5 +75,17 @@ namespace Forget.Tests.SqlServer
             await Connection.DisposeAsync();
             await _container.DisposeAsync();
         }
+    }
+
+    /// <summary>
+    /// Every SqlServer integration test class shares one <see cref="SqlServerFixture"/>, so one container serves them
+    /// all instead of one per class. The classes of a collection run one after the other, which is what keeps the
+    /// number of containers alive at the same time at one per provider; tests stay apart by using their own tables
+    /// or disjoint <c>Id</c> ranges.
+    /// </summary>
+    [CollectionDefinition(Name)]
+    public sealed class SqlServerCollection : ICollectionFixture<SqlServerFixture>
+    {
+        public const string Name = "SqlServer";
     }
 }

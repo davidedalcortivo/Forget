@@ -14,7 +14,8 @@ namespace Forget.Tests.SqlServer
     /// container per test.
     /// </para>
     /// </summary>
-    public class CrudIntegrationTests : IClassFixture<SqlServerFixture>
+    [Collection(SqlServerCollection.Name)]
+    public class CrudIntegrationTests
     {
         private readonly SqlServerFixture _fixture;
 

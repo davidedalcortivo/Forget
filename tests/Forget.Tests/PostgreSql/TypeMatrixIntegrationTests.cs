@@ -15,7 +15,8 @@ namespace Forget.Tests.PostgreSql
     /// Tests stay isolated on one shared container by using a disjoint <c>Id</c> range each.
     /// </para>
     /// </summary>
-    public class TypeMatrixIntegrationTests : IClassFixture<PostgreSqlFixture>
+    [Collection(PostgreSqlCollection.Name)]
+    public class TypeMatrixIntegrationTests
     {
         private readonly PostgreSqlFixture _fixture;
 

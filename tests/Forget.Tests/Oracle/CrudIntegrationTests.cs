@@ -19,7 +19,8 @@ namespace Forget.Tests.Oracle
     /// values per test, rather than paying for a fresh container per test.
     /// </para>
     /// </summary>
-    public class CrudIntegrationTests : IClassFixture<OracleFixture>
+    [Collection(OracleCollection.Name)]
+    public class CrudIntegrationTests
     {
         private readonly OracleFixture _fixture;
 

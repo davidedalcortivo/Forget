@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- An entity may now map only some of the columns of its table, as with Dapper (audit or legacy columns are common).
+  Every operation that reads the column list from the database used to throw `InvalidOperationException: Database table
+  schema mismatch` unless the entity mapped every column: `InsertRange`, `UpdateRange` and `UpsertRange` on Oracle
+  (even after `LoadDbCache`), `UpdateRange` on PostgreSQL, and `Sum`/`Avg` on SQL Server. PostgreSQL's `UpdateRange` now
+  fills the columns the entity does not map with `NULL` in its row values, which the `UPDATE` never reads; Oracle's
+  discovery block only reads the columns whose names Forget could map, so a column named with a backslash (which broke
+  the block's JSON output) no longer matters. A mapped property whose column does not exist in the table still fails,
+  with a message that names the property and the column.
+- Oracle: `InsertRange`, `UpdateRange` and `UpsertRange` silently rounded the values written to a `NUMBER` column
+  declared without a precision (`12.75` was stored as `13`), and mangled a `NUMBER(*,s)` column (scale used as
+  precision). The cast that the multi-row statement discovers per column took the dictionary's `DATA_LENGTH` (22, the
+  storage size of any `NUMBER`) for a precision. A length is now used only for `VARCHAR2`, `NVARCHAR2`, `CHAR`,
+  `NCHAR` and `RAW`; a `NUMBER` with no precision is cast as plain `NUMBER`, and `NUMBER(*,s)` as `NUMBER(38,s)`.
+  The same statement failed with `ORA-12899` on every non-null value written to a `CHAR(n CHAR)` or `NCHAR(n)`
+  column, because the cast was padded to `DATA_LENGTH`, which counts bytes; `CHAR` and `NCHAR` are now cast to the
+  column's own length in its own unit (`CHAR(n CHAR)`, `CHAR(n BYTE)`, `NCHAR(n)`).
+  Single-row operations were not affected.
 - PostgreSQL: every collection of enum values bound for `= ANY(@p)` failed, because it was bound as an `enum[]`
   array that Npgsql cannot write. This affected `Contains` over a list of enums (for example
   `kinds.Contains(x.Kind)`), `FilterDescriptor` with `ComparisonOperator.In` over enums, and

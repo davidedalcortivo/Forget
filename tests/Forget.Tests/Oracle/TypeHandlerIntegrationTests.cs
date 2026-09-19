@@ -15,7 +15,8 @@ namespace Forget.Tests.Oracle
     /// <see cref="ArgumentException"/>), so Forget inherits that limit rather than papering over it.
     /// </para>
     /// </summary>
-    public class TypeHandlerIntegrationTests : IClassFixture<OracleFixture>
+    [Collection(OracleCollection.Name)]
+    public class TypeHandlerIntegrationTests
     {
         private readonly OracleFixture _fixture;
 

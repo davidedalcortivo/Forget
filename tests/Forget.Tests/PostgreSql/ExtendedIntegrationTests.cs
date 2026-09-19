@@ -10,7 +10,8 @@ namespace Forget.Tests.PostgreSql
     /// update-by-predicate/delete-by-predicate overloads. Split into its own class (and its own container) purely
     /// to keep <see cref="CrudIntegrationTests"/> focused on the core round-trip story.
     /// </summary>
-    public class ExtendedIntegrationTests : IClassFixture<PostgreSqlFixture>
+    [Collection(PostgreSqlCollection.Name)]
+    public class ExtendedIntegrationTests
     {
         private readonly PostgreSqlFixture _fixture;
 

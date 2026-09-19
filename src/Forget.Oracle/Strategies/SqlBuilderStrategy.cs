@@ -23,6 +23,8 @@ namespace Forget.Oracle.Strategies
             string dataLengthNameColumn = SqlDialectStrategy.RenderIdentifier("DATA_LENGTH");
             string dataPrecisionNameColumn = SqlDialectStrategy.RenderIdentifier("DATA_PRECISION");
             string dataScaleNameColumn = SqlDialectStrategy.RenderIdentifier("DATA_SCALE");
+            string charLengthNameColumn = SqlDialectStrategy.RenderIdentifier("CHAR_LENGTH");
+            string charUsedNameColumn = SqlDialectStrategy.RenderIdentifier("CHAR_USED");
             string tableNameColumn = SqlDialectStrategy.RenderIdentifier("TABLE_NAME");
             string ownerColumn = SqlDialectStrategy.RenderIdentifier("OWNER");
 
@@ -32,6 +34,7 @@ namespace Forget.Oracle.Strategies
             StringBuilder conditionBuffer4 = new();
             StringBuilder conditionBuffer5 = new();
             StringBuilder conditionBuffer6 = new();
+            StringBuilder conditionBuffer7 = new();
 
             conditionBuffer1.AppendLine();
             conditionBuffer1.Append("                IF c.");
@@ -57,31 +60,55 @@ namespace Forget.Oracle.Strategies
 
             conditionBuffer3.AppendLine();
             conditionBuffer3.Append("                IF c.");
+            conditionBuffer3.Append(dataTypeNameColumn);
+            conditionBuffer3.Append(" = 'NUMBER' AND c.");
             conditionBuffer3.Append(dataScaleNameColumn);
             conditionBuffer3.AppendLine(" IS NOT NULL THEN");
-            conditionBuffer3.Append("                    v_type := v_type || '(' || c.");
+            conditionBuffer3.Append("                    v_type := v_type || '(38,' || c.");
             conditionBuffer3.Append(dataScaleNameColumn);
             conditionBuffer3.AppendLine(" || ')';");
             conditionBuffer3.AppendLine("                    v_sql := 'SELECT ''X'' FROM DUAL WHERE CAST(NULL AS ' || v_type || ') IS NULL';");
 
             conditionBuffer4.AppendLine();
             conditionBuffer4.Append("                IF c.");
-            conditionBuffer4.Append(dataLengthNameColumn);
+            conditionBuffer4.Append(dataTypeNameColumn);
+            conditionBuffer4.Append(" IN ('CHAR', 'NCHAR') AND c.");
+            conditionBuffer4.Append(charLengthNameColumn);
             conditionBuffer4.AppendLine(" IS NOT NULL THEN");
             conditionBuffer4.Append("                    v_type := v_type || '(' || c.");
-            conditionBuffer4.Append(dataLengthNameColumn);
-            conditionBuffer4.AppendLine(" || ')';");
+            conditionBuffer4.Append(charLengthNameColumn);
+            conditionBuffer4.AppendLine(" ||");
+            conditionBuffer4.AppendLine("                        CASE");
+            conditionBuffer4.Append("                            WHEN c.");
+            conditionBuffer4.Append(dataTypeNameColumn);
+            conditionBuffer4.AppendLine(" <> 'CHAR' THEN ''");
+            conditionBuffer4.Append("                            WHEN c.");
+            conditionBuffer4.Append(charUsedNameColumn);
+            conditionBuffer4.AppendLine(" = 'C' THEN ' CHAR'");
+            conditionBuffer4.AppendLine("                            ELSE ' BYTE'");
+            conditionBuffer4.AppendLine("                        END || ')';");
             conditionBuffer4.AppendLine("                    v_sql := 'SELECT ''X'' FROM DUAL WHERE CAST(NULL AS ' || v_type || ') IS NULL';");
 
             conditionBuffer5.AppendLine();
-            conditionBuffer5.AppendLine("                IF 1 = 1 THEN");
-            conditionBuffer5.AppendLine("                    v_type := v_type;");
+            conditionBuffer5.Append("                IF c.");
+            conditionBuffer5.Append(dataTypeNameColumn);
+            conditionBuffer5.Append(" IN ('VARCHAR2', 'NVARCHAR2', 'RAW') AND c.");
+            conditionBuffer5.Append(dataLengthNameColumn);
+            conditionBuffer5.AppendLine(" IS NOT NULL THEN");
+            conditionBuffer5.Append("                    v_type := v_type || '(' || c.");
+            conditionBuffer5.Append(dataLengthNameColumn);
+            conditionBuffer5.AppendLine(" || ')';");
             conditionBuffer5.AppendLine("                    v_sql := 'SELECT ''X'' FROM DUAL WHERE CAST(NULL AS ' || v_type || ') IS NULL';");
 
             conditionBuffer6.AppendLine();
             conditionBuffer6.AppendLine("                IF 1 = 1 THEN");
             conditionBuffer6.AppendLine("                    v_type := v_type;");
-            conditionBuffer6.AppendLine("                    v_sql := 'SELECT ''X'' FROM DUAL WHERE TO_' || v_type || '(NULL) IS NULL';");
+            conditionBuffer6.AppendLine("                    v_sql := 'SELECT ''X'' FROM DUAL WHERE CAST(NULL AS ' || v_type || ') IS NULL';");
+
+            conditionBuffer7.AppendLine();
+            conditionBuffer7.AppendLine("                IF 1 = 1 THEN");
+            conditionBuffer7.AppendLine("                    v_type := v_type;");
+            conditionBuffer7.AppendLine("                    v_sql := 'SELECT ''X'' FROM DUAL WHERE TO_' || v_type || '(NULL) IS NULL';");
 
             StringBuilder[] conditionBuffers = [
                 conditionBuffer1,
@@ -89,10 +116,12 @@ namespace Forget.Oracle.Strategies
                 conditionBuffer3,
                 conditionBuffer4,
                 conditionBuffer5,
-                conditionBuffer6
+                conditionBuffer6,
+                conditionBuffer7
             ];
 
             string[] vTypes = [
+                "                    v_type := 'CAST({} AS ' || v_type || ')';",
                 "                    v_type := 'CAST({} AS ' || v_type || ')';",
                 "                    v_type := 'CAST({} AS ' || v_type || ')';",
                 "                    v_type := 'CAST({} AS ' || v_type || ')';",
@@ -126,11 +155,17 @@ namespace Forget.Oracle.Strategies
             sqlBuffer.Append(dataPrecisionNameColumn);
             sqlBuffer.AppendLine(",");
             sqlBuffer.Append("            ");
-            sqlBuffer.AppendLine(dataScaleNameColumn);
+            sqlBuffer.Append(dataScaleNameColumn);
+            sqlBuffer.AppendLine(",");
+            sqlBuffer.Append("            ");
+            sqlBuffer.Append(charLengthNameColumn);
+            sqlBuffer.AppendLine(",");
+            sqlBuffer.Append("            ");
+            sqlBuffer.AppendLine(charUsedNameColumn);
             sqlBuffer.AppendLine("        FROM");
             sqlBuffer.Append("            ");
             sqlBuffer.Append(allTabColumnsTable);
-            sqlBuffer.AppendWhereClause($"{ownerColumn} = {SqlDialectStrategy.Placeholder}" + Environment.NewLine + $"            AND {tableNameColumn} = {SqlDialectStrategy.Placeholder}", "        ");
+            sqlBuffer.AppendWhereClause($"{ownerColumn} = {SqlDialectStrategy.Placeholder}" + Environment.NewLine + $"            AND {tableNameColumn} = {SqlDialectStrategy.Placeholder}" + Environment.NewLine + $"            AND REGEXP_LIKE({columnNameColumn}, '{IdentifierHelper.CharsetPattern}')", "        ");
             sqlBuffer.AppendLine();
             sqlBuffer.AppendLine("    )");
             sqlBuffer.AppendLine("    LOOP");

@@ -37,6 +37,13 @@ namespace Forget.Tests.PostgreSql
                     "Price" NUMERIC(18,2) NOT NULL
                 );
 
+                CREATE TABLE dbo."PartialRow" (
+                    "Id" INTEGER PRIMARY KEY,
+                    "Legacy" TEXT NOT NULL DEFAULT 'legacy',
+                    "Qty" INTEGER NOT NULL,
+                    "Audit" TIMESTAMP NULL
+                );
+
                 CREATE TABLE dbo."TypeMatrix" (
                     "Id" INTEGER PRIMARY KEY,
                     "BigValue" BIGINT NOT NULL,
@@ -71,5 +78,17 @@ namespace Forget.Tests.PostgreSql
             await Connection.DisposeAsync();
             await _container.DisposeAsync();
         }
+    }
+
+    /// <summary>
+    /// Every PostgreSql integration test class shares one <see cref="PostgreSqlFixture"/>, so one container serves them
+    /// all instead of one per class. The classes of a collection run one after the other, which is what keeps the
+    /// number of containers alive at the same time at one per provider; tests stay apart by using their own tables
+    /// or disjoint <c>Id</c> ranges.
+    /// </summary>
+    [CollectionDefinition(Name)]
+    public sealed class PostgreSqlCollection : ICollectionFixture<PostgreSqlFixture>
+    {
+        public const string Name = "PostgreSql";
     }
 }

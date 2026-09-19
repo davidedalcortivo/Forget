@@ -67,8 +67,42 @@ namespace Forget.Tests.Oracle
                 )
                 """);
 
+            await ExecuteAsync(Connection, """
+                CREATE TABLE "PartialRow" (
+                    "Id" NUMBER(10) PRIMARY KEY,
+                    "Legacy" VARCHAR2(50) DEFAULT 'legacy' NOT NULL,
+                    "Qty" NUMBER(10) NOT NULL,
+                    "Audit" DATE NULL,
+                    "Back\slash" NUMBER(1) NULL,
+                    "Odd$Name" NUMBER(1) NULL
+                )
+                """);
+
+            await ExecuteAsync(Connection, """
+                CREATE TABLE "CastRow" (
+                    "Id" NUMBER(10) PRIMARY KEY,
+                    "Plain" NUMBER NULL,
+                    "Scaled" NUMBER(*,2) NULL,
+                    "Exact" NUMBER(18,4) NULL,
+                    "Ratio" BINARY_DOUBLE NULL,
+                    "Approx" FLOAT NULL,
+                    "Body" CLOB NULL,
+                    "Payload" BLOB NULL,
+                    "Moment" TIMESTAMP(6) NULL,
+                    "Day" DATE NULL,
+                    "Code" CHAR(5) NULL,
+                    "CharSemantic" CHAR(5 CHAR) NULL,
+                    "National" NCHAR(5) NULL,
+                    "Label" VARCHAR2(50) NULL,
+                    "LabelChars" VARCHAR2(50 CHAR) NULL,
+                    "Unicode" NVARCHAR2(20) NULL,
+                    "Token" RAW(16) NULL
+                )
+                """);
+
             await Connection.LoadDbCacheAsync<Widget>();
             await Connection.LoadDbCacheAsync<HandlerRow>();
+            await Connection.LoadDbCacheAsync<CastRow>();
         }
 
         private static async Task ExecuteAsync(OracleConnection connection, string sql)
@@ -83,5 +117,17 @@ namespace Forget.Tests.Oracle
             await Connection.DisposeAsync();
             await _container.DisposeAsync();
         }
+    }
+
+    /// <summary>
+    /// Every Oracle integration test class shares one <see cref="OracleFixture"/>, so one container serves them all
+    /// instead of one per class (an Oracle container is the heaviest of the four). The classes of a collection run
+    /// one after the other, which is what keeps the number of containers alive at the same time at one per provider;
+    /// tests stay apart by using their own tables or disjoint <c>Id</c> ranges.
+    /// </summary>
+    [CollectionDefinition(Name)]
+    public sealed class OracleCollection : ICollectionFixture<OracleFixture>
+    {
+        public const string Name = "Oracle";
     }
 }
