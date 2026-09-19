@@ -1207,11 +1207,11 @@ namespace Forget.Oracle.Extensions
         /// it also opens and closes the connection for the duration of the operation.
         /// </para>
         /// <para>
-        /// A <c>MERGE</c> is not atomic against a concurrent insert of the same key: when two sessions upsert a key
-        /// that does not exist yet at the same moment, both decide it is not matched, and the second insert fails with
-        /// <c>ORA-00001</c> (unique constraint violated). Forget does not retry. If your workload can do this, handle that
-        /// error and call again: by then the row exists, and it is updated.
-        /// When this method owns the transaction, a failed call applies none of its rows.
+        /// A <c>MERGE</c> is not atomic against a concurrent insert of the same key. When two sessions upsert a key
+        /// that does not exist yet, both decide it is not matched, and the second insert fails with <c>ORA-00001</c>
+        /// (unique constraint violated). Overlapping keys can also make a session the victim of a deadlock
+        /// (<c>ORA-00060</c>). Forget does not retry: handle these errors and call again, and the other session's rows
+        /// are updated. When this method owns the transaction, a failed call applies none of its rows.
         /// </para>
         /// </remarks>
         /// <exception cref="ArgumentNullException">

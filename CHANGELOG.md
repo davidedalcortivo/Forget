@@ -11,11 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-- Oracle: the documentation of `Upsert`, `UpsertAsync`, `UpsertRange` and `UpsertRangeAsync`, and the README, now say what
-  happens when several sessions upsert the same new key at the same moment: a `MERGE` is not atomic against a concurrent
-  insert of the same key, so one of them can fail with `ORA-00001`, and never leaves a duplicate row. Forget does not retry;
-  handling that error is up to the caller. The other three providers are unaffected: concurrent upserts of the same key
-  succeed for every caller (covered by tests).
+- Upsert under concurrency is now documented, on the methods it affects and in the README, and covered by tests on all four
+  providers (16 connections upserting the same new keys at the same moment). Single-row upserts succeeded for every caller on
+  SQL Server, MySQL and PostgreSQL, and so did multi-row upserts on MySQL and PostgreSQL. Two cases can fail; in both, no key
+  ends up with two rows, and Forget does not retry (handling the error is up to the caller):
+  - Oracle: a `MERGE` is not atomic against a concurrent insert of the same key, so a session can fail with `ORA-00001`, and a
+    multi-row upsert can also be chosen as the victim of a deadlock (`ORA-00060`).
+  - SQL Server: a multi-row upsert of overlapping keys can be chosen as the victim of a deadlock (error 1205).
 - README: a new section under the mapping attributes says what the entity maps (the columns it declares; the table may
   have more), that types are Dapper's rather than Forget's, and that the column metadata some operations need is read
   once per entity and database and never invalidated.
@@ -31,10 +33,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   lost the reason it failed: only `Unable to evaluate expression '...'` came out. The original exception is now attached as
   the `InnerException`, and the message says what the expression would have needed to be (a mapped column of the entity, or a
   value that can be computed without it).
-- SQL Server: `UpsertRange` could deadlock when several connections upserted the same new keys at the same moment (one of
-  them was killed as the deadlock victim). Its `UPDATE` step took no lock at all and only the `INSERT` step held
+- SQL Server: `UpsertRange` deadlocked far too easily when several connections upserted the same new keys at the same moment
+  (one of them was killed as the deadlock victim). Its `UPDATE` step took no lock at all and only the `INSERT` step held
   `UPDLOCK, HOLDLOCK`, so two callers both got past the update and then blocked each other on the insert. The `UPDATE`
-  now takes the same range locks, as the single-row `Upsert` already did. `UpdateRange` is unchanged.
+  now takes the same range locks, as the single-row `Upsert` already did, which makes the deadlock much rarer. It does not
+  remove it: on a small table the server reads the target with a scan, and concurrent scans holding range locks can still
+  deadlock (see above). `UpdateRange` is unchanged.
 - An entity may now map only some of the columns of its table, as with Dapper (audit or legacy columns are common).
   Every operation that reads the column list from the database used to throw `InvalidOperationException: Database table
   schema mismatch` unless the entity mapped every column: `InsertRange`, `UpdateRange` and `UpsertRange` on Oracle

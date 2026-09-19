@@ -1209,6 +1209,12 @@ namespace Forget.SqlServer.Extensions
         /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,
         /// it also opens and closes the connection for the duration of the operation.
         /// </para>
+        /// <para>
+        /// When several connections upsert overlapping keys at the same moment, the database can choose one of them as the
+        /// victim of a deadlock (error 1205) and roll its transaction back. Forget does not retry. If your workload can do
+        /// this, handle that error and call again. No key ends up with two rows. When this method owns the transaction, a
+        /// failed call applies none of its rows.
+        /// </para>
         /// </remarks>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="connection"/> or <paramref name="entities"/> is <see langword="null"/>.

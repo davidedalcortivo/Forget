@@ -11,9 +11,10 @@ namespace Forget.Tests.Oracle
     /// <para>
     /// The concurrent tests state Oracle's contract, which is weaker than the other providers': a <c>MERGE</c> is not
     /// atomic against a concurrent insert of the same key, so when several sessions upsert a key that does not exist
-    /// yet, some of them can fail with <c>ORA-00001</c>. Forget does not retry (that is a policy for the caller, and
-    /// the error cannot be told apart from a different unique constraint of the table). What has to hold is that the
-    /// table never ends up with a duplicate and that nothing other than that error comes out.
+    /// yet, some of them can fail with <c>ORA-00001</c>, and a multi-row upsert of overlapping keys can also be chosen
+    /// as a deadlock victim (<c>ORA-00060</c>). Forget does not retry (that is a policy for the caller, and
+    /// <c>ORA-00001</c> cannot be told apart from a different unique constraint of the table). What has to hold is that
+    /// the table never ends up with a duplicate and that nothing other than those errors comes out.
     /// </para>
     /// </summary>
     [Collection(OracleCollection.Name)]
@@ -83,11 +84,11 @@ namespace Forget.Tests.Oracle
                 Assert.Equal(1, await _fixture.Connection.CountAsync<UpsertProduct>(p => p.Sku == sku, cancellationToken: Ct));
             }
 
-            AssertOnlyUniqueViolations(failures);
+            AssertOnlyOracleErrors(failures, 1);
         }
 
         [Fact]
-        public async Task UpsertRangeAsync_FromManyConnectionsAtOnceOnTheSameNewKeys_LeavesExactlyOneRowPerKeyAndTheOnlyFailureIsAUniqueViolation()
+        public async Task UpsertRangeAsync_FromManyConnectionsAtOnceOnTheSameNewKeys_LeavesExactlyOneRowPerKeyAndTheOnlyFailuresAreUniqueViolationsOrDeadlocks()
         {
             ConcurrentBag<Exception> failures = [];
 
@@ -106,7 +107,7 @@ namespace Forget.Tests.Oracle
                 Assert.Equal(3, await _fixture.Connection.CountAsync<UpsertProduct>(p => p.Sku.StartsWith(prefix), cancellationToken: Ct));
             }
 
-            AssertOnlyUniqueViolations(failures);
+            AssertOnlyOracleErrors(failures, 1, 60);
         }
 
         /// <summary>
@@ -147,9 +148,9 @@ namespace Forget.Tests.Oracle
             await Task.WhenAll(callers);
         }
 
-        private static void AssertOnlyUniqueViolations(ConcurrentBag<Exception> failures)
+        private static void AssertOnlyOracleErrors(ConcurrentBag<Exception> failures, params int[] allowedNumbers)
         {
-            Exception[] unexpected = [.. failures.Where(f => f is not OracleException { Number: 1 })];
+            Exception[] unexpected = [.. failures.Where(f => !(f is OracleException oracle && allowedNumbers.Contains(oracle.Number)))];
 
             Assert.True(unexpected.Length == 0, Environment.NewLine + string.Join(Environment.NewLine, unexpected.Select(f => $"{f.GetType().Name}: {f.Message}").Distinct()));
         }

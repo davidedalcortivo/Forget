@@ -177,9 +177,17 @@ What actually runs is deliberately *not* the same statement re-parameterized fou
   `IF @@ROWCOUNT = 0`, wrapped in a transaction Forget manages for you if you don't supply one.
 
 Each statement is the one that is right for that engine — instead of one statement that happens to parse everywhere
-but is subtly wrong (or slow, or unsafe under concurrency) on at least one of them. Concurrent upserts of the same
-new key, from many connections at once, are covered by tests on all 4 providers: on SQL Server, MySQL and PostgreSQL
-every caller succeeds; on Oracle the outcome is the one described above.
+but is subtly wrong (or slow, or unsafe under concurrency) on at least one of them.
+
+Upserts from many connections at once, on the same new keys, are covered by tests on all 4 providers. Single-row
+upserts succeeded for every caller on SQL Server, MySQL and PostgreSQL, and so did multi-row upserts on MySQL and
+PostgreSQL. Two cases can fail, and in both Forget doesn't retry — handle the error and call again:
+
+- **Oracle**: `ORA-00001`, as described above, and a multi-row upsert can also be chosen as the victim of a deadlock
+  (`ORA-00060`).
+- **SQL Server**: a multi-row upsert of overlapping keys can be chosen as the victim of a deadlock (error 1205).
+
+No key ever ends up with two rows.
 
 ### Avg, on every provider: read as text, converted to `decimal` in C#
 
