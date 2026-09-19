@@ -49,9 +49,9 @@ dotnet add package Forget.SqlServer
 Map an entity with plain data-annotation attributes:
 
 ```csharp
-using Forget.Core.Models; // UpsertKeyAttribute, and later FilterDescriptor/FilterGroup/ComparisonOperator/SortDescriptor
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Forget.Core.Models; // UpsertKeyAttribute, and later FilterDescriptor/FilterGroup/ComparisonOperator/SortDescriptor
 
 [Table("Products")]
 public class Product
