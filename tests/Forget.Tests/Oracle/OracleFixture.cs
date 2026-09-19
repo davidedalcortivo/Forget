@@ -22,6 +22,8 @@ namespace Forget.Tests.Oracle
 
         public OracleConnection Connection { get; private set; } = null!;
 
+        public string ConnectionString { get; private set; } = null!;
+
         public async ValueTask InitializeAsync()
         {
             _container = new OracleBuilder("gvenzl/oracle-xe:21.3.0-slim-faststart")
@@ -38,7 +40,8 @@ namespace Forget.Tests.Oracle
             // own can of worms. ALTER SESSION SET CURRENT_SCHEMA lets a DBA-privileged connection create objects
             // owned by another schema without ever logging in as that user.
             string connectionString = _container.GetConnectionString().Replace("User Id=oracle;", "User Id=system;");
-            Connection = new OracleConnection(connectionString);
+            ConnectionString = connectionString;
+            Connection = new OracleConnection(ConnectionString);
             await Connection.OpenAsync();
 
             await ExecuteAsync(Connection, $"CREATE USER \"dbo\" IDENTIFIED BY \"{Password}\"");
@@ -64,6 +67,15 @@ namespace Forget.Tests.Oracle
                     "Id" NUMBER(10) PRIMARY KEY,
                     "Token" RAW(16) NOT NULL,
                     "Note" VARCHAR2(50) NULL
+                )
+                """);
+
+            await ExecuteAsync(Connection, """
+                CREATE TABLE "UpsertProduct" (
+                    "Id" NUMBER(10) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                    "Sku" VARCHAR2(50) NOT NULL UNIQUE,
+                    "Name" VARCHAR2(100) NOT NULL,
+                    "Stock" NUMBER(10) NOT NULL
                 )
                 """);
 

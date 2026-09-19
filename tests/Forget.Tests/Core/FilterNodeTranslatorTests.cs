@@ -90,8 +90,7 @@ namespace Forget.Tests.Core
         {
             _ = dialectName;
             ISqlDialectStrategy dialect = (ISqlDialectStrategy)dialectObject;
-            int[] ids = [1, 2, 3];
-            FilterDescriptor<Widget> filter = new(w => w.Id, ids, ComparisonOperator.In);
+            FilterDescriptor<Widget> filter = new(w => w.Id, new[] { 1, 2, 3 }, ComparisonOperator.In);
 
             (string sql, DynamicParameters? parameters) = FilterNodeTranslator<Widget>.Translate(dialect, filter);
 

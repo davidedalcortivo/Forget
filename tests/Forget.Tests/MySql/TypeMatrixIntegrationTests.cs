@@ -100,7 +100,7 @@ namespace Forget.Tests.MySql
             Assert.Equal(expected.NullableLabel, actual.NullableLabel);
         }
 
-        private static List<int> Ids(IEnumerable<TypeMatrixRow?> rows) => rows.Where(r => r is not null).Select(r => r!.Id).Order().ToList();
+        private static List<int> Ids(IEnumerable<TypeMatrixRow?> rows) => [.. rows.Where(r => r is not null).Select(r => r!.Id).Order()];
 
         [Fact]
         public async Task InsertAsync_ThenGetByIdAsync_RoundTripsEveryColumnType()

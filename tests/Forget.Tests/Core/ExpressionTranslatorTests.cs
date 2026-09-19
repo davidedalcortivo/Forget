@@ -285,10 +285,7 @@ namespace Forget.Tests.Core
         {
             _ = dialectName;
             ISqlDialectStrategy dialect = (ISqlDialectStrategy)dialectObject;
-
-#pragma warning disable CA1862
             Expression<Func<Widget, bool>> predicate = w => w.Name.ToLower() == "widget";
-#pragma warning restore CA1862
 
             (string sql, DynamicParameters? parameters) = ExpressionTranslator<Widget>.Translate(dialect, predicate);
 
@@ -301,10 +298,7 @@ namespace Forget.Tests.Core
         {
             _ = dialectName;
             ISqlDialectStrategy dialect = (ISqlDialectStrategy)dialectObject;
-
-#pragma warning disable CA1862
             Expression<Func<Widget, bool>> predicate = w => w.Name.ToUpper() == "WIDGET";
-#pragma warning restore CA1862
 
             (string sql, DynamicParameters? parameters) = ExpressionTranslator<Widget>.Translate(dialect, predicate);
 
@@ -317,8 +311,7 @@ namespace Forget.Tests.Core
         {
             _ = dialectName;
             ISqlDialectStrategy dialect = (ISqlDialectStrategy)dialectObject;
-            int[] ids = [1, 2, 3];
-            Expression<Func<Widget, bool>> predicate = w => ids.Contains(w.Id);
+            Expression<Func<Widget, bool>> predicate = w => new[] { 1, 2, 3 }.Contains(w.Id);
 
             (string sql, DynamicParameters? parameters) = ExpressionTranslator<Widget>.Translate(dialect, predicate);
 
@@ -375,8 +368,7 @@ namespace Forget.Tests.Core
         {
             _ = dialectName;
             ISqlDialectStrategy dialect = (ISqlDialectStrategy)dialectObject;
-            int[] ids = [];
-            Expression<Func<Widget, bool>> predicate = w => ids.Contains(w.Id);
+            Expression<Func<Widget, bool>> predicate = w => new int[] { }.Contains(w.Id);
 
             (string sql, DynamicParameters? parameters) = ExpressionTranslator<Widget>.Translate(dialect, predicate);
 

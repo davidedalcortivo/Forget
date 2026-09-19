@@ -16,6 +16,8 @@ namespace Forget.Tests.SqlServer
 
         public SqlConnection Connection { get; private set; } = null!;
 
+        public string ConnectionString { get; private set; } = null!;
+
         public async ValueTask InitializeAsync()
         {
             _container = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04")
@@ -23,7 +25,8 @@ namespace Forget.Tests.SqlServer
 
             await _container.StartAsync();
 
-            Connection = new SqlConnection(_container.GetConnectionString());
+            ConnectionString = _container.GetConnectionString();
+            Connection = new SqlConnection(ConnectionString);
             await Connection.OpenAsync();
 
             await using SqlCommand command = Connection.CreateCommand();
@@ -42,6 +45,13 @@ namespace Forget.Tests.SqlServer
                     Legacy NVARCHAR(50) NOT NULL DEFAULT 'legacy',
                     Qty INT NOT NULL,
                     Audit DATETIME2 NULL
+                );
+
+                CREATE TABLE dbo.UpsertProduct (
+                    Id INT IDENTITY(1,1) PRIMARY KEY,
+                    Sku NVARCHAR(50) NOT NULL UNIQUE,
+                    Name NVARCHAR(100) NOT NULL,
+                    Stock INT NOT NULL
                 );
 
                 CREATE TABLE dbo.TypeMatrix (

@@ -110,8 +110,7 @@ namespace Forget.Tests.PostgreSql
             await _fixture.Connection.InsertAsync(new Widget { Id = 61, Name = "W61", IsActive = true, Price = 1m }, cancellationToken: TestContext.Current.CancellationToken);
             await _fixture.Connection.InsertAsync(new Widget { Id = 62, Name = "W62", IsActive = true, Price = 1m }, cancellationToken: TestContext.Current.CancellationToken);
 
-            int[] ids = [60, 62];
-            IReadOnlyList<Widget> matches = await _fixture.Connection.GetAllAsync<Widget>(w => ids.Contains(w.Id), cancellationToken: TestContext.Current.CancellationToken);
+            IReadOnlyList<Widget> matches = await _fixture.Connection.GetAllAsync<Widget>(w => new[] { 60, 62 }.Contains(w.Id), cancellationToken: TestContext.Current.CancellationToken);
 
             Assert.Equal([60, 62], matches.Where(w => w.Id is 60 or 61 or 62).Select(w => w.Id).OrderBy(id => id));
         }

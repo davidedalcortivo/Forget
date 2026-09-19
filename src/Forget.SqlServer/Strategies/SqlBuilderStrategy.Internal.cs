@@ -20,6 +20,10 @@ namespace Forget.SqlServer.Strategies
             sqlBuffer.AppendSetColumns<TEntity>(SqlDialectStrategy, updateProperties, sourceTable, null, "    ");
             sqlBuffer.AppendFromTable<TEntity>(SqlDialectStrategy, string.Empty, targetTable);
             sqlBuffer.AppendLine();
+
+            if (clause is null)
+                sqlBuffer.AppendLine("    WITH (UPDLOCK, HOLDLOCK)");
+
             sqlBuffer.AppendLine("INNER JOIN (");
             sqlBuffer.AppendLine("    VALUES");
             sqlBuffer.AppendLine(SqlDialectStrategy.Placeholder);

@@ -230,6 +230,7 @@ namespace Forget.Tests.SqlServer
                 "    [Price] = [Source].[Price]",
                 "FROM",
                 "    [dbo].[Widget] AS [Target]",
+                "    WITH (UPDLOCK, HOLDLOCK)",
                 "INNER JOIN (",
                 "    VALUES",
                 "<<ROWS1>>",

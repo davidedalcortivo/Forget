@@ -57,6 +57,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 public class Product
 {
     [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
 
     [UpsertKey]
@@ -167,13 +168,18 @@ What actually runs is deliberately *not* the same statement re-parameterized fou
 
 - **MySQL**: `INSERT INTO ... VALUES (...) AS new ON DUPLICATE KEY UPDATE col = new.col, ...`
 - **Oracle**: `MERGE INTO ... USING (SELECT ... FROM DUAL) SOURCE ON (...) WHEN MATCHED THEN UPDATE ... WHEN NOT MATCHED THEN INSERT ...`
+  (a `MERGE` is not atomic against a concurrent insert of the same key: if two sessions upsert a key that doesn't
+  exist yet at the same moment, one of them can fail with `ORA-00001`. Forget doesn't retry — handle that error and
+  call again; the row exists by then, and it is updated. It never leaves a duplicate row.)
 - **PostgreSQL**: `INSERT INTO ... VALUES (...) ON CONFLICT (sku) DO UPDATE SET col = EXCLUDED.col, ...`
 - **SQL Server**: *not* `MERGE` — a documented, well-known source of concurrency correctness bugs.
   Instead: `UPDATE ... WITH (UPDLOCK, HOLDLOCK) SET ... WHERE ...` followed by a conditional `INSERT` guarded by
   `IF @@ROWCOUNT = 0`, wrapped in a transaction Forget manages for you if you don't supply one.
 
-Each statement is actually correct for that engine — instead of one statement that happens to parse everywhere
-but is subtly wrong (or slow, or unsafe under concurrency) on at least one of them.
+Each statement is the one that is right for that engine — instead of one statement that happens to parse everywhere
+but is subtly wrong (or slow, or unsafe under concurrency) on at least one of them. Concurrent upserts of the same
+new key, from many connections at once, are covered by tests on all 4 providers: on SQL Server, MySQL and PostgreSQL
+every caller succeeds; on Oracle the outcome is the one described above.
 
 ### Avg, on every provider: read as text, converted to `decimal` in C#
 
@@ -261,6 +267,18 @@ precisely because it fails silently (a plausible-looking wrong number, no except
 | `[Column(Name = ...)]`                    | Overrides the SQL column name for a property.                        |
 | `[NotMapped]`                             | Excludes a property entirely.                                        |
 | `[DatabaseGenerated(...)]`                | A property with `Identity` or `Computed` is never written by the library, only read back. |
+
+### What the entity maps, and what Forget leaves alone
+
+- **The entity maps the columns it declares.** The table can have more columns than the entity (audit or legacy
+  columns, say): those are never selected and never written, so a database default applies on insert. A mapped
+  property whose column does not exist in the table fails with a message naming the property and the column.
+- **Types are Dapper's.** Forget does not map or convert types. Any type Dapper can bind, or that you register a
+  `SqlMapper.TypeHandler` for, works the same way through Forget.
+- **Column metadata is read once.** A few operations need the table's column types — `Sum`/`Avg` on SQL Server, the
+  multi-row writes on Oracle, `UpdateRange` on PostgreSQL. Forget reads them the first time it needs them (or when
+  you call `LoadDbCache`/`LoadDbCacheAsync` yourself) and keeps them, per entity and database, for the life of the
+  process. Nothing invalidates them: after altering a column, restart the process.
 
 ## What this isn't
 

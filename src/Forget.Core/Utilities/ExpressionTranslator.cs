@@ -5,6 +5,7 @@ using Forget.Core.Models;
 using System.Collections;
 using System.Collections.Immutable;
 using System.Linq.Expressions;
+using System.Reflection;
 
 
 namespace Forget.Core.Utilities
@@ -40,6 +41,13 @@ namespace Forget.Core.Utilities
 
         private static bool TryEval(Expression expr, out object? value)
         {
+            return TryEval(expr, out value, out _);
+        }
+
+        private static bool TryEval(Expression expr, out object? value, out Exception? failure)
+        {
+            failure = null;
+
             switch (expr)
             {
                 case ConstantExpression ce:
@@ -47,11 +55,28 @@ namespace Forget.Core.Utilities
                     return true;
 
                 case MemberExpression me:
-                    return MemberEvaluatorCache.TryEvaluate(me, out value);
+                    return MemberEvaluatorCache.TryEvaluate(me, out value, out failure);
             }
 
-            try { value = Expression.Lambda(expr).Compile().DynamicInvoke(); return true; }
-            catch { value = null; return false; }
+            try
+            {
+                value = Expression.Lambda(expr).Compile().DynamicInvoke();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                value = null;
+                failure = ex is TargetInvocationException { InnerException: not null } ? ex.InnerException : ex;
+                return false;
+            }
+        }
+
+        private string RenderColumn(MemberExpression member)
+        {
+            if (!_columnNamesByPropertyName.TryGetValue(member.Member.Name, out string? columnName))
+                throw new NotSupportedException($"The property '{member.Member.Name}' of entity '{typeof(TEntity).Name}' is not mapped to a column, so it cannot be used in a predicate.");
+
+            return _ctx.SqlDialectStrategy.RenderIdentifier(columnName);
         }
 
         private static bool IsNull(Expression expr)
@@ -98,12 +123,12 @@ namespace Forget.Core.Utilities
         {
             if (node.Expression is ParameterExpression)
             {
-                _ctx.SqlBuffer.Append(_ctx.SqlDialectStrategy.RenderIdentifier(_columnNamesByPropertyName[node.Member.Name]));
+                _ctx.SqlBuffer.Append(RenderColumn(node));
                 return node;
             }
 
-            if (!TryEval(node, out object? value))
-                throw new NotSupportedException($"Unable to evaluate expression '{node}'.");
+            if (!TryEval(node, out object? value, out Exception? failure))
+                throw new NotSupportedException($"Unable to evaluate expression '{node}': it is not a mapped column of the entity, and it cannot be computed without the entity either.", failure);
 
             _ctx.SqlBuffer.Append(_ctx.AddParameter(value));
             return node;
@@ -116,7 +141,7 @@ namespace Forget.Core.Utilities
                 member.Expression is ParameterExpression &&
                 member.Type == typeof(bool))
             {
-                string col = _ctx.SqlDialectStrategy.RenderIdentifier(_columnNamesByPropertyName[member.Member.Name]);
+                string col = RenderColumn(member);
 
                 _ctx.SqlBuffer.Append("NOT (");
                 _ctx.SqlBuffer.Append(_ctx.SqlDialectStrategy.IsTrue(col));
@@ -252,7 +277,7 @@ namespace Forget.Core.Utilities
                 member.Expression is ParameterExpression &&
                 member.Type == typeof(bool))
             {
-                string col = _ctx.SqlDialectStrategy.RenderIdentifier(_columnNamesByPropertyName[member.Member.Name]);
+                string col = RenderColumn(member);
 
                 _ctx.SqlBuffer.Append('(');
                 _ctx.SqlBuffer.Append(_ctx.SqlDialectStrategy.IsTrue(col));
@@ -282,7 +307,7 @@ namespace Forget.Core.Utilities
                 member.Expression is ParameterExpression &&
                 member.Type == typeof(bool))
             {
-                string col = _ctx.SqlDialectStrategy.RenderIdentifier(_columnNamesByPropertyName[member.Member.Name]);
+                string col = RenderColumn(member);
 
                 _ctx.SqlBuffer.Append('(');
                 _ctx.SqlBuffer.Append(_ctx.SqlDialectStrategy.IsTrue(col));
@@ -355,8 +380,8 @@ namespace Forget.Core.Utilities
 
                 bool ignoreCase = ResolveIgnoreCase(m);
 
-                if (!TryEval(m.Arguments[0], out object? raw))
-                    throw new NotSupportedException("LIKE argument must be evaluable.");
+                if (!TryEval(m.Arguments[0], out object? raw, out Exception? failure))
+                    throw new NotSupportedException($"The argument of '{m.Method.Name}' must be a value that can be evaluated without the entity, but '{m.Arguments[0]}' cannot.", failure);
 
                 if (raw is null)
                 {

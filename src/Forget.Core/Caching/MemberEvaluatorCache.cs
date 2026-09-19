@@ -9,9 +9,10 @@ namespace Forget.Core.Caching
     {
         private static readonly ConcurrentDictionary<MemberInfo, Func<object?, object?>> _cache = new();
 
-        public static bool TryEvaluate(MemberExpression expr, out object? value)
+        public static bool TryEvaluate(MemberExpression expr, out object? value, out Exception? failure)
         {
             value = null;
+            failure = null;
 
             if (expr.Expression is null)
             {
@@ -55,8 +56,9 @@ namespace Forget.Core.Caching
                 value = getter(DynamicInvokeRoot(expr.Expression));
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                failure = ex is TargetInvocationException { InnerException: not null } ? ex.InnerException : ex;
                 return false;
             }
         }

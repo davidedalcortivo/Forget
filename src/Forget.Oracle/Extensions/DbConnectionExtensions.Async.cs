@@ -913,6 +913,12 @@ namespace Forget.Oracle.Extensions
         /// property is updated except the identifier, any database-generated property, and the key properties
         /// themselves; otherwise, a new row is inserted using every property that is not database-generated.
         /// </para>
+        /// <para>
+        /// A <c>MERGE</c> is not atomic against a concurrent insert of the same key: when two sessions upsert a key
+        /// that does not exist yet at the same moment, both decide it is not matched, and the second insert fails with
+        /// <c>ORA-00001</c> (unique constraint violated). Forget does not retry. If your workload can do this, handle that
+        /// error and call again: by then the row exists, and it is updated.
+        /// </para>
         /// </remarks>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="connection"/> or <paramref name="entity"/> is <see langword="null"/>.
@@ -1199,6 +1205,13 @@ namespace Forget.Oracle.Extensions
         /// opts out of this; committing or rolling back is then the caller's responsibility.
         /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,
         /// it also opens and closes the connection for the duration of the operation.
+        /// </para>
+        /// <para>
+        /// A <c>MERGE</c> is not atomic against a concurrent insert of the same key: when two sessions upsert a key
+        /// that does not exist yet at the same moment, both decide it is not matched, and the second insert fails with
+        /// <c>ORA-00001</c> (unique constraint violated). Forget does not retry. If your workload can do this, handle that
+        /// error and call again: by then the row exists, and it is updated.
+        /// When this method owns the transaction, a failed call applies none of its rows.
         /// </para>
         /// </remarks>
         /// <exception cref="ArgumentNullException">

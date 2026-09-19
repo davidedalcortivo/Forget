@@ -15,6 +15,8 @@ namespace Forget.Tests.PostgreSql
 
         public NpgsqlConnection Connection { get; private set; } = null!;
 
+        public string ConnectionString { get; private set; } = null!;
+
         public async ValueTask InitializeAsync()
         {
             _container = new PostgreSqlBuilder("postgres:16-alpine")
@@ -22,7 +24,8 @@ namespace Forget.Tests.PostgreSql
 
             await _container.StartAsync();
 
-            Connection = new NpgsqlConnection(_container.GetConnectionString());
+            ConnectionString = _container.GetConnectionString();
+            Connection = new NpgsqlConnection(ConnectionString);
             await Connection.OpenAsync();
 
             await using NpgsqlCommand command = Connection.CreateCommand();
@@ -42,6 +45,13 @@ namespace Forget.Tests.PostgreSql
                     "Legacy" TEXT NOT NULL DEFAULT 'legacy',
                     "Qty" INTEGER NOT NULL,
                     "Audit" TIMESTAMP NULL
+                );
+
+                CREATE TABLE dbo."UpsertProduct" (
+                    "Id" INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                    "Sku" TEXT NOT NULL UNIQUE,
+                    "Name" TEXT NOT NULL,
+                    "Stock" INTEGER NOT NULL
                 );
 
                 CREATE TABLE dbo."TypeMatrix" (

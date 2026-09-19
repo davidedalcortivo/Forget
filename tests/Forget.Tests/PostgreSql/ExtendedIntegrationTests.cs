@@ -21,6 +21,39 @@ namespace Forget.Tests.PostgreSql
         }
 
         [Fact]
+        public async Task GetFirstAsync_WithPredicateAndSort_ReturnsTheFirstRowInSortOrder()
+        {
+            for (int i = 0; i < 3; i++)
+                await _fixture.Connection.InsertAsync(new Widget { Id = 200 + i, Name = $"First{i}", IsActive = true, Price = 1m }, cancellationToken: TestContext.Current.CancellationToken);
+
+            Widget fetched = await _fixture.Connection.GetFirstAsync<Widget>(w => w.Id >= 200 && w.Id <= 202, sortDescriptors: [new SortDescriptor<Widget>(w => w.Id, SortDirection.Descending)], cancellationToken: TestContext.Current.CancellationToken);
+
+            Assert.Equal(202, fetched.Id);
+        }
+
+        [Fact]
+        public async Task GetSingleAsync_WhenSeveralRowsMatch_Throws()
+        {
+            await _fixture.Connection.InsertAsync(new Widget { Id = 210, Name = "Twin", IsActive = true, Price = 1m }, cancellationToken: TestContext.Current.CancellationToken);
+            await _fixture.Connection.InsertAsync(new Widget { Id = 211, Name = "Twin", IsActive = true, Price = 1m }, cancellationToken: TestContext.Current.CancellationToken);
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _fixture.Connection.GetSingleAsync<Widget>(w => w.Name == "Twin", cancellationToken: TestContext.Current.CancellationToken));
+        }
+
+        [Fact]
+        public async Task DeleteRangeAsync_ByIds_RemovesEveryRowWithThoseIds()
+        {
+            await _fixture.Connection.InsertRangeAsync([new Widget { Id = 220, Name = "D220", IsActive = true, Price = 1m }, new Widget { Id = 221, Name = "D221", IsActive = true, Price = 1m }, new Widget { Id = 222, Name = "D222", IsActive = true, Price = 1m }], cancellationToken: TestContext.Current.CancellationToken);
+
+            int affected = await _fixture.Connection.DeleteRangeAsync<Widget>(new[] { 220, 221 }, cancellationToken: TestContext.Current.CancellationToken);
+
+            Assert.Equal(2, affected);
+            Assert.Null(await _fixture.Connection.GetByIdAsync<Widget>(220, cancellationToken: TestContext.Current.CancellationToken));
+            Assert.Null(await _fixture.Connection.GetByIdAsync<Widget>(221, cancellationToken: TestContext.Current.CancellationToken));
+            Assert.NotNull(await _fixture.Connection.GetByIdAsync<Widget>(222, cancellationToken: TestContext.Current.CancellationToken));
+        }
+
+        [Fact]
         public async Task GetFirstOrDefaultAsync_WithPredicate_ReturnsNullWhenNothingMatches()
         {
             Widget? fetched = await _fixture.Connection.GetFirstOrDefaultAsync<Widget>(w => w.Id == 999_001, cancellationToken: TestContext.Current.CancellationToken);
@@ -74,8 +107,7 @@ namespace Forget.Tests.PostgreSql
             await _fixture.Connection.InsertAsync(new Widget { Id = 120, Name = "R120", IsActive = true, Price = 1m }, cancellationToken: TestContext.Current.CancellationToken);
             await _fixture.Connection.InsertAsync(new Widget { Id = 121, Name = "R121", IsActive = true, Price = 1m }, cancellationToken: TestContext.Current.CancellationToken);
 
-            int[] ids = [120, 121, 999_003];
-            IReadOnlyList<Widget?> rows = await _fixture.Connection.GetByIdRangeAsync<Widget>(ids, cancellationToken: TestContext.Current.CancellationToken);
+            IReadOnlyList<Widget?> rows = await _fixture.Connection.GetByIdRangeAsync<Widget>(new[] { 120, 121, 999_003 }, cancellationToken: TestContext.Current.CancellationToken);
 
             Assert.Equal(2, rows.Count(w => w is not null));
             Assert.Contains(rows, w => w?.Id == 120);
@@ -161,6 +193,18 @@ namespace Forget.Tests.PostgreSql
             Assert.Equal(30m, max);
         }
 
+        [Fact]
+        public async Task AvgAsync_WithAFractionalResult_ReturnsTheAverageAsADecimal()
+        {
+            await _fixture.Connection.InsertAsync(new Widget { Id = 230, Name = "Avg230", IsActive = true, Price = 1m }, cancellationToken: TestContext.Current.CancellationToken);
+            await _fixture.Connection.InsertAsync(new Widget { Id = 231, Name = "Avg231", IsActive = true, Price = 1m }, cancellationToken: TestContext.Current.CancellationToken);
+            await _fixture.Connection.InsertAsync(new Widget { Id = 232, Name = "Avg232", IsActive = true, Price = 2m }, cancellationToken: TestContext.Current.CancellationToken);
+
+            decimal? avg = await _fixture.Connection.AvgAsync<Widget>(w => w.Price, w => w.Id >= 230 && w.Id <= 232, cancellationToken: TestContext.Current.CancellationToken);
+
+            // 4 / 3: every engine returns its own number of decimals, the value must survive the trip either way.
+            Assert.Equal(1.3333m, Math.Round(avg!.Value, 4));
+        }
         [Fact]
         public async Task UpdateAsync_WithValuesAndPredicate_UpdatesOnlyMatchingRows()
         {
