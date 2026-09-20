@@ -295,25 +295,17 @@ precisely because it fails silently (a plausible-looking wrong number, no except
 
 | Value type | Comparison (id, filter) | Write (`Update`) |
 |---|---|---|
-| The property's own type | yes | yes |
-| `byte`, `short`, `int`, `long` for an integer property | any width | wider only |
-| `byte`, `short`, `int`, `long` for a `decimal` | yes | yes |
-| `byte`, `short`, `int` for a `double`; `byte`, `short` for a `float` | yes | yes |
-| An enum for its underlying type, and back | yes | yes |
-| `string` for a number; `int`, `long` for a `float`; `long` for a `double`; `decimal`, `double` for an integer; `float` for a `double` | no | no |
-| `sbyte`, `ushort`, `uint`, `ulong` for another type (1) | no | no |
-| A list of bytes (2) | no | n/a |
+| The property's own type | accepted | accepted |
+| `byte`, `short`, `int`, `long` for an integer property | accepted, in any width (`GetById(1L)` on an `int` key) | only into a wider property (`int` for a `long`; a `long` for an `int` is rejected, cast it yourself) |
+| `byte`, `short`, `int`, `long` for a `decimal` | accepted | accepted |
+| `byte`, `short`, `int` for a `double`; `byte`, `short` for a `float` | accepted | accepted |
+| An enum for its underlying type, and the other way round | accepted | accepted |
+| `string` for a number, `int` or `long` for a `float`, `long` for a `double`, `decimal` or `double` for an integer, a `float` for a `double` (`1.1f` is not `1.1`) | rejected | rejected |
+| `sbyte`, `ushort`, `uint`, `ulong` for a property of another type | rejected (SQL Server, PostgreSQL and Oracle cannot bind them) | rejected |
+| A list of bytes (a `byte[]` as ids or as the values of an `In` filter) | rejected (every driver binds a `byte[]` as one binary value) | not applicable |
 
 The *Write* column is for `Update`/`UpdateAsync` with a values object such as `new { Price = 10 }`; `Update` with an
 entity is typed by the entity, so there is nothing to check.
-
-*Any width* means `GetById(1L)` works on an `int` key. *Wider only* means the value must fit the property: an `int`
-for a `long` is fine, a `long` for an `int` is rejected (cast it yourself). And `float` for a `double` is rejected
-because `1.1f` is not `1.1` once converted.
-
-1. SQL Server, PostgreSQL and Oracle cannot bind these types (MySQL can).
-2. A `byte[]` used as a list of ids, or as the values of an `In` filter: every driver binds a `byte[]` as one binary
-   value.
 
 A comparison never writes anything, so a value too large for the column simply finds no row. A write with a value
 that does not fit is an error at best: SQL Server and PostgreSQL reject it, MySQL without strict mode clips it, and
