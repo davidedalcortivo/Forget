@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-- An id, a filter value and a value of `Update(values)` no longer have to be of exactly the property's type. Forget still
+- An id, a filter value and a value you set with `Update`/`UpdateAsync` no longer have to be of exactly the property's type. Forget still
   never converts it: the value reaches Dapper as it was passed, and is rejected with an `ArgumentException` only when its
   type could lose precision or change meaning for the property, or when the drivers cannot bind it. For a comparison
   (`GetById`, `Delete(id)`, `GetByIdRange`, `DeleteRange(ids)` and `FilterDescriptor`, including the elements of an `In` list)
@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   every driver binds a `byte[]` as one binary value, so the query used to fail inside the database (`op ANY/ALL (array)
   requires array on right side` on PostgreSQL, `ORA-00932` on Oracle, a syntax error on SQL Server and MySQL). It already failed
   for a key of type `byte`.
-- `Update(values)` is stricter than a comparison, because a value that does not fit is an error at best (SQL Server and
+- A write with `Update`/`UpdateAsync` is stricter than a comparison, because a value that does not fit is an error at best (SQL Server and
   PostgreSQL reject it, MySQL clips it without strict mode, and Oracle stores it in a `NUMBER(10)` column and then fails to
   read the row back into an `int`): the type of each value must fit the property's, that is the same type or a narrower
   numeric one. An `int` for a `long` or a `decimal` property is accepted, a `long` for an `int` property is not (cast it
