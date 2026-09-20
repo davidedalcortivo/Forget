@@ -103,6 +103,8 @@ jobs:
           if git diff --cached --quiet; then
             echo "Coverage badge unchanged, nothing to commit."
           else
-            git commit -m "Update coverage badge to ${{ steps.coverage.outputs.pct }}% [skip ci]"
+            # No [skip ci]: tagging this commit would then not start the release. Nothing loops without it, because a
+            # push made with GITHUB_TOKEN never starts another workflow run.
+            git commit -m "Update coverage badge to ${{ steps.coverage.outputs.pct }}%"
             git push
           fi

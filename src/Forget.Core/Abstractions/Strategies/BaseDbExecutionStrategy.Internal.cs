@@ -89,11 +89,10 @@ namespace Forget.Core.Abstractions.Strategies
             bool ownsConnection = connection.State == ConnectionState.Closed;
             bool ownsTransaction = transaction is null;
             DbTransaction? _transaction = transaction;
+            DbTransaction? tempTransaction = null;
 
             try
             {
-                DbTransaction? tempTransaction = null;
-
                 if (ownsConnection)
                 {
                     if (sync)
@@ -110,7 +109,6 @@ namespace Forget.Core.Abstractions.Strategies
                         tempTransaction = await connection.BeginTransactionAsync(cancellationToken);
                 }
 
-                using DbTransaction? _ = tempTransaction;
                 _transaction ??= tempTransaction!;
 
                 foreach (DbCommandInfo command in commands)
@@ -145,6 +143,14 @@ namespace Forget.Core.Abstractions.Strategies
             }
             finally
             {
+                if (tempTransaction is not null)
+                {
+                    if (sync)
+                        tempTransaction.Dispose();
+                    else
+                        await tempTransaction.DisposeAsync();
+                }
+
                 if (ownsConnection)
                 {
                     if (sync)

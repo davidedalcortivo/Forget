@@ -57,11 +57,10 @@ namespace Forget.SqlServer.Strategies
             bool ownsConnection = connection.State == ConnectionState.Closed;
             bool ownsTransaction = transaction is null;
             DbTransaction? _transaction = transaction;
+            DbTransaction? tempTransaction = null;
 
             try
             {
-                DbTransaction? tempTransaction = null;
-
                 if (ownsConnection)
                 {
                     if (sync)
@@ -78,7 +77,6 @@ namespace Forget.SqlServer.Strategies
                         tempTransaction = await connection.BeginTransactionAsync(cancellationToken);
                 }
 
-                using DbTransaction? _ = tempTransaction;
                 _transaction ??= tempTransaction!;
 
                 result = await ExecuteImplAsync(connection, sync, command, _transaction, commandTimeout, cancellationToken);
@@ -112,6 +110,14 @@ namespace Forget.SqlServer.Strategies
             }
             finally
             {
+                if (tempTransaction is not null)
+                {
+                    if (sync)
+                        tempTransaction.Dispose();
+                    else
+                        await tempTransaction.DisposeAsync();
+                }
+
                 if (ownsConnection)
                 {
                     if (sync)
