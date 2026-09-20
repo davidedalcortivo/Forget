@@ -247,15 +247,9 @@ namespace Forget.Core.Abstractions.Strategies
             ArgumentNullException.ThrowIfNull(ids);
 
             PropertyInfo idProperty = EntityInfoCache<TEntity>.IdProperty;
-            List<object> idList = [];
+            List<object> idList = ToIdList<TEntity>(idProperty, ids);
 
-            foreach (object? id in ids)
-            {
-                EnsureIdType<TEntity>(idProperty, id);
-                idList.Add(id);
-            }
-
-            return BuildInRangeInvokerCache.Invoke<TEntity>(this, SqlDialectStrategy, SqlBuilderCache<TEntity, TStrategy>.GetByIdRangeSql, idList, batchSize, chunkSize, idProperty, true);
+            return BuildInRangeCommands(SqlDialectStrategy, SqlBuilderCache<TEntity, TStrategy>.GetByIdRangeSql, idList, batchSize, chunkSize, idProperty, true);
         }
 
         public abstract IReadOnlyList<DbCommandInfo> UpdateRangeCommands<TEntity>(DbConnection connection, IEnumerable<TEntity> entities, int batchSize, int chunkSize) where TEntity : class;
@@ -335,7 +329,7 @@ namespace Forget.Core.Abstractions.Strategies
             Func<TEntity, object?> idGetter = EntityInfoCache<TEntity>.PropertyGettersByPropertyName[idProperty.Name];
             List<object> idList = [.. entities.Select(x => idGetter(x)!)];
 
-            return BuildInRangeInvokerCache.Invoke<TEntity>(this, SqlDialectStrategy, SqlBuilderCache<TEntity, TStrategy>.DeleteRangeSql, idList, batchSize, chunkSize, idProperty, false);
+            return BuildInRangeCommands(SqlDialectStrategy, SqlBuilderCache<TEntity, TStrategy>.DeleteRangeSql, idList, batchSize, chunkSize, idProperty, false);
         }
 
         public virtual IReadOnlyList<DbCommandInfo> DeleteRangeCommands<TEntity>(DbConnection connection, IEnumerable ids, int batchSize, int chunkSize) where TEntity : class
@@ -343,15 +337,9 @@ namespace Forget.Core.Abstractions.Strategies
             ArgumentNullException.ThrowIfNull(ids);
 
             PropertyInfo idProperty = EntityInfoCache<TEntity>.IdProperty;
-            List<object> idList = [];
+            List<object> idList = ToIdList<TEntity>(idProperty, ids);
 
-            foreach (object? id in ids)
-            {
-                EnsureIdType<TEntity>(idProperty, id);
-                idList.Add(id);
-            }
-
-            return BuildInRangeInvokerCache.Invoke<TEntity>(this, SqlDialectStrategy, SqlBuilderCache<TEntity, TStrategy>.DeleteRangeSql, idList, batchSize, chunkSize, idProperty, false);
+            return BuildInRangeCommands(SqlDialectStrategy, SqlBuilderCache<TEntity, TStrategy>.DeleteRangeSql, idList, batchSize, chunkSize, idProperty, false);
         }
 
         public abstract IReadOnlyList<DbCommandInfo> UpsertRangeCommands<TEntity>(DbConnection connection, IEnumerable<TEntity> entities, int batchSize, int chunkSize) where TEntity : class;
@@ -481,7 +469,7 @@ namespace Forget.Core.Abstractions.Strategies
         public virtual DbCommandInfo MinCommand<TEntity, TProperty>(DbConnection connection, string propertyName, Expression<Func<TEntity, bool>>? predicate) where TEntity : class
         {
             PropertyInfo property = PropertyHelper.GetProperty<TEntity>(propertyName);
-            PropertyHelper.EnsureValueType<TEntity>(property, typeof(TProperty));
+            PropertyHelper.EnsureResultType<TEntity>(property, typeof(TProperty));
             (string? clause, DynamicParameters? parameters) = Translate(SqlDialectStrategy, predicate, null);
             return BuildAggregateCommand<TEntity>(SqlBuilderCache<TEntity, TStrategy>.MinSql, property, clause, parameters);
         }
@@ -489,7 +477,7 @@ namespace Forget.Core.Abstractions.Strategies
         public virtual DbCommandInfo MinCommand<TEntity, TProperty>(DbConnection connection, string propertyName, IFilterNode<TEntity>? filterNode) where TEntity : class
         {
             PropertyInfo property = PropertyHelper.GetProperty<TEntity>(propertyName);
-            PropertyHelper.EnsureValueType<TEntity>(property, typeof(TProperty));
+            PropertyHelper.EnsureResultType<TEntity>(property, typeof(TProperty));
             (string? clause, DynamicParameters? parameters) = Translate(SqlDialectStrategy, filterNode, null);
             return BuildAggregateCommand<TEntity>(SqlBuilderCache<TEntity, TStrategy>.MinSql, property, clause, parameters);
         }
@@ -511,7 +499,7 @@ namespace Forget.Core.Abstractions.Strategies
         public virtual DbCommandInfo MaxCommand<TEntity, TProperty>(DbConnection connection, string propertyName, Expression<Func<TEntity, bool>>? predicate) where TEntity : class
         {
             PropertyInfo property = PropertyHelper.GetProperty<TEntity>(propertyName);
-            PropertyHelper.EnsureValueType<TEntity>(property, typeof(TProperty));
+            PropertyHelper.EnsureResultType<TEntity>(property, typeof(TProperty));
             (string? clause, DynamicParameters? parameters) = Translate(SqlDialectStrategy, predicate, null);
             return BuildAggregateCommand<TEntity>(SqlBuilderCache<TEntity, TStrategy>.MaxSql, property, clause, parameters);
         }
@@ -519,7 +507,7 @@ namespace Forget.Core.Abstractions.Strategies
         public virtual DbCommandInfo MaxCommand<TEntity, TProperty>(DbConnection connection, string propertyName, IFilterNode<TEntity>? filterNode) where TEntity : class
         {
             PropertyInfo property = PropertyHelper.GetProperty<TEntity>(propertyName);
-            PropertyHelper.EnsureValueType<TEntity>(property, typeof(TProperty));
+            PropertyHelper.EnsureResultType<TEntity>(property, typeof(TProperty));
             (string? clause, DynamicParameters? parameters) = Translate(SqlDialectStrategy, filterNode, null);
             return BuildAggregateCommand<TEntity>(SqlBuilderCache<TEntity, TStrategy>.MaxSql, property, clause, parameters);
         }

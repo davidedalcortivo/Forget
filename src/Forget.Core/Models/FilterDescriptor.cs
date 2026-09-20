@@ -15,7 +15,9 @@ namespace Forget.Core.Models
     /// Combine multiple descriptors under a <see cref="FilterGroup{TEntity}"/> to build compound <c>AND</c>/<c>OR</c>
     /// conditions.
     /// <para>
-    /// Construction only validates that the provided value is assignable to the selected property's type. Whether
+    /// Construction only validates that the type of the provided value is compatible with the selected property's
+    /// type (the same type, a <c>short</c>, <c>int</c> or <c>long</c> for an integer property, or one of them for a
+    /// decimal, for instance), and never converts the value. Whether
     /// the combination of <see cref="Models.ComparisonOperator"/> and <see cref="Value"/> is
     /// actually supported — for example, <see cref="ComparisonOperator.In"/> requires a non-string collection, while
     /// <see cref="ComparisonOperator.Contains"/>, <see cref="ComparisonOperator.StartsWith"/> and
@@ -69,9 +71,9 @@ namespace Forget.Core.Models
         /// <param name="ignoreCase">Whether to ignore case when <paramref name="value"/> is a <see cref="string"/>.</param>
         /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException">
-        /// <paramref name="selector"/> does not select a simple property, or <paramref name="value"/> is not
-        /// assignable to the selected property's type. When that property's type is a non-string collection, this
-        /// instead means one of <paramref name="value"/>'s elements is not assignable to it.
+        /// <paramref name="selector"/> does not select a simple property, or the type of <paramref name="value"/> is not
+        /// compatible with the selected property's type. A non-string collection is checked element by element, unless its
+        /// own type is compatible with the property's (a <c>byte[]</c> for a <c>byte[]</c> property, for instance).
         /// </exception>
         public FilterDescriptor(Expression<Func<TEntity, object?>> selector, object? value, ComparisonOperator comparisonOperator = ComparisonOperator.Equal, bool not = false, bool ignoreCase = false)
         {
@@ -95,10 +97,10 @@ namespace Forget.Core.Models
         /// <param name="ignoreCase">Whether to ignore case when <paramref name="value"/> is a <see cref="string"/>.</param>
         /// <exception cref="ArgumentNullException"><paramref name="propertyName"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException">
-        /// <paramref name="propertyName"/> does not match a property on <typeparamref name="TEntity"/>, or
-        /// <paramref name="value"/> is not assignable to the property's type. When that property's type is a
-        /// non-string collection, this instead means one of <paramref name="value"/>'s elements is not assignable
-        /// to it.
+        /// <paramref name="propertyName"/> does not match a property on <typeparamref name="TEntity"/>, or the type of
+        /// <paramref name="value"/> is not compatible with the property's type. A non-string collection is checked element
+        /// by element, unless its own type is compatible with the property's (a <c>byte[]</c> for a <c>byte[]</c> property,
+        /// for instance).
         /// </exception>
         public FilterDescriptor(string propertyName, object? value, ComparisonOperator comparisonOperator = ComparisonOperator.Equal, bool not = false, bool ignoreCase = false)
         {

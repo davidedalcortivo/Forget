@@ -91,6 +91,12 @@ namespace Forget.Tests.MySql
                     `Id` VARBINARY(16) PRIMARY KEY,
                     `Name` VARCHAR(100) NOT NULL
                 );
+
+                CREATE TABLE `NumericRow` (
+                    `Id` INT PRIMARY KEY,
+                    `DoubleValue` DOUBLE NOT NULL,
+                    `SingleValue` FLOAT NOT NULL
+                );
                 """;
             await keyedCommand.ExecuteNonQueryAsync();
         }

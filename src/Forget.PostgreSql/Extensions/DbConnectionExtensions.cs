@@ -403,8 +403,9 @@ namespace Forget.PostgreSql.Extensions
         /// <typeparam name="TEntity">The entity type to query.</typeparam>
         /// <param name="connection">The connection to query.</param>
         /// <param name="id">
-        /// The identifier of the row to retrieve. Its runtime type must exactly match the type of
-        /// <typeparamref name="TEntity"/>'s identifier property.
+        /// The identifier of the row to retrieve. Its type must be compatible with the type of
+        /// <typeparamref name="TEntity"/>'s identifier property (for instance the same type,
+        /// or a <c>short</c>, <c>int</c> or <c>long</c> for an integer key).
         /// </param>
         /// <param name="transaction">The transaction to execute the query within, or <see langword="null"/> to execute it outside of an explicit transaction.</param>
         /// <param name="commandTimeout">The number of seconds to wait before timing out, or <see langword="null"/> to use the default timeout.</param>
@@ -413,7 +414,7 @@ namespace Forget.PostgreSql.Extensions
         /// <paramref name="connection"/> or <paramref name="id"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ArgumentException">
-        /// The type of <paramref name="id"/> does not match the type of <typeparamref name="TEntity"/>'s identifier
+        /// The type of <paramref name="id"/> is not compatible with the type of <typeparamref name="TEntity"/>'s identifier
         /// property, or <paramref name="transaction"/> does not belong to <paramref name="connection"/>.
         /// </exception>
         public static TEntity? GetById<TEntity>(this NpgsqlConnection connection, object id, NpgsqlTransaction? transaction = null, int? commandTimeout = null) where TEntity : class
@@ -544,7 +545,8 @@ namespace Forget.PostgreSql.Extensions
         /// <see cref="KeyAttribute"/> — or is marked as database-generated or <see cref="NotMappedAttribute"/>,
         /// is silently ignored rather than treated as a column to update.
         /// Every other property must correspond to an updatable property of <typeparamref name="TEntity"/>,
-        /// and its value must be assignable to that property's type.
+        /// and its type must fit that property's type: the same type, or a narrower numeric one (an <c>int</c> for a
+        /// <c>long</c> property, for instance).
         /// </param>
         /// <param name="transaction">The transaction to execute the update within, or <see langword="null"/> to execute it outside of an explicit transaction.</param>
         /// <param name="commandTimeout">The number of seconds to wait before timing out, or <see langword="null"/> to use the default timeout.</param>
@@ -560,7 +562,7 @@ namespace Forget.PostgreSql.Extensions
         /// <paramref name="values"/> has no properties left to update once its identifier, database-generated, and
         /// <see cref="NotMappedAttribute"/>-marked properties are excluded; one of its remaining properties
         /// does not correspond to an updatable property of <typeparamref name="TEntity"/>;
-        /// a remaining property's value is not assignable to the corresponding property's type;
+        /// a remaining property's type does not fit the corresponding property's type;
         /// or <paramref name="transaction"/> does not belong to <paramref name="connection"/>.
         /// </exception>
         /// <exception cref="InvalidOperationException">
@@ -585,7 +587,8 @@ namespace Forget.PostgreSql.Extensions
         /// <see cref="KeyAttribute"/> — or is marked as database-generated or <see cref="NotMappedAttribute"/>,
         /// is silently ignored rather than treated as a column to update.
         /// Every other property must correspond to an updatable property of <typeparamref name="TEntity"/>,
-        /// and its value must be assignable to that property's type.
+        /// and its type must fit that property's type: the same type, or a narrower numeric one (an <c>int</c> for a
+        /// <c>long</c> property, for instance).
         /// </param>
         /// <param name="predicate">
         /// An optional predicate the updated rows must satisfy. When <see langword="null"/>, every row is updated.
@@ -600,7 +603,7 @@ namespace Forget.PostgreSql.Extensions
         /// <paramref name="values"/> has no properties left to update once its identifier, database-generated, and
         /// <see cref="NotMappedAttribute"/>-marked properties are excluded; one of its remaining properties
         /// does not correspond to an updatable property of <typeparamref name="TEntity"/>;
-        /// a remaining property's value is not assignable to the corresponding property's type;
+        /// a remaining property's type does not fit the corresponding property's type;
         /// or <paramref name="transaction"/> does not belong to <paramref name="connection"/>.
         /// </exception>
         /// <exception cref="InvalidOperationException">
@@ -628,7 +631,8 @@ namespace Forget.PostgreSql.Extensions
         /// <see cref="KeyAttribute"/> — or is marked as database-generated or <see cref="NotMappedAttribute"/>,
         /// is silently ignored rather than treated as a column to update.
         /// Every other property must correspond to an updatable property of <typeparamref name="TEntity"/>,
-        /// and its value must be assignable to that property's type.
+        /// and its type must fit that property's type: the same type, or a narrower numeric one (an <c>int</c> for a
+        /// <c>long</c> property, for instance).
         /// </param>
         /// <param name="filterNode">
         /// An optional filter the updated rows must satisfy. When <see langword="null"/>, every row is updated.
@@ -643,7 +647,7 @@ namespace Forget.PostgreSql.Extensions
         /// <paramref name="values"/> has no properties left to update once its identifier, database-generated, and
         /// <see cref="NotMappedAttribute"/>-marked properties are excluded; one of its remaining properties
         /// does not correspond to an updatable property of <typeparamref name="TEntity"/>;
-        /// a remaining property's value is not assignable to the corresponding property's type;
+        /// a remaining property's type does not fit the corresponding property's type;
         /// or <paramref name="transaction"/> does not belong to <paramref name="connection"/>.
         /// </exception>
         /// <exception cref="InvalidOperationException">
@@ -709,8 +713,9 @@ namespace Forget.PostgreSql.Extensions
         /// <typeparam name="TEntity">The entity type to delete.</typeparam>
         /// <param name="connection">The connection to execute the delete on.</param>
         /// <param name="id">
-        /// The identifier of the row to delete. Its runtime type must exactly match the type of
-        /// <typeparamref name="TEntity"/>'s identifier property.
+        /// The identifier of the row to delete. Its type must be compatible with the type of
+        /// <typeparamref name="TEntity"/>'s identifier property (for instance the same type,
+        /// or a <c>short</c>, <c>int</c> or <c>long</c> for an integer key).
         /// </param>
         /// <param name="transaction">The transaction to execute the delete within, or <see langword="null"/> to execute it outside of an explicit transaction.</param>
         /// <param name="commandTimeout">The number of seconds to wait before timing out, or <see langword="null"/> to use the default timeout.</param>
@@ -719,7 +724,7 @@ namespace Forget.PostgreSql.Extensions
         /// <paramref name="connection"/> or <paramref name="id"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ArgumentException">
-        /// The type of <paramref name="id"/> does not match the type of <typeparamref name="TEntity"/>'s identifier
+        /// The type of <paramref name="id"/> is not compatible with the type of <typeparamref name="TEntity"/>'s identifier
         /// property, or <paramref name="transaction"/> does not belong to <paramref name="connection"/>.
         /// </exception>
         public static int Delete<TEntity>(this NpgsqlConnection connection, object id, NpgsqlTransaction? transaction = null, int? commandTimeout = null) where TEntity : class
@@ -837,8 +842,9 @@ namespace Forget.PostgreSql.Extensions
         /// <param name="connection">The connection to query.</param>
         /// <param name="ids">
         /// The identifiers of the rows to retrieve. Neither the sequence nor any of its elements may be
-        /// <see langword="null"/>, and each identifier's runtime type must exactly match the type of
-        /// <typeparamref name="TEntity"/>'s identifier property.
+        /// <see langword="null"/>, and all of them must have the same type, which must be compatible with the type of
+        /// <typeparamref name="TEntity"/>'s identifier property (for instance the same type,
+        /// or a <c>short</c>, <c>int</c> or <c>long</c> for an integer key).
         /// </param>
         /// <param name="batchSize">
         /// The maximum number of identifiers queried by a single round trip. When less than or equal to zero, every
@@ -859,7 +865,7 @@ namespace Forget.PostgreSql.Extensions
         /// elements is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ArgumentException">
-        /// The type of one of the elements of <paramref name="ids"/> does not match the type of
+        /// The elements of <paramref name="ids"/> do not all have the same type, or that type is not compatible with the type of
         /// <typeparamref name="TEntity"/>'s identifier property, or <paramref name="transaction"/> does not belong
         /// to <paramref name="connection"/>.
         /// </exception>
@@ -986,8 +992,9 @@ namespace Forget.PostgreSql.Extensions
         /// <param name="connection">The connection to execute the delete on.</param>
         /// <param name="ids">
         /// The identifiers of the rows to delete. Neither the sequence nor any of its elements may be
-        /// <see langword="null"/>, and each identifier's runtime type must exactly match the type of
-        /// <typeparamref name="TEntity"/>'s identifier property.
+        /// <see langword="null"/>, and all of them must have the same type, which must be compatible with the type of
+        /// <typeparamref name="TEntity"/>'s identifier property (for instance the same type,
+        /// or a <c>short</c>, <c>int</c> or <c>long</c> for an integer key).
         /// </param>
         /// <param name="batchSize">
         /// The maximum number of identifiers included in a single round trip. When less than or equal to zero,
@@ -1009,7 +1016,7 @@ namespace Forget.PostgreSql.Extensions
         /// elements is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ArgumentException">
-        /// The type of one of the elements of <paramref name="ids"/> does not match the type of
+        /// The elements of <paramref name="ids"/> do not all have the same type, or that type is not compatible with the type of
         /// <typeparamref name="TEntity"/>'s identifier property, or <paramref name="transaction"/> does not belong
         /// to <paramref name="connection"/>.
         /// </exception>
@@ -1771,7 +1778,7 @@ namespace Forget.PostgreSql.Extensions
         /// Computes the minimum value of the named property across every <typeparamref name="TEntity"/> row, synchronously.
         /// </summary>
         /// <typeparam name="TEntity">The entity type to query.</typeparam>
-        /// <typeparam name="TProperty">The type of the named property.</typeparam>
+        /// <typeparam name="TProperty">The type the result is read as: the property's own type, or a wider numeric type.</typeparam>
         /// <param name="connection">The connection to query.</param>
         /// <param name="propertyName">The name of the property to evaluate.</param>
         /// <param name="transaction">The transaction to execute the query within, or <see langword="null"/> to execute it outside of an explicit transaction.</param>
@@ -1781,8 +1788,8 @@ namespace Forget.PostgreSql.Extensions
         /// <paramref name="connection"/> or <paramref name="propertyName"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ArgumentException">
-        /// <paramref name="propertyName"/> does not match a property on <typeparamref name="TEntity"/>, its type
-        /// does not match <typeparamref name="TProperty"/>, or <paramref name="transaction"/> does not belong to
+        /// <paramref name="propertyName"/> does not match a property on <typeparamref name="TEntity"/>, <typeparamref name="TProperty"/>
+        /// cannot hold the values of that property, or <paramref name="transaction"/> does not belong to
         /// <paramref name="connection"/>.
         /// </exception>
         public static TProperty? Min<TEntity, TProperty>(this NpgsqlConnection connection, string propertyName, NpgsqlTransaction? transaction = null, int? commandTimeout = null) where TEntity : class
@@ -1796,7 +1803,7 @@ namespace Forget.PostgreSql.Extensions
         /// matching the specified predicate, synchronously.
         /// </summary>
         /// <typeparam name="TEntity">The entity type to query.</typeparam>
-        /// <typeparam name="TProperty">The type of the named property.</typeparam>
+        /// <typeparam name="TProperty">The type the result is read as: the property's own type, or a wider numeric type.</typeparam>
         /// <param name="connection">The connection to query.</param>
         /// <param name="propertyName">The name of the property to evaluate.</param>
         /// <param name="predicate">
@@ -1809,8 +1816,8 @@ namespace Forget.PostgreSql.Extensions
         /// <paramref name="connection"/> or <paramref name="propertyName"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ArgumentException">
-        /// <paramref name="propertyName"/> does not match a property on <typeparamref name="TEntity"/>, its type
-        /// does not match <typeparamref name="TProperty"/>, or <paramref name="transaction"/> does not belong to
+        /// <paramref name="propertyName"/> does not match a property on <typeparamref name="TEntity"/>, <typeparamref name="TProperty"/>
+        /// cannot hold the values of that property, or <paramref name="transaction"/> does not belong to
         /// <paramref name="connection"/>.
         /// </exception>
         /// <exception cref="NotSupportedException">
@@ -1827,7 +1834,7 @@ namespace Forget.PostgreSql.Extensions
         /// matching the specified filter, synchronously.
         /// </summary>
         /// <typeparam name="TEntity">The entity type to query.</typeparam>
-        /// <typeparam name="TProperty">The type of the named property.</typeparam>
+        /// <typeparam name="TProperty">The type the result is read as: the property's own type, or a wider numeric type.</typeparam>
         /// <param name="connection">The connection to query.</param>
         /// <param name="propertyName">The name of the property to evaluate.</param>
         /// <param name="filterNode">
@@ -1840,8 +1847,8 @@ namespace Forget.PostgreSql.Extensions
         /// <paramref name="connection"/> or <paramref name="propertyName"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ArgumentException">
-        /// <paramref name="propertyName"/> does not match a property on <typeparamref name="TEntity"/>, its type
-        /// does not match <typeparamref name="TProperty"/>, or <paramref name="transaction"/> does not belong to
+        /// <paramref name="propertyName"/> does not match a property on <typeparamref name="TEntity"/>, <typeparamref name="TProperty"/>
+        /// cannot hold the values of that property, or <paramref name="transaction"/> does not belong to
         /// <paramref name="connection"/>.
         /// </exception>
         /// <exception cref="NotSupportedException">
@@ -1942,7 +1949,7 @@ namespace Forget.PostgreSql.Extensions
         /// Computes the maximum value of the named property across every <typeparamref name="TEntity"/> row, synchronously.
         /// </summary>
         /// <typeparam name="TEntity">The entity type to query.</typeparam>
-        /// <typeparam name="TProperty">The type of the named property.</typeparam>
+        /// <typeparam name="TProperty">The type the result is read as: the property's own type, or a wider numeric type.</typeparam>
         /// <param name="connection">The connection to query.</param>
         /// <param name="propertyName">The name of the property to evaluate.</param>
         /// <param name="transaction">The transaction to execute the query within, or <see langword="null"/> to execute it outside of an explicit transaction.</param>
@@ -1952,8 +1959,8 @@ namespace Forget.PostgreSql.Extensions
         /// <paramref name="connection"/> or <paramref name="propertyName"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ArgumentException">
-        /// <paramref name="propertyName"/> does not match a property on <typeparamref name="TEntity"/>, its type
-        /// does not match <typeparamref name="TProperty"/>, or <paramref name="transaction"/> does not belong to
+        /// <paramref name="propertyName"/> does not match a property on <typeparamref name="TEntity"/>, <typeparamref name="TProperty"/>
+        /// cannot hold the values of that property, or <paramref name="transaction"/> does not belong to
         /// <paramref name="connection"/>.
         /// </exception>
         public static TProperty? Max<TEntity, TProperty>(this NpgsqlConnection connection, string propertyName, NpgsqlTransaction? transaction = null, int? commandTimeout = null) where TEntity : class
@@ -1967,7 +1974,7 @@ namespace Forget.PostgreSql.Extensions
         /// matching the specified predicate, synchronously.
         /// </summary>
         /// <typeparam name="TEntity">The entity type to query.</typeparam>
-        /// <typeparam name="TProperty">The type of the named property.</typeparam>
+        /// <typeparam name="TProperty">The type the result is read as: the property's own type, or a wider numeric type.</typeparam>
         /// <param name="connection">The connection to query.</param>
         /// <param name="propertyName">The name of the property to evaluate.</param>
         /// <param name="predicate">
@@ -1980,8 +1987,8 @@ namespace Forget.PostgreSql.Extensions
         /// <paramref name="connection"/> or <paramref name="propertyName"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ArgumentException">
-        /// <paramref name="propertyName"/> does not match a property on <typeparamref name="TEntity"/>, its type
-        /// does not match <typeparamref name="TProperty"/>, or <paramref name="transaction"/> does not belong to
+        /// <paramref name="propertyName"/> does not match a property on <typeparamref name="TEntity"/>, <typeparamref name="TProperty"/>
+        /// cannot hold the values of that property, or <paramref name="transaction"/> does not belong to
         /// <paramref name="connection"/>.
         /// </exception>
         /// <exception cref="NotSupportedException">
@@ -1998,7 +2005,7 @@ namespace Forget.PostgreSql.Extensions
         /// matching the specified filter, synchronously.
         /// </summary>
         /// <typeparam name="TEntity">The entity type to query.</typeparam>
-        /// <typeparam name="TProperty">The type of the named property.</typeparam>
+        /// <typeparam name="TProperty">The type the result is read as: the property's own type, or a wider numeric type.</typeparam>
         /// <param name="connection">The connection to query.</param>
         /// <param name="propertyName">The name of the property to evaluate.</param>
         /// <param name="filterNode">
@@ -2011,8 +2018,8 @@ namespace Forget.PostgreSql.Extensions
         /// <paramref name="connection"/> or <paramref name="propertyName"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ArgumentException">
-        /// <paramref name="propertyName"/> does not match a property on <typeparamref name="TEntity"/>, its type
-        /// does not match <typeparamref name="TProperty"/>, or <paramref name="transaction"/> does not belong to
+        /// <paramref name="propertyName"/> does not match a property on <typeparamref name="TEntity"/>, <typeparamref name="TProperty"/>
+        /// cannot hold the values of that property, or <paramref name="transaction"/> does not belong to
         /// <paramref name="connection"/>.
         /// </exception>
         /// <exception cref="NotSupportedException">

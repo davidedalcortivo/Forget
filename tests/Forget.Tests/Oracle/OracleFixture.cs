@@ -126,6 +126,14 @@ namespace Forget.Tests.Oracle
                 )
                 """);
 
+            await ExecuteAsync(Connection, """
+                CREATE TABLE "NumericRow" (
+                    "Id" NUMBER(10) PRIMARY KEY,
+                    "DoubleValue" BINARY_DOUBLE NOT NULL,
+                    "SingleValue" BINARY_FLOAT NOT NULL
+                )
+                """);
+
             await Connection.LoadDbCacheAsync<Widget>();
             await Connection.LoadDbCacheAsync<HandlerRow>();
             await Connection.LoadDbCacheAsync<CastRow>();

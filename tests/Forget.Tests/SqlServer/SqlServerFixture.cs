@@ -86,6 +86,12 @@ namespace Forget.Tests.SqlServer
                     Id VARBINARY(16) PRIMARY KEY,
                     Name NVARCHAR(100) NOT NULL
                 );
+
+                CREATE TABLE dbo.NumericRow (
+                    Id INT PRIMARY KEY,
+                    DoubleValue FLOAT NOT NULL,
+                    SingleValue REAL NOT NULL
+                );
                 """;
             await command.ExecuteNonQueryAsync();
         }

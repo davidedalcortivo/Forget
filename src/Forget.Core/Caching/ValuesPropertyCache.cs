@@ -75,7 +75,7 @@ namespace Forget.Core.Caching
                 if (!updatePropertiesByPropertyName.TryGetValue(updateProperty.Name, out PropertyInfo? property))
                     throw new ArgumentException($"The property '{updateProperty.Name}' is not a valid update property for entity '{typeof(TEntity).Name}'.");
 
-                PropertyHelper.EnsureValueType<TEntity>(property, updateProperty.PropertyType);
+                PropertyHelper.EnsureStorableType<TEntity>(property, updateProperty.PropertyType);
             }
 
             return updateProperties;

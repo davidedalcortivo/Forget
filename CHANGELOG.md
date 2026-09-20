@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-09-21
+
+### Changed
+
+- An id, a filter value and a value of `Update(values)` no longer have to be of exactly the property's type. Forget still
+  never converts it: the value reaches Dapper as it was passed, and is rejected with an `ArgumentException` only when its
+  type could lose precision or change meaning for the property, or when the drivers cannot bind it. For a comparison
+  (`GetById`, `Delete(id)`, `GetByIdRange`, `DeleteRange(ids)` and `FilterDescriptor`, including the elements of an `In` list)
+  the accepted types are: the same type, `byte`, `short`, `int` or `long` for any integer property, those for a `decimal`,
+  `byte`, `short` or `int` for a `double`, `byte` or `short` for a `float`, and an enum for its
+  underlying type (and the other way round). So `GetById(1L)` and `DeleteRange(new long[] { ... })` now work on an `int` key,
+  and `new FilterDescriptor<Product>("Price", 10)` works on a `decimal` property; before, each of them threw. Still rejected:
+  a `string` for a number, an `int` or a `long` for a `float`, a `long` for a `double`, a `decimal` or a `double` for an
+  integer, and a `float` for a `double` (`1.1f` is converted exactly, but it is not `1.1`, so it would silently compare or
+  write another number).
+- `sbyte`, `ushort`, `uint` and `ulong` are accepted only for a property of the same type. Tried against the four engines,
+  SQL Server, PostgreSQL and Oracle fail to bind them with an opaque driver error (only MySQL binds them), so Forget refuses
+  them up front with its own message.
+- A list of bytes (a `byte[]` used as a list of ids or as the values of an `In` filter) is rejected with an `ArgumentException`:
+  every driver binds a `byte[]` as one binary value, so the query used to fail inside the database (`op ANY/ALL (array)
+  requires array on right side` on PostgreSQL, `ORA-00932` on Oracle, a syntax error on SQL Server and MySQL). It already failed
+  for a key of type `byte`.
+- `Update(values)` is stricter than a comparison, because a value that does not fit is an error at best (SQL Server and
+  PostgreSQL reject it, MySQL clips it without strict mode, and Oracle stores it in a `NUMBER(10)` column and then fails to
+  read the row back into an `int`): the type of each value must fit the property's, that is the same type or a narrower
+  numeric one. An `int` for a `long` or a `decimal` property is accepted, a `long` for an `int` property is not (cast it
+  yourself), and neither is an `int` for a `float`.
+- The ids of `GetByIdRange` and `DeleteRange` must all have the same type (a list mixing, say, `int` and `long` throws an
+  `ArgumentException`). Before, they all had to be of the key's exact type.
+- `Min` and `Max` with a property name and a `TProperty` (`MinAsync<Order, long>("Quantity")`) now accept any `TProperty`
+  that can hold every value of the property: a wider numeric type works (`long` for an `int` property, `decimal` for an
+  `int` one), a narrower one is still rejected, and so is one that could round the result (`int` for a `decimal` property).
+
+### Fixed
+
+- A `byte[]` as the value of a `FilterDescriptor` on a `byte[]` property threw
+  `The type of the provided value 'System.Byte' does not match the type of the property 'Payload' ('System.Byte[]')`,
+  because the array was checked element by element against the array type. The same happened with an array column
+  (`int[]` on PostgreSQL). A value whose own type fits the property is now accepted as a whole, and only a collection that
+  does not fit is checked element by element.
+
 ## [2.0.0] - 2026-09-20
 
 ### Removed
@@ -128,6 +169,7 @@ Initial release.
   syntax constraints (e.g. Oracle's `UNION ALL`/`DUAL`-based multi-row insert with automatic per-column cast
   discovery, since Oracle has no native `VALUES (...), (...)` syntax).
 
+[2.1.0]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.1.0
 [2.0.0]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.0.0
 [1.0.3]: https://github.com/davidedalcortivo/Forget/releases/tag/v1.0.3
 [1.0.2]: https://github.com/davidedalcortivo/Forget/releases/tag/v1.0.2

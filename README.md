@@ -283,10 +283,28 @@ precisely because it fails silently (a plausible-looking wrong number, no except
   property whose column does not exist in the table fails with a message naming the property and the column.
 - **Types are Dapper's.** Forget does not map or convert types. Any type Dapper can bind, or that you register a
   `SqlMapper.TypeHandler` for, works the same way through Forget.
+- **Values are checked, not converted.** An id, a filter value or a value of `Update(values)` reaches Dapper as you
+  passed it, and Forget rejects it with an `ArgumentException` when its type could lose precision or change meaning
+  for the property (or when the drivers cannot bind it). The table below says what is accepted.
 - **Column metadata is read once.** A few operations need the table's column types — `Sum`/`Avg` on SQL Server, the
   multi-row writes on Oracle, `UpdateRange` on PostgreSQL. Forget reads them the first time it needs them (or when
   you call `LoadDbCache`/`LoadDbCacheAsync` yourself) and keeps them, per entity and database, for the life of the
   process. Nothing invalidates them: after altering a column, restart the process.
+
+| The value's type | Comparing (an id, a filter value) | Writing (`Update(values)`) |
+|---|---|---|
+| The property's own type | accepted | accepted |
+| `byte`, `short`, `int`, `long` for an integer property | accepted, in any width (`GetById(1L)` on an `int` key) | only into a wider property (`int` for a `long`; a `long` for an `int` is rejected, cast it yourself) |
+| `byte`, `short`, `int`, `long` for a `decimal` | accepted | accepted |
+| `byte`, `short`, `int` for a `double`; `byte`, `short` for a `float` | accepted | accepted |
+| An enum for its underlying type, and the other way round | accepted | accepted |
+| `string` for a number, `int` or `long` for a `float`, `long` for a `double`, `decimal` or `double` for an integer, a `float` for a `double` (`1.1f` is not `1.1`) | rejected | rejected |
+| `sbyte`, `ushort`, `uint`, `ulong` for a property of another type | rejected (SQL Server, PostgreSQL and Oracle cannot bind them) | rejected |
+| A list of bytes (a `byte[]` as ids or as the values of an `In` filter) | rejected (every driver binds a `byte[]` as one binary value) | not applicable |
+
+A comparison never writes anything, so a value too large for the column simply finds no row. A write with a value
+that does not fit is an error at best: SQL Server and PostgreSQL reject it, MySQL without strict mode clips it, and
+Oracle can store it and then fail to read the row back into an `int`. Hence the stricter rule.
 
 ## What this isn't
 
