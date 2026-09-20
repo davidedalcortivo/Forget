@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-09-20
+
+### Removed
+
+- **Breaking:** the `preserveDuplicates` and `preserveNulls` parameters of `GetByIdRange`/`GetByIdRangeAsync`, on all four
+  providers. Both existed to keep the result aligned with `ids`, which meant pairing every row read back with the id that
+  was asked for, and that pairing is what failed (see Fixed).
+
+### Changed
+
+- **Breaking:** `GetByIdRange`/`GetByIdRangeAsync` return `IReadOnlyList<TEntity>` instead of `IReadOnlyList<TEntity?>`. The
+  result holds the rows that exist, each once: it is not in the order of `ids`, and an id with no row does not appear in it.
+  The identifier is assumed to be unique in the table. Code that relied on the order or on the `null` entries can rebuild
+  them from the rows:
+
+  ```csharp
+  IReadOnlyList<Product> rows = await connection.GetByIdRangeAsync<Product>(ids);
+  Dictionary<int, Product> byId = rows.ToDictionary(p => p.Id);
+  List<Product?> inOrder = [.. ids.Select(id => byId.GetValueOrDefault(id))];
+  ```
+
+### Fixed
+
+- `GetByIdRange`/`GetByIdRangeAsync` threw `KeyNotFoundException` whenever the database matched an id that .NET did not
+  consider equal to the row's key, because each row read back was paired with the requested ids by exact .NET equality. It
+  happened with a `string` key under a case-insensitive collation (the default on SQL Server and MySQL: asking for `"abc"`
+  when the table holds `"ABC"`) and with a `byte[]` key (two arrays with the same content are different objects). It no
+  longer happens: the rows are not paired with the ids any more. Rows the database returns more than once, because two
+  ids the database considers equal (`"abc"` and `"ABC"`) fell in different batches, or because the same `byte[]` was
+  requested twice, are returned once, compared by their own key (`byte[]` by content).
+
 ## [1.0.3] - 2026-09-20
 
 ### Changed
@@ -97,6 +128,7 @@ Initial release.
   syntax constraints (e.g. Oracle's `UNION ALL`/`DUAL`-based multi-row insert with automatic per-column cast
   discovery, since Oracle has no native `VALUES (...), (...)` syntax).
 
+[2.0.0]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.0.0
 [1.0.3]: https://github.com/davidedalcortivo/Forget/releases/tag/v1.0.3
 [1.0.2]: https://github.com/davidedalcortivo/Forget/releases/tag/v1.0.2
 [1.0.1]: https://github.com/davidedalcortivo/Forget/releases/tag/v1.0.1

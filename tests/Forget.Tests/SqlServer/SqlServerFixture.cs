@@ -76,6 +76,16 @@ namespace Forget.Tests.SqlServer
                     NullableKind INT NULL,
                     NullableLabel NVARCHAR(200) NULL
                 );
+
+                CREATE TABLE dbo.StringKeyed (
+                    Code NVARCHAR(50) PRIMARY KEY,
+                    Name NVARCHAR(100) NOT NULL
+                );
+
+                CREATE TABLE dbo.BinaryKeyed (
+                    Id VARBINARY(16) PRIMARY KEY,
+                    Name NVARCHAR(100) NOT NULL
+                );
                 """;
             await command.ExecuteNonQueryAsync();
         }

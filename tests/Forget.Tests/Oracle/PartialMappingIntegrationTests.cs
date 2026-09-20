@@ -36,9 +36,9 @@ namespace Forget.Tests.Oracle
         {
             await _fixture.Connection.InsertRangeAsync([new PartialRow { Id = 10, Qty = 3 }, new PartialRow { Id = 11, Qty = 5 }], cancellationToken: Ct);
 
-            IReadOnlyList<PartialRow?> fetched = await _fixture.Connection.GetByIdRangeAsync<PartialRow>(new[] { 10, 11 }, cancellationToken: Ct);
+            IReadOnlyList<PartialRow> fetched = await _fixture.Connection.GetByIdRangeAsync<PartialRow>(new[] { 10, 11 }, cancellationToken: Ct);
 
-            Assert.Equal([3, 5], fetched.Select(r => r!.Qty).ToList());
+            Assert.Equal([3, 5], fetched.OrderBy(r => r.Id).Select(r => r.Qty).ToList());
             Assert.Equal("legacy", await LegacyOfAsync(10));
             Assert.Equal("legacy", await LegacyOfAsync(11));
         }
@@ -49,9 +49,9 @@ namespace Forget.Tests.Oracle
             await _fixture.Connection.InsertRangeAsync([new PartialRow { Id = 20, Qty = 1 }, new PartialRow { Id = 21, Qty = 2 }], cancellationToken: Ct);
 
             await _fixture.Connection.UpdateRangeAsync([new PartialRow { Id = 20, Qty = 10 }, new PartialRow { Id = 21, Qty = 20 }], cancellationToken: Ct);
-            IReadOnlyList<PartialRow?> fetched = await _fixture.Connection.GetByIdRangeAsync<PartialRow>(new[] { 20, 21 }, cancellationToken: Ct);
+            IReadOnlyList<PartialRow> fetched = await _fixture.Connection.GetByIdRangeAsync<PartialRow>(new[] { 20, 21 }, cancellationToken: Ct);
 
-            Assert.Equal([10, 20], fetched.Select(r => r!.Qty).ToList());
+            Assert.Equal([10, 20], fetched.OrderBy(r => r.Id).Select(r => r.Qty).ToList());
             Assert.Equal("legacy", await LegacyOfAsync(20));
             Assert.Equal("legacy", await LegacyOfAsync(21));
         }
@@ -62,9 +62,9 @@ namespace Forget.Tests.Oracle
             await _fixture.Connection.InsertRangeAsync([new PartialRow { Id = 30, Qty = 1 }], cancellationToken: Ct);
 
             await _fixture.Connection.UpsertRangeAsync([new PartialRow { Id = 30, Qty = 10 }, new PartialRow { Id = 31, Qty = 20 }], cancellationToken: Ct);
-            IReadOnlyList<PartialRow?> fetched = await _fixture.Connection.GetByIdRangeAsync<PartialRow>(new[] { 30, 31 }, cancellationToken: Ct);
+            IReadOnlyList<PartialRow> fetched = await _fixture.Connection.GetByIdRangeAsync<PartialRow>(new[] { 30, 31 }, cancellationToken: Ct);
 
-            Assert.Equal([10, 20], fetched.Select(r => r!.Qty).ToList());
+            Assert.Equal([10, 20], fetched.OrderBy(r => r.Id).Select(r => r.Qty).ToList());
             Assert.Equal("legacy", await LegacyOfAsync(30));
             Assert.Equal("legacy", await LegacyOfAsync(31));
         }

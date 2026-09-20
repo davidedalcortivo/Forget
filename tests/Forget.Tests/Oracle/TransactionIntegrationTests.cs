@@ -91,12 +91,12 @@ namespace Forget.Tests.Oracle
                 tx.Commit();
             }
 
-            IReadOnlyList<Widget?> kept = await _fixture.Connection.GetByIdRangeAsync<Widget>(AllIds, cancellationToken: Ct);
+            IReadOnlyList<Widget> kept = await _fixture.Connection.GetByIdRangeAsync<Widget>(AllIds, cancellationToken: Ct);
 
-            Assert.Equal([400, 401, 402, 405, 409], kept.Select(w => w!.Id).Order());
-            Assert.Equal("changed", kept.Single(w => w!.Id == 400)!.Name);
-            Assert.Equal("changed", kept.Single(w => w!.Id == 401)!.Name);
-            Assert.Equal(0, kept.Single(w => w!.Id == 402)!.IsActive);
+            Assert.Equal([400, 401, 402, 405, 409], kept.Select(w => w.Id).Order());
+            Assert.Equal("changed", kept.Single(w => w.Id == 400).Name);
+            Assert.Equal("changed", kept.Single(w => w.Id == 401).Name);
+            Assert.Equal(0, kept.Single(w => w.Id == 402).IsActive);
 
             await _fixture.Connection.DeleteRangeAsync<Widget>(new[] { 400, 401, 402, 405, 409 }, cancellationToken: Ct);
         }

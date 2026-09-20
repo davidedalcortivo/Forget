@@ -79,6 +79,8 @@ namespace Forget.Tests.PostgreSql
 
                 CREATE TABLE dbo."EnumKeyed" ("Id" INTEGER PRIMARY KEY, "Name" TEXT NOT NULL);
                 CREATE TABLE dbo."GuidKeyed" ("Id" UUID PRIMARY KEY, "Name" TEXT NOT NULL);
+                CREATE TABLE dbo."StringKeyed" ("Code" TEXT PRIMARY KEY, "Name" TEXT NOT NULL);
+                CREATE TABLE dbo."BinaryKeyed" ("Id" BYTEA PRIMARY KEY, "Name" TEXT NOT NULL);
                 """;
             await command.ExecuteNonQueryAsync();
         }

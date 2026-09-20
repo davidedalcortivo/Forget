@@ -64,13 +64,13 @@ namespace Forget.Tests.PostgreSql
             SyncWidget[] rows = [NewWidget(310, "a"), NewWidget(311, "b"), NewWidget(312, "c")];
 
             Assert.Equal(3, _fixture.Connection.InsertRange(rows));
-            Assert.Equal(3, _fixture.Connection.GetByIdRange<SyncWidget>(new[] { 310, 311, 312 }).Count(w => w is not null));
+            Assert.Equal(3, _fixture.Connection.GetByIdRange<SyncWidget>(new[] { 310, 311, 312 }).Count);
 
             foreach (SyncWidget row in rows)
                 row.Name = "updated";
 
             Assert.Equal(3, _fixture.Connection.UpdateRange(rows));
-            Assert.All(_fixture.Connection.GetByIdRange<SyncWidget>(new[] { 310, 311, 312 }), w => Assert.Equal("updated", w!.Name));
+            Assert.All(_fixture.Connection.GetByIdRange<SyncWidget>(new[] { 310, 311, 312 }), w => Assert.Equal("updated", w.Name));
 
             Assert.Equal(1, _fixture.Connection.DeleteRange<SyncWidget>(new[] { 310 }));
             Assert.Equal(2, _fixture.Connection.DeleteRange(rows[1..]));

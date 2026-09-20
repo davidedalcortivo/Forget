@@ -95,12 +95,12 @@ namespace Forget.Tests.Oracle
             CastRow b = new() { Id = 101, Plain = 0.5m, Scaled = 9.4m };
 
             await _fixture.Connection.InsertRangeAsync([a, b], cancellationToken: Ct);
-            IReadOnlyList<CastRow?> fetched = await _fixture.Connection.GetByIdRangeAsync<CastRow>(new[] { 100, 101 }, cancellationToken: Ct);
+            IReadOnlyList<CastRow> fetched = await _fixture.Connection.GetByIdRangeAsync<CastRow>(new[] { 100, 101 }, cancellationToken: Ct);
 
-            Assert.Equal(12.75m, fetched.Single(r => r?.Id == 100)!.Plain);
-            Assert.Equal(1.25m, fetched.Single(r => r?.Id == 100)!.Scaled);
-            Assert.Equal(0.5m, fetched.Single(r => r?.Id == 101)!.Plain);
-            Assert.Equal(9.4m, fetched.Single(r => r?.Id == 101)!.Scaled);
+            Assert.Equal(12.75m, fetched.Single(r => r.Id == 100).Plain);
+            Assert.Equal(1.25m, fetched.Single(r => r.Id == 100).Scaled);
+            Assert.Equal(0.5m, fetched.Single(r => r.Id == 101).Plain);
+            Assert.Equal(9.4m, fetched.Single(r => r.Id == 101).Scaled);
         }
 
         [Fact]
@@ -121,12 +121,12 @@ namespace Forget.Tests.Oracle
             await _fixture.Connection.InsertRangeAsync([new CastRow { Id = 120, Plain = 1m, Scaled = 1m }], cancellationToken: Ct);
 
             await _fixture.Connection.UpsertRangeAsync([new CastRow { Id = 120, Plain = 12.75m, Scaled = 1.25m }, new CastRow { Id = 121, Plain = 0.5m, Scaled = 9.4m }], cancellationToken: Ct);
-            IReadOnlyList<CastRow?> fetched = await _fixture.Connection.GetByIdRangeAsync<CastRow>(new[] { 120, 121 }, cancellationToken: Ct);
+            IReadOnlyList<CastRow> fetched = await _fixture.Connection.GetByIdRangeAsync<CastRow>(new[] { 120, 121 }, cancellationToken: Ct);
 
-            Assert.Equal(12.75m, fetched.Single(r => r?.Id == 120)!.Plain);
-            Assert.Equal(1.25m, fetched.Single(r => r?.Id == 120)!.Scaled);
-            Assert.Equal(0.5m, fetched.Single(r => r?.Id == 121)!.Plain);
-            Assert.Equal(9.4m, fetched.Single(r => r?.Id == 121)!.Scaled);
+            Assert.Equal(12.75m, fetched.Single(r => r.Id == 120).Plain);
+            Assert.Equal(1.25m, fetched.Single(r => r.Id == 120).Scaled);
+            Assert.Equal(0.5m, fetched.Single(r => r.Id == 121).Plain);
+            Assert.Equal(9.4m, fetched.Single(r => r.Id == 121).Scaled);
         }
 
         [Fact]
@@ -139,15 +139,15 @@ namespace Forget.Tests.Oracle
             CastRow second = Full(132, 0.5m, 9.4m);
 
             await _fixture.Connection.InsertRangeAsync([empty, first, second], cancellationToken: Ct);
-            IReadOnlyList<CastRow?> fetched = await _fixture.Connection.GetByIdRangeAsync<CastRow>(new[] { 130, 131, 132 }, cancellationToken: Ct);
+            IReadOnlyList<CastRow> fetched = await _fixture.Connection.GetByIdRangeAsync<CastRow>(new[] { 130, 131, 132 }, cancellationToken: Ct);
 
-            CastRow? emptyBack = fetched.Single(r => r?.Id == 130);
-            Assert.Null(emptyBack!.Plain);
+            CastRow emptyBack = fetched.Single(r => r.Id == 130);
+            Assert.Null(emptyBack.Plain);
             Assert.Null(emptyBack.Body);
             Assert.Null(emptyBack.Payload);
             Assert.Null(emptyBack.Token);
-            AssertSame(first, fetched.Single(r => r?.Id == 131));
-            AssertSame(second, fetched.Single(r => r?.Id == 132));
+            AssertSame(first, fetched.Single(r => r.Id == 131));
+            AssertSame(second, fetched.Single(r => r.Id == 132));
         }
     }
 }

@@ -941,15 +941,6 @@ namespace Forget.Oracle.Extensions
         /// <see langword="null"/>, and each identifier's runtime type must exactly match the type of
         /// <typeparamref name="TEntity"/>'s identifier property.
         /// </param>
-        /// <param name="preserveDuplicates">
-        /// Whether an identifier repeated in <paramref name="ids"/> should produce the same entity more than once
-        /// in the result. When <see langword="false"/>, duplicate identifiers are queried once.
-        /// </param>
-        /// <param name="preserveNulls">
-        /// Whether an identifier with no matching row should produce a <see langword="null"/> entry in the result,
-        /// keeping the result the same length as (the possibly deduplicated) <paramref name="ids"/>. When
-        /// <see langword="false"/>, unmatched identifiers are omitted and the result may be shorter.
-        /// </param>
         /// <param name="batchSize">
         /// The maximum number of identifiers queried by a single round trip. When less than or equal to zero, every
         /// identifier is queried in a single round trip.
@@ -958,14 +949,20 @@ namespace Forget.Oracle.Extensions
         /// <param name="commandTimeout">The number of seconds to wait before timing out, or <see langword="null"/> to use the default timeout.</param>
         /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
         /// <returns>
-        /// A task that represents the asynchronous operation. The task result contains the matching rows. The
-        /// result preserves the order of <paramref name="ids"/>; see <paramref name="preserveDuplicates"/> and
-        /// <paramref name="preserveNulls"/> for how duplicates and misses are represented.
+        /// A task that represents the asynchronous operation. The task result contains the rows that exist, each once.
+        /// Their order is not defined, and an identifier with no row does not appear in the result, which can therefore be
+        /// shorter than <paramref name="ids"/> (or empty).
         /// </returns>
         /// <remarks>
+        /// <para>
+        /// Each row is returned once, however many of <paramref name="ids"/> match it. The identifier is assumed to be unique
+        /// in the table.
+        /// </para>
+        /// <para>
         /// Oracle limits a single <c>IN</c> clause to 1,000 items. When a round trip is larger than that, it is
         /// built internally from multiple <c>UNION ALL</c>'d sub-queries rather than a single <c>IN</c> clause, so
         /// the number of round trips still depends only on <paramref name="batchSize"/>.
+        /// </para>
         /// </remarks>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="connection"/> or <paramref name="ids"/> is <see langword="null"/>, or one of its
@@ -977,10 +974,10 @@ namespace Forget.Oracle.Extensions
         /// to <paramref name="connection"/>.
         /// </exception>
         /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
-        public static async Task<IReadOnlyList<TEntity?>> GetByIdRangeAsync<TEntity>(this OracleConnection connection, IEnumerable ids, bool preserveDuplicates = false, bool preserveNulls = false, int batchSize = 500, OracleTransaction? transaction = null, int? commandTimeout = null, CancellationToken cancellationToken = default) where TEntity : class
+        public static async Task<IReadOnlyList<TEntity>> GetByIdRangeAsync<TEntity>(this OracleConnection connection, IEnumerable ids, int batchSize = 500, OracleTransaction? transaction = null, int? commandTimeout = null, CancellationToken cancellationToken = default) where TEntity : class
         {
             DbCommandStrategy.Instance.LoadRuntimeCache<TEntity>(connection);
-            return await DbExecutionStrategy.Instance.GetByIdRangeImplAsync<TEntity>(connection, false, ids, preserveDuplicates, preserveNulls, batchSize, SqlDialectStrategy.Instance.MaxInValueCount, transaction, commandTimeout, cancellationToken);
+            return await DbExecutionStrategy.Instance.GetByIdRangeImplAsync<TEntity>(connection, false, ids, batchSize, SqlDialectStrategy.Instance.MaxInValueCount, transaction, commandTimeout, cancellationToken);
         }
 
         /// <summary>

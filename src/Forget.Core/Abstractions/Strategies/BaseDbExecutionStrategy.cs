@@ -161,29 +161,14 @@ namespace Forget.Core.Abstractions.Strategies
             return await ExecuteImplAsync(connection, sync, command, transaction, commandTimeout, cancellationToken);
         }
 
-        public virtual async Task<IReadOnlyList<TEntity?>> GetByIdRangeImplAsync<TEntity>(DbConnection connection, bool sync, IEnumerable ids, bool preserveDuplicates, bool preserveNulls, int batchSize, int chunkSize, DbTransaction? transaction, int? commandTimeout, CancellationToken cancellationToken) where TEntity : class
+        public virtual async Task<IReadOnlyList<TEntity>> GetByIdRangeImplAsync<TEntity>(DbConnection connection, bool sync, IEnumerable ids, int batchSize, int chunkSize, DbTransaction? transaction, int? commandTimeout, CancellationToken cancellationToken) where TEntity : class
         {
             ArgumentNullException.ThrowIfNull(ids);
 
-            List<object?> idList = [];
             HashSet<object?> idSet = [];
 
-            if (preserveDuplicates)
-            {
-                foreach (object? id in ids)
-                {
-                    idList.Add(id);
-                    idSet.Add(id);
-                }
-            }
-            else
-            {
-                foreach (object? id in ids)
-                {
-                    if (idSet.Add(id))
-                        idList.Add(id);
-                }
-            }
+            foreach (object? id in ids)
+                idSet.Add(id);
 
             IReadOnlyList<DbCommandInfo> commands = dbCommandStrategy.GetByIdRangeCommands<TEntity>(connection, idSet, batchSize, chunkSize);
             List<TEntity> entityList = [];
@@ -192,39 +177,18 @@ namespace Forget.Core.Abstractions.Strategies
                 return entityList;
 
             PropertyInfo idProperty = EntityInfoCache<TEntity>.IdProperty;
-            Func<TEntity, object?> propertyGetter = EntityInfoCache<TEntity>.PropertyGettersByPropertyName[idProperty.Name];
-            Dictionary<object, List<int>> indexesById = new(idSet.Count);
-            TEntity?[] entityArray = new TEntity?[idList.Count];
-
-            for (int i = 0; i < idList.Count; i++)
-            {
-                if (!indexesById.TryGetValue(idList[i]!, out List<int>? indexes))
-                    indexesById[idList[i]!] = indexes = [];
-
-                indexes.Add(i);
-            }
+            Func<TEntity, object?> idGetter = EntityInfoCache<TEntity>.PropertyGettersByPropertyName[idProperty.Name];
+            HashSet<object> returnedIds = new(idSet.Count, IdEqualityComparer.Instance);
 
             foreach (DbCommandInfo command in commands)
             {
-                IEnumerable<TEntity> entities = await QueryImplAsync<TEntity>(connection, sync, command, null, transaction, commandTimeout, cancellationToken);
+                IReadOnlyList<TEntity> entities = await QueryImplAsync<TEntity>(connection, sync, command, null, transaction, commandTimeout, cancellationToken);
 
                 foreach (TEntity entity in entities)
                 {
-                    object id = propertyGetter(entity)!;
-                    List<int> indexes = indexesById[id];
-
-                    foreach (int index in indexes)
-                        entityArray[index] = entity;
+                    if (returnedIds.Add(idGetter(entity)!))
+                        entityList.Add(entity);
                 }
-            }
-
-            if (preserveNulls)
-                return entityArray;
-
-            foreach (TEntity? entity in entityArray)
-            {
-                if (entity is not null)
-                    entityList.Add(entity);
             }
 
             return entityList;

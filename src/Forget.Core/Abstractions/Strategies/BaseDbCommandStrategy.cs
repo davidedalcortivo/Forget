@@ -332,8 +332,8 @@ namespace Forget.Core.Abstractions.Strategies
             ArgumentNullException.ThrowIfNull(entities);
 
             PropertyInfo idProperty = EntityInfoCache<TEntity>.IdProperty;
-            Func<TEntity, object?> propertyGetter = EntityInfoCache<TEntity>.PropertyGettersByPropertyName[idProperty.Name];
-            List<object> idList = [.. entities.Select(x => propertyGetter(x)!)];
+            Func<TEntity, object?> idGetter = EntityInfoCache<TEntity>.PropertyGettersByPropertyName[idProperty.Name];
+            List<object> idList = [.. entities.Select(x => idGetter(x)!)];
 
             return BuildInRangeInvokerCache.Invoke<TEntity>(this, SqlDialectStrategy, SqlBuilderCache<TEntity, TStrategy>.DeleteRangeSql, idList, batchSize, chunkSize, idProperty, false);
         }

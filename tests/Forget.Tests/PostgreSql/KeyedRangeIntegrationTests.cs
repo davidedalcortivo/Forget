@@ -1,0 +1,80 @@
+using Forget.PostgreSql.Extensions;
+
+
+namespace Forget.Tests.PostgreSql
+{
+    /// <summary>
+    /// <c>GetByIdRange</c> asks the database for the rows and returns what it finds. Which rows match a key is the
+    /// database's decision, not .NET's: PostgreSQL compares strings exactly, so <c>'abc'</c> does not match the row stored as
+    /// <c>'ABC'</c>, and a <c>byte[]</c> key is compared by content by the database but by reference by .NET.
+    /// </summary>
+    [Collection(PostgreSqlCollection.Name)]
+    public class KeyedRangeIntegrationTests
+    {
+        private readonly PostgreSqlFixture _fixture;
+
+        public KeyedRangeIntegrationTests(PostgreSqlFixture fixture)
+        {
+            _fixture = fixture;
+        }
+
+        private static CancellationToken Ct => TestContext.Current.CancellationToken;
+
+        [Fact]
+        public async Task GetByIdRangeAsync_WithAStringKeyOfAnotherCase_ReturnsOnlyTheRowTheDatabaseMatches()
+        {
+            await _fixture.Connection.InsertAsync(new StringKeyed { Code = "ABC-1", Name = "one" }, cancellationToken: Ct);
+
+            IReadOnlyList<StringKeyed> rows = await _fixture.Connection.GetByIdRangeAsync<StringKeyed>(new[] { "abc-1", "ABC-1" }, batchSize: 1, cancellationToken: Ct);
+
+            Assert.Equal(["ABC-1"], rows.Select(r => r.Code));
+        }
+
+        [Fact]
+        public async Task GetByIdRangeAsync_WithAStringKey_ReturnsEachRowOnceWhateverTheBatchSize()
+        {
+            await _fixture.Connection.InsertRangeAsync(
+            [
+                new StringKeyed { Code = "KEY-1", Name = "a" },
+                new StringKeyed { Code = "KEY-2", Name = "b" },
+                new StringKeyed { Code = "KEY-3", Name = "c" }
+            ], cancellationToken: Ct);
+            string[] ids = ["KEY-1", "KEY-2", "KEY-3"];
+
+            IReadOnlyList<StringKeyed> together = await _fixture.Connection.GetByIdRangeAsync<StringKeyed>(ids, cancellationToken: Ct);
+            IReadOnlyList<StringKeyed> apart = await _fixture.Connection.GetByIdRangeAsync<StringKeyed>(ids, batchSize: 1, cancellationToken: Ct);
+
+            Assert.Equal(["a", "b", "c"], together.Select(r => r.Name).Order());
+            Assert.Equal(["a", "b", "c"], apart.Select(r => r.Name).Order());
+        }
+
+        [Fact]
+        public async Task GetByIdRangeAsync_WithABinaryKey_ReturnsTheRowsWhateverTheBatchSize()
+        {
+            await _fixture.Connection.InsertRangeAsync(
+            [
+                new BinaryKeyed { Id = [1, 0, 1], Name = "a" },
+                new BinaryKeyed { Id = [1, 0, 2], Name = "b" },
+                new BinaryKeyed { Id = [1, 0, 3], Name = "c" }
+            ], cancellationToken: Ct);
+            byte[][] ids = [[1, 0, 1], [1, 0, 2], [1, 0, 3]];
+
+            IReadOnlyList<BinaryKeyed> together = await _fixture.Connection.GetByIdRangeAsync<BinaryKeyed>(ids, cancellationToken: Ct);
+            IReadOnlyList<BinaryKeyed> apart = await _fixture.Connection.GetByIdRangeAsync<BinaryKeyed>(ids, batchSize: 1, cancellationToken: Ct);
+
+            Assert.Equal(["a", "b", "c"], together.Select(r => r.Name).Order());
+            Assert.Equal(["a", "b", "c"], apart.Select(r => r.Name).Order());
+        }
+
+        [Fact]
+        public async Task GetByIdRangeAsync_WithTheSameBinaryKeyRequestedTwiceInDifferentBatches_ReturnsTheRowOnce()
+        {
+            await _fixture.Connection.InsertAsync(new BinaryKeyed { Id = [2, 0, 1], Name = "only" }, cancellationToken: Ct);
+            byte[][] ids = [[2, 0, 1], [2, 0, 1]];
+
+            IReadOnlyList<BinaryKeyed> rows = await _fixture.Connection.GetByIdRangeAsync<BinaryKeyed>(ids, batchSize: 1, cancellationToken: Ct);
+
+            Assert.Equal(["only"], rows.Select(r => r.Name));
+        }
+    }
+}

@@ -191,12 +191,12 @@ namespace Forget.Tests.SqlServer
             TypeMatrixRow[] rows = [filled, nulls, mixed];
 
             int affected = await _fixture.Connection.InsertRangeAsync(rows, cancellationToken: Ct);
-            IReadOnlyList<TypeMatrixRow?> fetched = await _fixture.Connection.GetByIdRangeAsync<TypeMatrixRow>(new[] { 10, 11, 12 }, cancellationToken: Ct);
+            IReadOnlyList<TypeMatrixRow> fetched = await _fixture.Connection.GetByIdRangeAsync<TypeMatrixRow>(new[] { 10, 11, 12 }, cancellationToken: Ct);
 
             Assert.Equal(3, affected);
             foreach (TypeMatrixRow expected in rows)
             {
-                AssertSame(expected, fetched.Single(r => r?.Id == expected.Id));
+                AssertSame(expected, fetched.Single(r => r.Id == expected.Id));
             }
         }
 
@@ -210,11 +210,11 @@ namespace Forget.Tests.SqlServer
             ChangeEverything(a);
             ChangeEverything(b);
             int affected = await _fixture.Connection.UpdateRangeAsync([a, b], cancellationToken: Ct);
-            IReadOnlyList<TypeMatrixRow?> fetched = await _fixture.Connection.GetByIdRangeAsync<TypeMatrixRow>(new[] { 20, 21 }, cancellationToken: Ct);
+            IReadOnlyList<TypeMatrixRow> fetched = await _fixture.Connection.GetByIdRangeAsync<TypeMatrixRow>(new[] { 20, 21 }, cancellationToken: Ct);
 
             Assert.Equal(2, affected);
-            AssertSame(a, fetched.Single(r => r?.Id == 20));
-            AssertSame(b, fetched.Single(r => r?.Id == 21));
+            AssertSame(a, fetched.Single(r => r.Id == 20));
+            AssertSame(b, fetched.Single(r => r.Id == 21));
         }
 
         [Fact]
@@ -230,10 +230,10 @@ namespace Forget.Tests.SqlServer
             TypeMatrixRow brandNew = Sample(31);
 
             await _fixture.Connection.UpsertRangeAsync([updated, brandNew], cancellationToken: Ct);
-            IReadOnlyList<TypeMatrixRow?> fetched = await _fixture.Connection.GetByIdRangeAsync<TypeMatrixRow>(new[] { 30, 31 }, cancellationToken: Ct);
+            IReadOnlyList<TypeMatrixRow> fetched = await _fixture.Connection.GetByIdRangeAsync<TypeMatrixRow>(new[] { 30, 31 }, cancellationToken: Ct);
 
-            AssertSame(updated, fetched.Single(r => r?.Id == 30));
-            AssertSame(brandNew, fetched.Single(r => r?.Id == 31));
+            AssertSame(updated, fetched.Single(r => r.Id == 30));
+            AssertSame(brandNew, fetched.Single(r => r.Id == 31));
         }
 
         [Fact]

@@ -99,11 +99,11 @@ namespace Forget.Tests.SqlServer
             await _fixture.Connection.InsertAsync(new Widget { Id = 120, Name = "R120", IsActive = true, Price = 1m }, cancellationToken: Ct);
             await _fixture.Connection.InsertAsync(new Widget { Id = 121, Name = "R121", IsActive = true, Price = 1m }, cancellationToken: Ct);
 
-            IReadOnlyList<Widget?> rows = await _fixture.Connection.GetByIdRangeAsync<Widget>(new[] { 120, 121, 999_003 }, cancellationToken: Ct);
+            IReadOnlyList<Widget> rows = await _fixture.Connection.GetByIdRangeAsync<Widget>(new[] { 120, 121, 999_003 }, cancellationToken: Ct);
 
-            Assert.Equal(2, rows.Count(w => w is not null));
-            Assert.Contains(rows, w => w?.Id == 120);
-            Assert.Contains(rows, w => w?.Id == 121);
+            Assert.Equal(2, rows.Count);
+            Assert.Contains(rows, w => w.Id == 120);
+            Assert.Contains(rows, w => w.Id == 121);
         }
 
         [Fact]

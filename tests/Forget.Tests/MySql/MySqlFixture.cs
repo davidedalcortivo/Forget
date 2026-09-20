@@ -79,6 +79,20 @@ namespace Forget.Tests.MySql
                 );
                 """;
             await upsertCommand.ExecuteNonQueryAsync();
+
+            await using MySqlCommand keyedCommand = Connection.CreateCommand();
+            keyedCommand.CommandText = """
+                CREATE TABLE `StringKeyed` (
+                    `Code` VARCHAR(50) PRIMARY KEY,
+                    `Name` VARCHAR(100) NOT NULL
+                );
+
+                CREATE TABLE `BinaryKeyed` (
+                    `Id` VARBINARY(16) PRIMARY KEY,
+                    `Name` VARCHAR(100) NOT NULL
+                );
+                """;
+            await keyedCommand.ExecuteNonQueryAsync();
         }
 
         public async ValueTask DisposeAsync()

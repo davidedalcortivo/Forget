@@ -55,13 +55,13 @@ namespace Forget.Tests.Oracle
             HandlerRow c = new() { Id = 12, Token = NewToken(), Note = "c" };
 
             int affected = await _fixture.Connection.InsertRangeAsync([a, b, c], cancellationToken: Ct);
-            IReadOnlyList<HandlerRow?> fetched = await _fixture.Connection.GetByIdRangeAsync<HandlerRow>(new[] { 10, 11, 12 }, cancellationToken: Ct);
+            IReadOnlyList<HandlerRow> fetched = await _fixture.Connection.GetByIdRangeAsync<HandlerRow>(new[] { 10, 11, 12 }, cancellationToken: Ct);
 
             Assert.Equal(3, affected);
             foreach (HandlerRow expected in new[] { a, b, c })
             {
-                HandlerRow? actual = fetched.Single(r => r?.Id == expected.Id);
-                Assert.Equal(expected.Token, actual!.Token);
+                HandlerRow actual = fetched.Single(r => r.Id == expected.Id);
+                Assert.Equal(expected.Token, actual.Token);
                 Assert.Equal(expected.Note, actual.Note);
             }
         }

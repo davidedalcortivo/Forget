@@ -112,6 +112,20 @@ namespace Forget.Tests.Oracle
                 )
                 """);
 
+            await ExecuteAsync(Connection, """
+                CREATE TABLE "StringKeyed" (
+                    "Code" VARCHAR2(50) PRIMARY KEY,
+                    "Name" VARCHAR2(100) NOT NULL
+                )
+                """);
+
+            await ExecuteAsync(Connection, """
+                CREATE TABLE "BinaryKeyed" (
+                    "Id" RAW(16) PRIMARY KEY,
+                    "Name" VARCHAR2(100) NOT NULL
+                )
+                """);
+
             await Connection.LoadDbCacheAsync<Widget>();
             await Connection.LoadDbCacheAsync<HandlerRow>();
             await Connection.LoadDbCacheAsync<CastRow>();
