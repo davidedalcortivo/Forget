@@ -57,3 +57,15 @@ jobs:
           for pkg in ./artifacts/*.nupkg; do
             dotnet nuget push "$pkg" --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
           done
+
+  # The GitHub release, written from CHANGELOG.md, once NuGet has the packages. It runs in its own job with its own
+  # permission, so the job above keeps read-only access to the repository, and a problem with the notes can never keep
+  # a version off NuGet: run the "Release notes" workflow again by hand.
+  notes:
+    name: GitHub release notes
+    needs: release
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release-notes.yml
+    with:
+      tag: ${{ github.ref_name }}

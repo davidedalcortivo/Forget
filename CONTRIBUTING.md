@@ -59,7 +59,9 @@ dotnet test --project tests/Forget.Tests -- --filter-class "*KeyedRangeIntegrati
 
 The project follows [Semantic Versioning](https://semver.org/): accepting more input is a minor version, and changing
 what an existing call returns or throws for input that worked is a major one. Contributors do not change `<Version>`:
-the maintainer tags a release, and the release workflow runs the full suite before it publishes anything.
+the maintainer tags a release, and the release workflow runs the full suite before it publishes anything, then creates the
+GitHub release from the section of [CHANGELOG.md](CHANGELOG.md) for that version, which therefore has to be there when the tag
+is created.
 
 ## License
 

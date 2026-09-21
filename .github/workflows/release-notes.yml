@@ -2,7 +2,7 @@ name: Release notes
 
 # Creates the GitHub release of a tag, or updates it if it exists, with the section of CHANGELOG.md for that version as
 # its notes. It can be run by hand from the Actions tab (to write the notes of a tag that has none: start from the oldest,
-# so that the newest one ends up marked as the latest), and release.yml can call it once NuGet has the packages.
+# so that the newest one ends up marked as the latest), and release.yml calls it once NuGet has the packages.
 "on":
   workflow_call:
     inputs:
@@ -29,7 +29,9 @@ jobs:
           ref: ${{ inputs.tag }}
 
       # The section is read from the tagged commit, so it has to be in the CHANGELOG when the tag is created. A missing or
-      # empty section fails the job with a message, rather than publishing a release with no notes.
+      # empty section fails the job with a message, rather than publishing a release with no notes. The CHANGELOG is wrapped
+      # at about 120 columns to be read as a file, but on the release page every wrapped line would show as a line break, so
+      # the lines of a paragraph or of a list item are joined into one (code blocks are left as they are).
       - name: Build the notes from CHANGELOG.md
         env:
           TAG: ${{ inputs.tag }}
@@ -43,11 +45,24 @@ jobs:
             index($0, header) == 1 { found = 1; next }
             found && /^## \[/ { exit }
             found { print }
-          ' CHANGELOG.md > notes.md
-          if ! grep -q '[^[:space:]]' notes.md; then
+          ' CHANGELOG.md > section.md
+          if ! grep -q '[^[:space:]]' section.md; then
             echo "::error::CHANGELOG.md has no section '## [$VERSION]', or it is empty. Add it, then run this workflow again."
             exit 1
           fi
+          awk '
+            function flush() { if (buf != "") { print buf; buf = "" } }
+            {
+              line = $0
+              if (line ~ /^[ \t]*```/) { flush(); infence = !infence; print line; next }
+              if (infence) { print line; next }
+              if (line ~ /^[ \t]*$/) { flush(); print ""; next }
+              if (line ~ /^#/) { flush(); print line; next }
+              if (line ~ /^[ \t]*([-*+]|[0-9]+\.)[ \t]/ || line ~ /^[ \t]*>/ || line ~ /^[ \t]*\|/) { flush(); buf = line; next }
+              if (buf == "") { buf = line } else { sub(/^[ \t]+/, "", line); buf = buf " " line }
+            }
+            END { flush() }
+          ' section.md > notes.md
 
       - name: Create or update the GitHub release
         env:
