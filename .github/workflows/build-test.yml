@@ -34,7 +34,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        provider: [Core, SqlServer, MySql, PostgreSql, Oracle]
+        provider: [Core, MySql, Oracle, PostgreSql, SqlServer]
     steps:
       - uses: actions/checkout@v7
 
@@ -50,7 +50,7 @@ jobs:
             10.0.x
 
       # Ubuntu GitHub-hosted runners ship Docker Engine preinstalled, which is all Testcontainers needs -
-      # no extra setup step required for the SqlServer/MySql/PostgreSql/Oracle containers the tests spin up
+      # no extra setup step required for the MySql/Oracle/PostgreSql/SqlServer containers the tests spin up
       # themselves.
       - name: Test
         run: >

@@ -7,10 +7,10 @@ body:
     attributes:
       label: Provider
       options:
-        - SQL Server
         - MySQL
-        - PostgreSQL
         - Oracle
+        - PostgreSQL
+        - SQL Server
         - Core (every provider)
     validations:
       required: true

@@ -14,8 +14,8 @@ is worth more than a large pull request that arrives without a conversation firs
 
 ## Building and testing
 
-You need the .NET 8 SDK and Docker. The integration tests start real databases with Testcontainers (SQL Server 2022,
-MySQL 8.4, PostgreSQL 16 and Oracle XE 21), so the first run pulls the images, and Oracle is the slow one.
+You need the .NET 8 SDK and Docker. The integration tests start real databases with Testcontainers (MySQL 8.4,
+Oracle XE 21, PostgreSQL 16 and SQL Server 2022), so the first run pulls the images, and Oracle is the slow one.
 
 ```bash
 dotnet build
@@ -33,9 +33,9 @@ dotnet test --project tests/Forget.Tests -- --filter-class "*KeyedRangeIntegrati
 
 - `src/Forget.Core`: the part that does not depend on a database: translating expressions and filters, the entity and
   column caches, and the base strategies.
-- `src/Forget.SqlServer`, `Forget.MySql`, `Forget.PostgreSql`, `Forget.Oracle`: each provider's dialect, its SQL
-  builders, and the connection extension methods (`DbConnectionExtensions*.cs`: synchronous, asynchronous, and the
-  `Commands` overloads that return the SQL without running it).
+- `src/Forget.MySql`, `src/Forget.Oracle`, `src/Forget.PostgreSql`, `src/Forget.SqlServer`: each provider's dialect,
+  its SQL builders, and the connection extension methods (`DbConnectionExtensions*.cs`: synchronous, asynchronous, and
+  the `Commands` overloads that return the SQL without running it).
 - `tests/Forget.Tests`: `Core` (no database) and one folder per provider. Each provider has its own copy of the test
   entities, because they diverge where an engine's types require it.
 

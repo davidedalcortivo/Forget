@@ -40,17 +40,17 @@ No code changes: the package metadata and the documentation.
   integer, and a `float` for a `double` (`1.1f` is converted exactly, but it is not `1.1`, so it would silently compare or
   write another number).
 - `sbyte`, `ushort`, `uint` and `ulong` are accepted only for a property of the same type. Tried against the four engines,
-  SQL Server, PostgreSQL and Oracle fail to bind them with an opaque driver error (only MySQL binds them), so Forget refuses
-  them up front with its own message.
+  MySQL binds them, while Oracle, PostgreSQL and SQL Server fail with an opaque driver error, so Forget refuses them up
+  front with its own message.
 - A list of bytes (a `byte[]` used as a list of ids or as the values of an `In` filter) is rejected with an `ArgumentException`:
-  every driver binds a `byte[]` as one binary value, so the query used to fail inside the database (`op ANY/ALL (array)
-  requires array on right side` on PostgreSQL, `ORA-00932` on Oracle, a syntax error on SQL Server and MySQL). It already failed
-  for a key of type `byte`.
-- A write with `Update`/`UpdateAsync` is stricter than a comparison, because a value that does not fit is an error at best (SQL Server and
-  PostgreSQL reject it, MySQL clips it without strict mode, and Oracle stores it in a `NUMBER(10)` column and then fails to
-  read the row back into an `int`): the type of each value must fit the property's, that is the same type or a narrower
-  numeric one. An `int` for a `long` or a `decimal` property is accepted, a `long` for an `int` property is not (cast it
-  yourself), and neither is an `int` for a `float`.
+  every driver binds a `byte[]` as one binary value, so the query used to fail inside the database (a syntax error on MySQL,
+  `ORA-00932` on Oracle, `op ANY/ALL (array) requires array on right side` on PostgreSQL, and a syntax error on SQL Server).
+  It already failed for a key of type `byte`.
+- A write with `Update`/`UpdateAsync` is stricter than a comparison, because a value that does not fit is an error at
+  best (MySQL clips it without strict mode, Oracle stores it in a `NUMBER(10)` column and then fails to read the row back
+  into an `int`, and PostgreSQL and SQL Server reject it): the type of each value must fit the property's, that is the
+  same type or a narrower numeric one. An `int` for a `long` or a `decimal` property is accepted, a `long` for an
+  `int` property is not (cast it yourself), and neither is an `int` for a `float`.
 - The ids of `GetByIdRange` and `DeleteRange` must all have the same type (a list mixing, say, `int` and `long` throws an
   `ArgumentException`). Before, they all had to be of the key's exact type.
 - `Min` and `Max` with a property name and a `TProperty` (`MinAsync<Order, long>("Quantity")`) now accept any `TProperty`
@@ -90,7 +90,7 @@ No code changes: the package metadata and the documentation.
 
 - `GetByIdRange`/`GetByIdRangeAsync` threw `KeyNotFoundException` whenever the database matched an id that .NET did not
   consider equal to the row's key, because each row read back was paired with the requested ids by exact .NET equality. It
-  happened with a `string` key under a case-insensitive collation (the default on SQL Server and MySQL: asking for `"abc"`
+  happened with a `string` key under a case-insensitive collation (the default on MySQL and SQL Server: asking for `"abc"`
   when the table holds `"ABC"`) and with a `byte[]` key (two arrays with the same content are different objects). It no
   longer happens: the rows are not paired with the ids any more. Rows the database returns more than once, because two
   ids the database considers equal (`"abc"` and `"ABC"`) fell in different batches, or because the same `byte[]` was
@@ -102,7 +102,7 @@ No code changes: the package metadata and the documentation.
 
 - Upsert under concurrency is now documented, on the methods it affects and in the README, and covered by tests on all four
   providers (16 connections upserting the same new keys at the same moment). Single-row upserts succeeded for every caller on
-  SQL Server, MySQL and PostgreSQL, and so did multi-row upserts on MySQL and PostgreSQL. Two cases can fail; in both, no key
+  MySQL, PostgreSQL and SQL Server, and so did multi-row upserts on MySQL and PostgreSQL. Two cases can fail; in both, no key
   ends up with two rows, and Forget does not retry (handling the error is up to the caller):
   - Oracle: a `MERGE` is not atomic against a concurrent insert of the same key, so a session can fail with `ORA-00001`, and a
     multi-row upsert can also be chosen as the victim of a deadlock (`ORA-00060`).
@@ -154,7 +154,7 @@ No code changes: the package metadata and the documentation.
 ### Known issues
 
 - `GetByIdRange`/`GetByIdRangeAsync` with a `string` key throws `KeyNotFoundException` when the database compares strings
-  differently from .NET: with a case-insensitive collation (the default on SQL Server and MySQL), asking for `"abc"` when
+  differently from .NET: with a case-insensitive collation (the default on MySQL and SQL Server), asking for `"abc"` when
   the table holds `"ABC"` matches in the database, but the rows read back are then paired with the requested ids by exact
   comparison and the pair is not found. Until this is addressed, ask for the keys exactly as they are stored, or use
   `GetAll`/`GetAllAsync` with a predicate such as `x => ids.Contains(x.Code)`, which leaves the comparison to the database.
@@ -182,7 +182,7 @@ Initial release.
 - Core engine: expression-based (`Expression<Func<T, bool>>`) and descriptor-based (`FilterDescriptor`/`FilterGroup`)
   filtering, translated per-dialect into parameterized SQL.
 - Type-safe CRUD, sorting, paging, and single/range upsert.
-- Provider packages for SQL Server, MySQL, PostgreSQL and Oracle, each following that engine's real type and
+- Provider packages for MySQL, Oracle, PostgreSQL and SQL Server, each following that engine's real type and
   syntax constraints (e.g. Oracle's `UNION ALL`/`DUAL`-based multi-row insert with automatic per-column cast
   discovery, since Oracle has no native `VALUES (...), (...)` syntax).
 

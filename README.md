@@ -180,7 +180,7 @@ Each statement is the one that is right for that engine — instead of one state
 but is subtly wrong (or slow, or unsafe under concurrency) on at least one of them.
 
 Upserts from many connections at once, on the same new keys, are covered by tests on all 4 providers. Single-row
-upserts succeeded for every caller on SQL Server, MySQL and PostgreSQL, and so did multi-row upserts on MySQL and
+upserts succeeded for every caller on MySQL, PostgreSQL and SQL Server, and so did multi-row upserts on MySQL and
 PostgreSQL. Two cases can fail, and in both Forget doesn't retry — handle the error and call again:
 
 - **Oracle**: `ORA-00001`, as described above, and a multi-row upsert can also be chosen as the victim of a deadlock
@@ -287,8 +287,8 @@ precisely because it fails silently (a plausible-looking wrong number, no except
   `Update`/`UpdateAsync` and an object such as `new { Price = 10 }` (a write), reach Dapper as you passed them. Forget
   rejects one with an `ArgumentException` when its type could lose precision or change meaning for the property, or
   when the drivers cannot bind it. The table below says what is accepted.
-- **Column metadata is read once.** A few operations need the table's column types — `Sum`/`SumAsync` and
-  `Avg`/`AvgAsync` on SQL Server, the multi-row writes on Oracle, `UpdateRange`/`UpdateRangeAsync` on PostgreSQL.
+- **Column metadata is read once.** A few operations need the table's column types — the multi-row writes on Oracle,
+  `UpdateRange`/`UpdateRangeAsync` on PostgreSQL, and `Sum`/`SumAsync` and `Avg`/`AvgAsync` on SQL Server.
   Forget reads them the first time it needs them (or when you call `LoadDbCache`/`LoadDbCacheAsync` yourself) and
   keeps them, per entity and database, for the life of the process. Nothing invalidates them: after altering a
   column, restart the process.
@@ -301,15 +301,15 @@ precisely because it fails silently (a plausible-looking wrong number, no except
 | `byte`, `short`, `int` for a `double`; `byte`, `short` for a `float` | accepted | accepted |
 | An enum for its underlying type, and the other way round | accepted | accepted |
 | `string` for a number, `int` or `long` for a `float`, `long` for a `double`, `decimal` or `double` for an integer, a `float` for a `double` (`1.1f` is not `1.1`) | rejected | rejected |
-| `sbyte`, `ushort`, `uint`, `ulong` for a property of another type | rejected (SQL Server, PostgreSQL and Oracle cannot bind them) | rejected |
+| `sbyte`, `ushort`, `uint`, `ulong` for a property of another type | rejected (Oracle, PostgreSQL and SQL Server cannot bind them) | rejected |
 | A list of bytes (a `byte[]` as ids or as the values of an `In` filter) | rejected (every driver binds a `byte[]` as one binary value) | not applicable |
 
 The *Write* column is for `Update`/`UpdateAsync` with a values object such as `new { Price = 10 }`; `Update` with an
 entity is typed by the entity, so there is nothing to check.
 
 A comparison never writes anything, so a value too large for the column simply finds no row. A write with a value
-that does not fit is an error at best: SQL Server and PostgreSQL reject it, MySQL without strict mode clips it, and
-Oracle can store it and then fail to read the row back into an `int`. Hence the stricter rule.
+that does not fit is an error at best: MySQL without strict mode clips it, Oracle can store it and then fail to read
+the row back into an `int`, and PostgreSQL and SQL Server reject it. Hence the stricter rule.
 
 ## What this isn't
 

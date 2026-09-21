@@ -31,7 +31,7 @@ body:
       label: Providers concerned
       multiple: true
       options:
-        - SQL Server
         - MySQL
-        - PostgreSQL
         - Oracle
+        - PostgreSQL
+        - SQL Server
