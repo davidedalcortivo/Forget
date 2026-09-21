@@ -11,7 +11,7 @@
     <PackageProjectUrl>https://github.com/davidedalcortivo/Forget</PackageProjectUrl>
     <RepositoryUrl>https://github.com/davidedalcortivo/Forget</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>dapper;orm;micro-orm;dotnet;sql;data-access</PackageTags>
+    <PackageTags>dapper;data-access;dotnet;micro-orm;orm;sql</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
 

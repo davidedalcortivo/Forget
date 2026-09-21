@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <PackageId>Forget.MySql</PackageId>
     <Description>MySQL provider for Forget, a thin, provider-aware extension layer on top of Dapper: type-safe CRUD, filtering, sorting, and paging, with the right SQL for MySQL.</Description>
-    <PackageTags>$(PackageTags);mysql</PackageTags>
+    <PackageTags>dapper;data-access;dotnet;micro-orm;mysql;orm;sql</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

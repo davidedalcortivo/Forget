@@ -1,0 +1,66 @@
+name: Release notes
+
+# Creates the GitHub release of a tag, or updates it if it exists, with the section of CHANGELOG.md for that version as
+# its notes. It can be run by hand from the Actions tab (to write the notes of a tag that has none: start from the oldest,
+# so that the newest one ends up marked as the latest), and release.yml can call it once NuGet has the packages.
+"on":
+  workflow_call:
+    inputs:
+      tag:
+        description: "The tag of the release, for example v2.1.1"
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "The tag of the release, for example v2.1.1"
+        required: true
+        type: string
+
+jobs:
+  notes:
+    name: GitHub release for ${{ inputs.tag }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag }}
+
+      # The section is read from the tagged commit, so it has to be in the CHANGELOG when the tag is created. A missing or
+      # empty section fails the job with a message, rather than publishing a release with no notes.
+      - name: Build the notes from CHANGELOG.md
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          VERSION="${TAG#v}"
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Tag '$TAG' does not look like a version (expected vX.Y.Z, for example v2.1.1)"
+            exit 1
+          fi
+          awk -v header="## [$VERSION]" '
+            index($0, header) == 1 { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > notes.md
+          if ! grep -q '[^[:space:]]' notes.md; then
+            echo "::error::CHANGELOG.md has no section '## [$VERSION]', or it is empty. Add it, then run this workflow again."
+            exit 1
+          fi
+
+      - name: Create or update the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          VERSION="${TAG#v}"
+          PRERELEASE=""
+          if [[ "$VERSION" == *-* ]]; then
+            PRERELEASE="--prerelease"
+          fi
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release edit "$TAG" --title "Forget $VERSION" --notes-file notes.md $PRERELEASE
+          else
+            gh release create "$TAG" --verify-tag --title "Forget $VERSION" --notes-file notes.md $PRERELEASE
+          fi

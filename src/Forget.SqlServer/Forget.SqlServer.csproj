@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <PackageId>Forget.SqlServer</PackageId>
     <Description>SQL Server provider for Forget, a thin, provider-aware extension layer on top of Dapper: type-safe CRUD, filtering, sorting, and paging, with the right SQL for SQL Server.</Description>
-    <PackageTags>$(PackageTags);sqlserver</PackageTags>
+    <PackageTags>dapper;data-access;dotnet;micro-orm;orm;sql;sqlserver</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

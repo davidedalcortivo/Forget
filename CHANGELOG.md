@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- The package tags are listed in alphabetical order, the same order as the repository topics; the tags themselves are the
+  same as in 2.1.1.
+
 ## [2.1.1] - 2026-09-21
 
 No code changes: the package metadata and the documentation.
