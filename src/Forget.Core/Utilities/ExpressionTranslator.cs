@@ -4,6 +4,7 @@ using Forget.Core.Caching;
 using Forget.Core.Models;
 using System.Collections;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -56,6 +57,9 @@ namespace Forget.Core.Utilities
 
                 case MemberExpression me:
                     return MemberEvaluatorCache.TryEvaluate(me, out value, out failure);
+
+                case UnaryExpression { NodeType: ExpressionType.Convert or ExpressionType.ConvertChecked, Method: null } conversion when conversion.Type.IsAssignableFrom(conversion.Operand.Type):
+                    return TryEval(conversion.Operand, out value, out failure);
             }
 
             try
@@ -81,7 +85,40 @@ namespace Forget.Core.Utilities
 
         private static bool IsNull(Expression expr)
         {
-            return expr is ConstantExpression { Value: null } || TryEval(expr, out object? v) && v is null;
+            if (expr is ConstantExpression { Value: null })
+                return true;
+
+            if (DependsOnEntity(expr) || IsTranslatedFunction(expr))
+                return false;
+
+            if (expr is UnaryExpression { NodeType: ExpressionType.Convert or ExpressionType.ConvertChecked } conversion)
+            {
+                if (conversion.Type.IsValueType && Nullable.GetUnderlyingType(conversion.Type) is null)
+                    return false;
+
+                if (conversion.Method is null)
+                    return IsNull(conversion.Operand);
+            }
+
+            return TryEval(expr, out object? v) && v is null;
+        }
+
+        private static bool DependsOnEntity(Expression? expr)
+        {
+            return expr switch
+            {
+                ParameterExpression => true,
+                MemberExpression member => DependsOnEntity(member.Expression),
+                _ => false
+            };
+        }
+
+        private static bool IsTranslatedFunction(Expression expr)
+        {
+            return expr is MethodCallExpression { Object: not null, Arguments.Count: 0 } call
+                && (call.Method.Name == nameof(ToString)
+                    || call.Method.DeclaringType == typeof(string)
+                    && call.Method.Name is nameof(string.ToLower) or nameof(string.ToLowerInvariant) or nameof(string.ToUpper) or nameof(string.ToUpperInvariant));
         }
 
         private static bool IsStringEquals(MethodCallExpression m)
@@ -113,14 +150,60 @@ namespace Forget.Core.Utilities
             return false;
         }
 
+        [return: NotNullIfNotNull(nameof(node))]
+        public override Expression? Visit(Expression? node)
+        {
+            if (node is NewExpression or NewArrayExpression or MemberInitExpression or ListInitExpression or ConditionalExpression or TypeBinaryExpression or InvocationExpression or IndexExpression)
+                throw new NotSupportedException($"Unsupported expression '{node}'.");
+
+            return base.Visit(node);
+        }
+
         protected override Expression VisitConstant(ConstantExpression node)
         {
             _ctx.SqlBuffer.Append(_ctx.AddParameter(node.Value));
             return node;
         }
 
+        private static MemberExpression? NullableColumn(Expression expr)
+        {
+            return expr is MemberExpression { Expression: MemberExpression { Expression: ParameterExpression } column } member
+                && member.Member.DeclaringType is { IsGenericType: true } declaring
+                && declaring.GetGenericTypeDefinition() == typeof(Nullable<>)
+                ? column
+                : null;
+        }
+
+        private bool TryVisitHasValueComparison(BinaryExpression node)
+        {
+            Expression hasValue = node.Left is MemberExpression { Member.Name: nameof(Nullable<int>.HasValue) } ? node.Left : node.Right;
+            Expression other = ReferenceEquals(hasValue, node.Left) ? node.Right : node.Left;
+
+            if (hasValue is not MemberExpression { Member.Name: nameof(Nullable<int>.HasValue) }
+                || NullableColumn(hasValue) is not { } column
+                || DependsOnEntity(other)
+                || !TryEval(other, out object? value)
+                || value is not bool expected)
+                return false;
+
+            string sql = RenderColumn(column);
+            bool isNotNull = (node.NodeType == ExpressionType.Equal) == expected;
+
+            _ctx.SqlBuffer.Append('(');
+            _ctx.SqlBuffer.Append(isNotNull ? _ctx.SqlDialectStrategy.IsNotNull(sql) : _ctx.SqlDialectStrategy.IsNull(sql));
+            _ctx.SqlBuffer.Append(')');
+            return true;
+        }
+
         protected override Expression VisitMember(MemberExpression node)
         {
+            if (NullableColumn(node) is { } nullableColumn)
+            {
+                string column = RenderColumn(nullableColumn);
+                _ctx.SqlBuffer.Append(node.Member.Name == nameof(Nullable<int>.HasValue) ? $"({_ctx.SqlDialectStrategy.IsNotNull(column)})" : column);
+                return node;
+            }
+
             if (node.Expression is ParameterExpression)
             {
                 _ctx.SqlBuffer.Append(RenderColumn(node));
@@ -150,7 +233,7 @@ namespace Forget.Core.Utilities
                 return node;
             }
 
-            if (node.NodeType == ExpressionType.Not)
+            if (node.NodeType == ExpressionType.Not && (Nullable.GetUnderlyingType(node.Type) ?? node.Type) == typeof(bool))
             {
                 _ctx.SqlBuffer.Append("NOT ");
 
@@ -171,7 +254,7 @@ namespace Forget.Core.Utilities
             if (node.NodeType is ExpressionType.Convert or ExpressionType.ConvertChecked)
                 return Visit(node.Operand);
 
-            return base.VisitUnary(node);
+            throw new NotSupportedException($"Unsupported operator '{node.NodeType}'.");
         }
 
         protected override Expression VisitBinary(BinaryExpression node)
@@ -192,6 +275,9 @@ namespace Forget.Core.Utilities
 
             if (node.NodeType is ExpressionType.Equal or ExpressionType.NotEqual)
             {
+                if (TryVisitHasValueComparison(node))
+                    return node;
+
                 bool leftNull = IsNull(node.Left);
                 bool rightNull = IsNull(node.Right);
 
@@ -260,13 +346,8 @@ namespace Forget.Core.Utilities
             if (node.Method.DeclaringType == typeof(string))
                 return VisitStringMethod(node);
 
-            if (node.Method.Name == nameof(Enumerable.Contains))
-            {
-                Type sourceType = node.Object?.Type ?? node.Arguments[0].Type;
-
-                if (typeof(IEnumerable).IsAssignableFrom(sourceType))
-                    return VisitCollectionContains(node);
-            }
+            if (node.Method.Name == nameof(Enumerable.Contains) && typeof(IEnumerable).IsAssignableFrom(CollectionSource(node).Type))
+                return VisitCollectionContains(node);
 
             throw new NotSupportedException($"Unsupported method '{node.Method.Name}'.");
         }
@@ -504,14 +585,22 @@ namespace Forget.Core.Utilities
             }
         }
 
+        private static Expression CollectionSource(MethodCallExpression m)
+        {
+            if (m.Object is not null)
+                return m.Object;
+
+            return m.Method.DeclaringType == typeof(MemoryExtensions) && m.Arguments[0] is MethodCallExpression { Method.Name: "op_Implicit", Arguments: [Expression array] }
+                ? array
+                : m.Arguments[0];
+        }
+
         private MethodCallExpression VisitCollectionContains(MethodCallExpression m)
         {
-            object? raw =
-                m.Object is not null
-                    ? Expression.Lambda(m.Object).Compile().DynamicInvoke()
-                    : Expression.Lambda(m.Arguments[0]).Compile().DynamicInvoke();
+            Expression source = CollectionSource(m);
+            object? raw = TryEval(source, out object? value) ? value : Expression.Lambda(source).Compile().DynamicInvoke();
 
-            if (raw is null && typeof(IEnumerable).IsAssignableFrom(m.Object?.Type ?? m.Arguments[0].Type))
+            if (raw is null && typeof(IEnumerable).IsAssignableFrom(source.Type))
             {
                 _ctx.SqlBuffer.Append("(1 = 0)");
                 return m;

@@ -1,4 +1,5 @@
-﻿using System.Data.Common;
+﻿using System.Collections.Concurrent;
+using System.Data.Common;
 using System.Text;
 
 
@@ -8,6 +9,7 @@ namespace Forget.Core.Abstractions.Strategies
     {
         private bool _isInitialized = false;
         private readonly object _lock = new();
+        private readonly ConcurrentDictionary<string, string> _connectionIds = new();
 
         public string DefaultSchemaName { get; protected set; } = null!;
         public virtual string NullValue { get; } = "NULL";
@@ -120,7 +122,12 @@ namespace Forget.Core.Abstractions.Strategies
 
         public abstract string CastAsString(string sql);
 
-        public abstract string GetConnectionId(DbConnection connection);
+        protected abstract string BuildConnectionId(string connectionString);
+
+        public string GetConnectionId(DbConnection connection)
+        {
+            return _connectionIds.GetOrAdd(connection.ConnectionString, static (connectionString, dialect) => dialect.BuildConnectionId(connectionString), this);
+        }
 
         public void Initialize(DbConnection connection)
         {

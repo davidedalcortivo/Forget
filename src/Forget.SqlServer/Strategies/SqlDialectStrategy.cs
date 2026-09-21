@@ -35,9 +35,9 @@ namespace Forget.SqlServer.Strategies
             return $"CAST({sql} AS NVARCHAR(MAX))";
         }
 
-        public override string GetConnectionId(DbConnection connection)
+        protected override string BuildConnectionId(string connectionString)
         {
-            SqlConnectionStringBuilder builder = new(connection.ConnectionString);
+            SqlConnectionStringBuilder builder = new(connectionString);
             return $"sqlserver://{builder.DataSource}/{builder.InitialCatalog}";
         }
     }

@@ -130,6 +130,31 @@ IReadOnlyList<Product> results = await connection.GetAllAsync(filter);
 (and their respective asynchronous overloads) all accept either shape — pick whichever fits the call site, they
 translate to the same SQL.
 
+### What a predicate can contain
+
+A predicate is translated to SQL, not run, so it can only contain what has a SQL equivalent. Anything else throws a
+`NotSupportedException` that names the expression, before any query is sent.
+
+| | Supported |
+|---|---|
+| Comparisons | `==`, `!=`, `<`, `<=`, `>`, `>=` between a column and a value (on either side, `5 < p.Id`) or between two columns, combined with `&&`, `\|\|` and `!` |
+| The value | a literal, a variable, a field, a property or a member of one of them (`request.Filter.Category`), a constant, a static property such as `DateTime.UtcNow`; of any type the driver can bind (`Guid`, `DateTime`, `enum`, ...) |
+| `null` | `p.Note == null`, `p.Note != null`, and a variable that is `null` |
+| Nullable columns | `p.Deleted.HasValue`, `!p.Deleted.HasValue`, `p.Deleted.HasValue == false`, `p.Deleted.Value > since` |
+| Booleans | `p.IsActive`, `!p.IsActive`, `p.IsActive == flag` |
+| Text | `==`, `Equals` (also with `StringComparison.OrdinalIgnoreCase`), `string.Compare(a, b) < 0`, `Contains`, `StartsWith` and `EndsWith` (also with a `StringComparison`), `ToLower()`, `ToUpper()`, `ToString()`; the argument of `Contains`, `StartsWith` and `EndsWith` must be a value, not a column |
+| Collections | `ids.Contains(p.Id)` and `!ids.Contains(p.Id)` on an array, a `List<T>`, a `HashSet<T>` or any `IEnumerable<T>` (translated to `IN` and `NOT IN`, or to `= ANY` on PostgreSQL) |
+
+What is not translated: arithmetic (`p.Price * 2`, `x + 1`, `-x`), other members of a string (`Length`, `Trim()`,
+`Substring()`, `string.IsNullOrEmpty`, concatenation with `+`), `Math`, parts of a date (`p.Created.Year`), enum flags
+(`HasFlag`, `&`), `GetValueOrDefault()`, `Equals` on anything but a string, LINQ (`Any`), and `new`, `?:`, `??`, `is`,
+`as`, a method call or an indexer used as a value. Compute the value in a variable first
+(`DateTime since = DateTime.UtcNow.AddDays(-1);`) and compare with that. The negation of a variable in a comparison,
+`p.IsActive == !flag`, is sent as `IsActive = NOT @p0`, which only PostgreSQL accepts: write `bool wanted = !flag;` first.
+
+A cast is not applied: `p.Id == (int)value` sends `value` with its own type, because Forget never converts one type
+into another.
+
 ### Sorting and paging
 
 ```csharp

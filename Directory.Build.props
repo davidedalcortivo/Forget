@@ -5,7 +5,7 @@
     <Product>Forget</Product>
     <Copyright>Copyright $([System.DateTime]::Now.Year) Davide Dal Cortivo</Copyright>
 
-    <Version>2.1.1</Version>
+    <Version>2.2.0</Version>
 
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/davidedalcortivo/Forget</PackageProjectUrl>

@@ -7,8 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-09-22
+
 ### Added
 
+- `HasValue` and `Value` on a nullable column in a filter: `p.Deleted.HasValue`, `!p.Deleted.HasValue`,
+  `p.Deleted.HasValue == false` and `p.Deleted.Value > since` are translated to `IS NOT NULL`, `NOT (... IS NOT NULL)`,
+  `IS NULL` and the column itself. They threw a `NotSupportedException` that called `Deleted` a column that is not mapped.
+- A section of the README, "What a predicate can contain", that lists what a filter can contain and what it cannot, and
+  says that a cast in a filter is not applied.
+- Benchmarks that compare Forget with hand-written Dapper and EF Core on PostgreSQL (in the repository only, not in the
+  packages).
 - A `Release notes` workflow that creates the GitHub release of a tag, with the section of this file for that version as
   its notes (the wrapped lines of each paragraph joined into one, so that the release page does not show them broken), and
   the release workflow now calls it after the packages are on NuGet. It can also be run by hand for a tag that has no
@@ -18,6 +27,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - The package tags are listed in alphabetical order, the same order as the repository topics; the tags themselves are the
   same as in 2.1.1.
+- The id that Forget uses to keep the column metadata of a connection is built once for each connection string, instead of
+  parsing the string on every call that needs the metadata (about 20 µs each, so `Avg` on SQL Server took 25 to 30 µs to
+  build against 3 to 6 on the other providers).
+
+### Fixed
+
+- A filter with `new`, `?:`, `is`, `as`, `-x`, `~x` or the `Length` of an array was turned into wrong SQL instead of being
+  refused: `p.Created > new DateTime(2026, 1, 1)` became `"Created" > @p0@p1@p2`, `p.Id == (flag ? 1 : 2)` became
+  `"Id" = @p0@p1@p2`, `new Guid(text)` was replaced by `text`, and `p.Id == -x` compared the column with `x`, without the
+  sign, so a `Delete` or an `Update` with it could touch other rows than the ones meant. They now throw a
+  `NotSupportedException` that names the expression, like any other expression that cannot be translated; compute the value
+  in a variable first.
+- A filter that compares a column with a value taken from a variable, a field or a property (`p => p.Category == category`)
+  cost about 75 µs of CPU on every call, and twice that for `==` and `!=`, against a few microseconds for the same value
+  written in the predicate: the value was computed by compiling a lambda each time it was read. It is now read directly.
+  The same applies to `Contains` on a collection and to `Contains`, `StartsWith` and `EndsWith` with such a value, to a
+  value that is converted, such as a cast or an `int` compared with a nullable or a `decimal` column (60 to over 600 µs),
+  and to `ToLower()`, `ToUpper()` and `ToString()` (`p.Name.ToLower() == name.ToLower()` cost about 300 µs). The SQL and
+  the parameters are the same as before.
+- Translating a comparison of a column no longer throws and catches an exception internally (`p.Id == 7` did, once per
+  comparison), which was invisible except for the time it took and for a debugger set to break on exceptions.
+- `ids.Contains(p.Id)` on an **array** failed with `Unsupported method 'Contains'` in a project compiled with C# 14, the
+  default of the .NET 10 SDK: the compiler then binds it to `MemoryExtensions.Contains` on a span, converted from the array,
+  instead of `Enumerable.Contains`. Both forms are now translated the same way, and an array of strings, or of any other
+  reference type, that the compiler also wraps in a conversion is read directly too. `List<T>` and other collections were
+  not affected, and neither were projects compiled with an earlier language version.
 
 ## [2.1.1] - 2026-09-21
 
@@ -198,6 +233,7 @@ Initial release.
   syntax constraints (e.g. Oracle's `UNION ALL`/`DUAL`-based multi-row insert with automatic per-column cast
   discovery, since Oracle has no native `VALUES (...), (...)` syntax).
 
+[2.2.0]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.2.0
 [2.1.1]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.1.1
 [2.1.0]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.1.0
 [2.0.0]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.0.0

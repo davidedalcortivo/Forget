@@ -28,9 +28,9 @@ namespace Forget.Oracle.Strategies
             return $"TO_CHAR({sql})";
         }
 
-        public override string GetConnectionId(DbConnection connection)
+        protected override string BuildConnectionId(string connectionString)
         {
-            OracleConnectionStringBuilder builder = new(connection.ConnectionString);
+            OracleConnectionStringBuilder builder = new(connectionString);
             return $"oracle://{builder.DataSource}/{builder.UserID}";
         }
     }

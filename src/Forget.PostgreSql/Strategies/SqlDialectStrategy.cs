@@ -51,9 +51,9 @@ namespace Forget.PostgreSql.Strategies
             return $"{sql}::text";
         }
 
-        public override string GetConnectionId(DbConnection connection)
+        protected override string BuildConnectionId(string connectionString)
         {
-            NpgsqlConnectionStringBuilder builder = new(connection.ConnectionString);
+            NpgsqlConnectionStringBuilder builder = new(connectionString);
             return $"postgresql://{builder.Host}:{builder.Port}/{builder.Database}";
         }
     }

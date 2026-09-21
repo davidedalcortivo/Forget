@@ -45,9 +45,9 @@ namespace Forget.MySql.Strategies
             return $"CAST({sql} AS CHAR)";
         }
 
-        public override string GetConnectionId(DbConnection connection)
+        protected override string BuildConnectionId(string connectionString)
         {
-            MySqlConnectionStringBuilder builder = new(connection.ConnectionString);
+            MySqlConnectionStringBuilder builder = new(connectionString);
             return $"mysql://{builder.Server}:{builder.Port}/{builder.Database}";
         }
     }

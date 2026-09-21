@@ -17,7 +17,7 @@ namespace Forget.Tests.Oracle
     /// block — this is what avoids <c>ORA-01790</c> (datatype mismatch) on the <c>UNION ALL</c>.
     /// <para>
     /// No live Oracle connection is needed: the connection is only used to derive a cache key
-    /// (<see cref="SqlDialectStrategy.GetConnectionId"/> merely parses the connection string), so the column-cast
+    /// (<see cref="Forget.Core.Abstractions.Strategies.ISqlDialectStrategy.GetConnectionId"/> merely parses the connection string), so the column-cast
     /// metadata that would normally come from that PL/SQL block against a real schema is seeded directly into
     /// <see cref="DbColumnInfoCache{TEntity}"/> here instead.
     /// </para>

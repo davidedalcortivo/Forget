@@ -53,7 +53,7 @@ namespace Forget.Core.Caching
 
             try
             {
-                value = getter(DynamicInvokeRoot(expr.Expression));
+                value = getter(EvaluateRoot(expr.Expression));
                 return true;
             }
             catch (Exception ex)
@@ -63,9 +63,27 @@ namespace Forget.Core.Caching
             }
         }
 
-        private static object? DynamicInvokeRoot(Expression expr)
+        private static object? EvaluateRoot(Expression root)
         {
-            return Expression.Lambda(expr).Compile().DynamicInvoke();
+            if (root is ConstantExpression constant)
+            {
+                return constant.Value;
+            }
+
+            if (root is MemberExpression member)
+            {
+                if (TryEvaluate(member, out object? value, out Exception? failure))
+                {
+                    return value;
+                }
+
+                if (failure is not null)
+                {
+                    throw failure;
+                }
+            }
+
+            return Expression.Lambda(root).Compile().DynamicInvoke();
         }
     }
 }
