@@ -15,7 +15,7 @@ namespace Forget.SqlServer.Extensions
 {
     /// <summary>
     /// Extension methods on <see cref="SqlConnection"/> providing type-safe CRUD (single-row or multi-row),
-    /// dynamic filtering, sorting, paging, and aggregation against SQL Server, for any entity mapped with the
+    /// filtering, sorting, paging, and aggregation against SQL Server, for any entity mapped with the
     /// attributes in <c>Forget.Core.Models</c>.
     /// </summary>
     public static partial class DbConnectionExtensions

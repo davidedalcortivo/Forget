@@ -12,7 +12,7 @@ namespace Forget.PostgreSql.Extensions
 {
     /// <summary>
     /// Extension methods on <see cref="NpgsqlConnection"/> providing type-safe CRUD (single-row or multi-row),
-    /// dynamic filtering, sorting, paging, and aggregation against PostgreSQL, for any entity mapped with the
+    /// filtering, sorting, paging, and aggregation against PostgreSQL, for any entity mapped with the
     /// attributes in <c>Forget.Core.Models</c>.
     /// </summary>
     public static partial class DbConnectionExtensions

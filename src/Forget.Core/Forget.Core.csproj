@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageId>Forget.Core</PackageId>
-    <Description>Core engine of Forget: expression-based filtering, entity/column caching and per-dialect SQL building on top of Dapper. Pulled in automatically by a provider package (Forget.SqlServer, Forget.MySql, Forget.PostgreSql or Forget.Oracle) - you normally don't install this package directly.</Description>
+    <Description>Core engine of Forget: filtering, entity/column caching and per-dialect SQL building on top of Dapper. Pulled in automatically by a provider package (Forget.MySql, Forget.Oracle, Forget.PostgreSql, or Forget.SqlServer) - you normally don't install this package directly.</Description>
   </PropertyGroup>
 
   <ItemGroup>

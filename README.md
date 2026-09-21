@@ -5,7 +5,7 @@
 [![Buy Me A Coffee](https://img.shields.io/badge/-Buy_Me_A_Coffee-ffdd00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/davidedalcortivo)
 
 A thin, provider-aware extension layer on top of [Dapper](https://github.com/DapperLib/Dapper): type-safe CRUD
-(single-row or multi-row), dynamic filtering, sorting, and paging against one mapped table at a time — with SQL
+(single-row or multi-row), filtering, sorting, and paging against one mapped table at a time — with SQL
 generated correctly for the engine you're actually running against, not a lowest-common-denominator translation.
 Supports **MySQL**, **Oracle**, **PostgreSQL**, and **SQL Server**.
 
@@ -98,7 +98,7 @@ await connection.UpsertAsync(new Product { Sku = "SKU-1", Name = "Widget", Categ
 await connection.DeleteAsync<Product>(id: 42);
 ```
 
-## Dynamic filtering, two ways
+## Filtering, two ways
 
 A predicate you can write at compile time works exactly like you'd expect:
 

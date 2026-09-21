@@ -1,0 +1,37 @@
+name: Feature request
+description: Something Forget could do that it does not do today
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Forget stays thin on purpose: it does not map or convert types, and it does not do joins, change tracking or
+        migrations. A request that fits that is easier to say yes to.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do
+      description: The task, in your own words, rather than the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like Forget to do
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you do today instead
+      description: For example a Dapper call on the same connection.
+  - type: dropdown
+    id: providers
+    attributes:
+      label: Providers concerned
+      multiple: true
+      options:
+        - SQL Server
+        - MySQL
+        - PostgreSQL
+        - Oracle

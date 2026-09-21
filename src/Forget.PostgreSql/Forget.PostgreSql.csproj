@@ -5,8 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageId>Forget.PostgreSql</PackageId>
-    <Description>PostgreSQL provider for Forget: type-safe CRUD, expression-based filtering, sorting, paging and upsert on top of Dapper, without the overhead of a full ORM.</Description>
-    <PackageTags>$(PackageTags);postgresql;postgres;npgsql</PackageTags>
+    <Description>PostgreSQL provider for Forget, a thin, provider-aware extension layer on top of Dapper: type-safe CRUD, filtering, sorting, and paging, with the right SQL for PostgreSQL.</Description>
+    <PackageTags>$(PackageTags);postgresql</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

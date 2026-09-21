@@ -5,13 +5,13 @@
     <Product>Forget</Product>
     <Copyright>Copyright $([System.DateTime]::Now.Year) Davide Dal Cortivo</Copyright>
 
-    <Version>2.1.0</Version>
+    <Version>2.1.1</Version>
 
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/davidedalcortivo/Forget</PackageProjectUrl>
     <RepositoryUrl>https://github.com/davidedalcortivo/Forget</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>dapper;orm;micro-orm;sql;data-access</PackageTags>
+    <PackageTags>dapper;orm;micro-orm;dotnet;sql;data-access</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
 

@@ -1,0 +1,50 @@
+name: Bug report
+description: Something does not work, throws, or generates the wrong SQL
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Provider
+      options:
+        - SQL Server
+        - MySQL
+        - PostgreSQL
+        - Oracle
+        - Core (every provider)
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Forget version
+      placeholder: "2.1.0"
+    validations:
+      required: true
+  - type: input
+    id: database
+    attributes:
+      label: Database version
+      description: The engine and its version, for example PostgreSQL 16.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: What reproduces it
+      description: The smallest entity and call that show the problem, and the table definition when a type or a column matters.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened
+      description: The exception with its message, or the SQL and the result.
+    validations:
+      required: true

@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-09-21
+
+No code changes: the package metadata and the documentation.
+
+### Added
+
+- `CONTRIBUTING.md`, `SECURITY.md`, issue forms and a pull request template (in the repository only, not in the packages).
+
+### Changed
+
+- The README and the summaries of the connection extension classes say "filtering" instead of "dynamic filtering", because
+  "dynamic" suggested only the filters built at runtime and left out the expression predicates.
+- The package descriptions no longer mention upsert and follow the repository's wording (plain "filtering", which covers
+  both expression predicates and `FilterDescriptor`), and the package tags now match the repository topics: `dapper`, `orm`,
+  `micro-orm`, `dotnet`, `sql`, `data-access`, plus the provider's own (`sqlserver`, `mysql`, `postgresql` or `oracle`). The
+  alternative spellings (`mssql`, `postgres`, `npgsql`, `odp.net`) are gone.
+
 ## [2.1.0] - 2026-09-21
 
 ### Changed
@@ -169,6 +186,7 @@ Initial release.
   syntax constraints (e.g. Oracle's `UNION ALL`/`DUAL`-based multi-row insert with automatic per-column cast
   discovery, since Oracle has no native `VALUES (...), (...)` syntax).
 
+[2.1.1]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.1.1
 [2.1.0]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.1.0
 [2.0.0]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.0.0
 [1.0.3]: https://github.com/davidedalcortivo/Forget/releases/tag/v1.0.3
