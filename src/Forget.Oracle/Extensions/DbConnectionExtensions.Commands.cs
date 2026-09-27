@@ -414,6 +414,35 @@ namespace Forget.Oracle.Extensions
         }
 
         /// <summary>
+        /// Builds the command that retrieves the <typeparamref name="TEntity"/> row with the specified identifier, when it is
+        /// held as a <typeparamref name="TKey"/>.
+        /// </summary>
+        /// <typeparam name="TEntity">The entity type to query.</typeparam>
+        /// <typeparam name="TKey">
+        /// The type of the identifier, which must be compatible with the type of <typeparamref name="TEntity"/>'s identifier
+        /// property (for instance the same type, or a <c>short</c>, <c>int</c> or <c>long</c> for an integer key).
+        /// </typeparam>
+        /// <param name="connection">The connection used to build the command.</param>
+        /// <param name="id">The identifier of the row to retrieve.</param>
+        /// <returns>The <see cref="DbCommandInfo"/> for the query.</returns>
+        /// <remarks>
+        /// It builds the same command as the overload that takes an untyped identifier, and refuses the same identifiers. The type
+        /// of the identifier is checked against <typeparamref name="TKey"/> instead of being read from the value, so prefer it when
+        /// the identifier is already typed.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="connection"/> or <paramref name="id"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// <typeparamref name="TKey"/> is not compatible with the type of <typeparamref name="TEntity"/>'s identifier property.
+        /// </exception>
+        public static DbCommandInfo GetByIdCommand<TEntity, TKey>(this OracleConnection connection, TKey id) where TEntity : class where TKey : notnull
+        {
+            DbCommandStrategy.Instance.LoadRuntimeCache<TEntity>(connection);
+            return DbCommandStrategy.Instance.GetByIdCommand<TEntity, TKey>(connection, id);
+        }
+
+        /// <summary>
         /// Builds the command that retrieves a page of <typeparamref name="TEntity"/> rows.
         /// </summary>
         /// <typeparam name="TEntity">The entity type to query.</typeparam>
@@ -710,6 +739,35 @@ namespace Forget.Oracle.Extensions
         }
 
         /// <summary>
+        /// Builds the command that deletes the <typeparamref name="TEntity"/> row with the specified identifier, when it is
+        /// held as a <typeparamref name="TKey"/>.
+        /// </summary>
+        /// <typeparam name="TEntity">The entity type to delete.</typeparam>
+        /// <typeparam name="TKey">
+        /// The type of the identifier, which must be compatible with the type of <typeparamref name="TEntity"/>'s identifier
+        /// property (for instance the same type, or a <c>short</c>, <c>int</c> or <c>long</c> for an integer key).
+        /// </typeparam>
+        /// <param name="connection">The connection used to build the command.</param>
+        /// <param name="id">The identifier of the row to delete.</param>
+        /// <returns>The <see cref="DbCommandInfo"/> for the delete.</returns>
+        /// <remarks>
+        /// It builds the same command as the overload that takes an untyped identifier, and refuses the same identifiers. The type
+        /// of the identifier is checked against <typeparamref name="TKey"/> instead of being read from the value, so prefer it when
+        /// the identifier is already typed.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="connection"/> or <paramref name="id"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// <typeparamref name="TKey"/> is not compatible with the type of <typeparamref name="TEntity"/>'s identifier property.
+        /// </exception>
+        public static DbCommandInfo DeleteCommand<TEntity, TKey>(this OracleConnection connection, TKey id) where TEntity : class where TKey : notnull
+        {
+            DbCommandStrategy.Instance.LoadRuntimeCache<TEntity>(connection);
+            return DbCommandStrategy.Instance.DeleteCommand<TEntity, TKey>(connection, id);
+        }
+
+        /// <summary>
         /// Builds the command that deletes every <typeparamref name="TEntity"/> row.
         /// </summary>
         /// <typeparam name="TEntity">The entity type to delete rows from.</typeparam>
@@ -832,6 +890,53 @@ namespace Forget.Oracle.Extensions
         {
             DbCommandStrategy.Instance.LoadRuntimeCache<TEntity>(connection);
             return DbCommandStrategy.Instance.GetByIdRangeCommands<TEntity>(connection, ids, batchSize, SqlDialectStrategy.Instance.MaxInValueCount);
+        }
+
+        /// <summary>
+        /// Builds the commands that retrieve the <typeparamref name="TEntity"/> rows with the specified identifiers, when they are
+        /// held as a <typeparamref name="TKey"/>.
+        /// </summary>
+        /// <typeparam name="TEntity">The entity type to query.</typeparam>
+        /// <typeparam name="TKey">
+        /// The type of the identifiers, which must be compatible with the type of <typeparamref name="TEntity"/>'s identifier
+        /// property (for instance the same type, or a <c>short</c>, <c>int</c> or <c>long</c> for an integer key).
+        /// </typeparam>
+        /// <param name="connection">The connection used to build the commands.</param>
+        /// <param name="ids">
+        /// The identifiers of the rows to retrieve. Neither the sequence nor any of its elements may be
+        /// <see langword="null"/>.
+        /// </param>
+        /// <param name="batchSize">
+        /// The maximum number of identifiers included in a single command. When less than or equal to zero, every
+        /// identifier is included in a single command.
+        /// </param>
+        /// <returns>
+        /// The <see cref="DbCommandInfo"/> instances for the query, one per batch of up to <paramref name="batchSize"/>
+        /// identifiers.
+        /// </returns>
+        /// <remarks>
+        /// <para>
+        /// It builds the same commands as the overload that takes a non-generic sequence, and refuses the same identifiers.
+        /// Because the type of the identifiers is known, it is checked once instead of once per identifier and the identifiers
+        /// are not boxed, so prefer it when they are already typed, for instance in an <c>int[]</c>.
+        /// </para>
+        /// <para>
+        /// Oracle limits a single <c>IN</c> clause to 1,000 items. When a batch is larger than that, it is built
+        /// internally from multiple <c>UNION ALL</c>'d sub-queries rather than a single <c>IN</c> clause, so the
+        /// number of commands returned still depends only on <paramref name="batchSize"/>.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="connection"/> or <paramref name="ids"/> is <see langword="null"/>, or one of its
+        /// elements is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// <typeparamref name="TKey"/> is not compatible with the type of <typeparamref name="TEntity"/>'s identifier property.
+        /// </exception>
+        public static IReadOnlyList<DbCommandInfo> GetByIdRangeCommands<TEntity, TKey>(this OracleConnection connection, IEnumerable<TKey> ids, int batchSize = 500) where TEntity : class where TKey : notnull
+        {
+            DbCommandStrategy.Instance.LoadRuntimeCache<TEntity>(connection);
+            return DbCommandStrategy.Instance.GetByIdRangeCommands<TEntity, TKey>(connection, ids, batchSize, SqlDialectStrategy.Instance.MaxInValueCount);
         }
 
         /// <summary>
@@ -965,6 +1070,47 @@ namespace Forget.Oracle.Extensions
             DbCommandStrategy.Instance.LoadRuntimeCache<TEntity>(connection);
             batchSize = batchSize > 0 ? Math.Min(batchSize, SqlDialectStrategy.Instance.MaxInValueCount) : SqlDialectStrategy.Instance.MaxInValueCount;
             return DbCommandStrategy.Instance.DeleteRangeCommands<TEntity>(connection, ids, batchSize, 0);
+        }
+
+        /// <summary>
+        /// Builds the commands that delete the <typeparamref name="TEntity"/> rows with the specified identifiers, when they are
+        /// held as a <typeparamref name="TKey"/>.
+        /// </summary>
+        /// <typeparam name="TEntity">The entity type to delete.</typeparam>
+        /// <typeparam name="TKey">
+        /// The type of the identifiers, which must be compatible with the type of <typeparamref name="TEntity"/>'s identifier
+        /// property (for instance the same type, or a <c>short</c>, <c>int</c> or <c>long</c> for an integer key).
+        /// </typeparam>
+        /// <param name="connection">The connection used to build the commands.</param>
+        /// <param name="ids">
+        /// The identifiers of the rows to delete. Neither the sequence nor any of its elements may be
+        /// <see langword="null"/>.
+        /// </param>
+        /// <param name="batchSize">
+        /// The maximum number of identifiers included in a single command, capped at 1,000 — Oracle's limit for a
+        /// single <c>IN</c> clause. When less than or equal to zero, the cap of 1,000 is used.
+        /// </param>
+        /// <returns>
+        /// The <see cref="DbCommandInfo"/> instances for the delete, one per batch of up to
+        /// <paramref name="batchSize"/> identifiers.
+        /// </returns>
+        /// <remarks>
+        /// It builds the same commands as the overload that takes a non-generic sequence, and refuses the same identifiers.
+        /// Because the type of the identifiers is known, it is checked once instead of once per identifier and the identifiers
+        /// are not boxed, so prefer it when they are already typed, for instance in an <c>int[]</c>.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="connection"/> or <paramref name="ids"/> is <see langword="null"/>, or one of its
+        /// elements is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// <typeparamref name="TKey"/> is not compatible with the type of <typeparamref name="TEntity"/>'s identifier property.
+        /// </exception>
+        public static IReadOnlyList<DbCommandInfo> DeleteRangeCommands<TEntity, TKey>(this OracleConnection connection, IEnumerable<TKey> ids, int batchSize = 500) where TEntity : class where TKey : notnull
+        {
+            DbCommandStrategy.Instance.LoadRuntimeCache<TEntity>(connection);
+            batchSize = batchSize > 0 ? Math.Min(batchSize, SqlDialectStrategy.Instance.MaxInValueCount) : SqlDialectStrategy.Instance.MaxInValueCount;
+            return DbCommandStrategy.Instance.DeleteRangeCommands<TEntity, TKey>(connection, ids, batchSize, 0);
         }
 
         /// <summary>

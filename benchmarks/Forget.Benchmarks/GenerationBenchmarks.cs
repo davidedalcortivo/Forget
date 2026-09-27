@@ -17,6 +17,9 @@ namespace Forget.Benchmarks
         public object GetById() => _connection.GetByIdCommand<Product>(5000);
 
         [Benchmark]
+        public object GetById_Typed() => _connection.GetByIdCommand<Product, int>(5000);
+
+        [Benchmark]
         public object GetAll() => _connection.GetAllCommand<Product>();
 
         [Benchmark]

@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-09-27
+
+### Added
+
+- `GetByIdRange<TEntity, TKey>`, `GetByIdRangeAsync<TEntity, TKey>` and `GetByIdRangeCommands<TEntity, TKey>` on the four
+  providers, for identifiers that are already held as a typed sequence, such as an `int[]` or a `List<Guid>`. They return
+  what the overloads that take a non-generic sequence return, and refuse the same identifiers, but the type of the
+  identifiers is checked once instead of once per identifier and they are not boxed or rebuilt with reflection: building
+  the commands for 10,000 identifiers takes 2 µs and 43 KB instead of 284 µs and 533 KB, and with one round trip the call
+  is about as fast as a hand-written Dapper query (1.04x at 10,000 identifiers against 1.07x) and allocates less than
+  EF Core. `TKey` is constrained to `notnull`, and an enum, a nullable type or a type that only names a base of the
+  identifiers, such as `object`, is handled as the other overloads handle it.
+- `DeleteRange<TEntity, TKey>`, `DeleteRangeAsync<TEntity, TKey>` and `DeleteRangeCommands<TEntity, TKey>` on the four
+  providers, for the same reason and with the same behaviour as the `GetByIdRange<TEntity, TKey>` overloads above:
+  building the commands for 10,000 identifiers takes 2.8 µs and 41 KB instead of 387 µs and 532 KB.
+- `GetById<TEntity, TKey>`, `GetByIdAsync<TEntity, TKey>`, `GetByIdCommand<TEntity, TKey>`, `Delete<TEntity, TKey>`,
+  `DeleteAsync<TEntity, TKey>` and `DeleteCommand<TEntity, TKey>` on the four providers, for consistency with the range
+  overloads and for a caller who already holds the identifier as a `TKey`. Unlike the range overloads, these take a
+  single identifier, so there is no per-identifier work to skip and no measurable difference in time or memory from the
+  overloads that take the identifier as `object`.
+
+### Changed
+
+- `GetByIdRange` and `GetByIdRangeAsync` no longer copy the identifiers into a set before building the commands, and
+  enumerate them once instead of twice (about 15% less memory allocated at 10,000 identifiers). An identifier listed
+  more than once is now sent as many times as it is listed; the row is still returned once. `DeleteRange` and
+  `DeleteRangeAsync` never copied the identifiers into a set (there is no row to deduplicate for a delete), so they are
+  unaffected by this change.
+
+### Fixed
+
+- SQL Server's `DeleteRangeCommands`, `InsertRangeCommands`, `UpdateRangeCommands` and `UpsertRangeCommands` (for
+  entities, for identifiers where they take them, and the new typed `DeleteRangeCommands` overload) did not cap
+  `batchSize` to the ~2,100-parameter limit as their own documentation already said they did — each capped only the size
+  of the chunk built at a time, not how many chunks a single command could combine, so a command built with an explicit
+  `batchSize` above the limit (with enough rows to reach it) failed at the database with "The incoming request has too
+  many parameters." `DeleteRange`/`DeleteRangeAsync`, `InsertRange`/`InsertRangeAsync`, `UpdateRange`/`UpdateRangeAsync`
+  and `UpsertRange`/`UpsertRangeAsync`, which execute rather than only build the commands, already capped `batchSize`
+  correctly and were not affected.
+
 ## [2.2.0] - 2026-09-22
 
 ### Added
@@ -233,6 +273,7 @@ Initial release.
   syntax constraints (e.g. Oracle's `UNION ALL`/`DUAL`-based multi-row insert with automatic per-column cast
   discovery, since Oracle has no native `VALUES (...), (...)` syntax).
 
+[2.3.0]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.3.0
 [2.2.0]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.2.0
 [2.1.1]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.1.1
 [2.1.0]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.1.0

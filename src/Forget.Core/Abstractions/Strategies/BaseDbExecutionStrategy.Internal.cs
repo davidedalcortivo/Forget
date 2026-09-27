@@ -1,7 +1,10 @@
 ﻿using Dapper;
+using Forget.Core.Caching;
 using Forget.Core.Models;
+using Forget.Core.Utilities;
 using System.Data;
 using System.Data.Common;
+using System.Reflection;
 
 
 namespace Forget.Core.Abstractions.Strategies
@@ -65,6 +68,31 @@ namespace Forget.Core.Abstractions.Strategies
                 return connection.QuerySingleOrDefault<TEntity?>(command.Sql, command.Parameters, transaction, commandTimeout);
 
             return await connection.QuerySingleOrDefaultAsync<TEntity?>(new CommandDefinition(command.Sql, command.Parameters, transaction, commandTimeout, cancellationToken: cancellationToken));
+        }
+
+        protected virtual async Task<IReadOnlyList<TEntity>> QueryByIdRangeImplAsync<TEntity>(DbConnection connection, bool sync, IReadOnlyList<DbCommandInfo> commands, int idCount, DbTransaction? transaction, int? commandTimeout, CancellationToken cancellationToken) where TEntity : class
+        {
+            List<TEntity> entityList = [];
+
+            if (commands.Count == 0)
+                return entityList;
+
+            PropertyInfo idProperty = EntityInfoCache<TEntity>.IdProperty;
+            Func<TEntity, object?> idGetter = EntityInfoCache<TEntity>.PropertyGettersByPropertyName[idProperty.Name];
+            HashSet<object> ids = new(idCount, IdEqualityComparer.Instance);
+
+            foreach (DbCommandInfo command in commands)
+            {
+                IReadOnlyList<TEntity> entities = await QueryImplAsync<TEntity>(connection, sync, command, null, transaction, commandTimeout, cancellationToken);
+
+                foreach (TEntity entity in entities)
+                {
+                    if (ids.Add(idGetter(entity)!))
+                        entityList.Add(entity);
+                }
+            }
+
+            return entityList;
         }
 
         protected virtual async Task<int> ExecuteImplAsync(DbConnection connection, bool sync, DbCommandInfo command, DbTransaction? transaction, int? commandTimeout, CancellationToken cancellationToken)

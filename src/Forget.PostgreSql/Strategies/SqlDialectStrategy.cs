@@ -1,6 +1,5 @@
 ﻿using Forget.Core.Abstractions.Strategies;
 using Npgsql;
-using System.Data.Common;
 using System.Text;
 
 

@@ -24,6 +24,7 @@ namespace Forget.Core.Abstractions.Strategies
         DbCommandInfo GetSingleOrDefaultCommand<TEntity>(DbConnection connection, Expression<Func<TEntity, bool>>? predicate) where TEntity : class;
         DbCommandInfo GetSingleOrDefaultCommand<TEntity>(DbConnection connection, IFilterNode<TEntity>? filterNode) where TEntity : class;
         DbCommandInfo GetByIdCommand<TEntity>(DbConnection connection, object id) where TEntity : class;
+        DbCommandInfo GetByIdCommand<TEntity, TKey>(DbConnection connection, TKey id) where TEntity : class where TKey : notnull;
         DbCommandInfo GetPageCommand<TEntity>(DbConnection connection, Expression<Func<TEntity, bool>>? predicate, IEnumerable<SortDescriptor<TEntity>>? sortDescriptors, int? skip, int? take) where TEntity : class;
         DbCommandInfo GetPageCommand<TEntity>(DbConnection connection, IFilterNode<TEntity>? filterNode, IEnumerable<SortDescriptor<TEntity>>? sortDescriptors, int? skip, int? take) where TEntity : class;
         DbCommandInfo UpdateCommand<TEntity>(DbConnection connection, TEntity entity) where TEntity : class;
@@ -32,14 +33,17 @@ namespace Forget.Core.Abstractions.Strategies
         DbCommandInfo InsertCommand<TEntity>(DbConnection connection, TEntity entity) where TEntity : class;
         DbCommandInfo DeleteCommand<TEntity>(DbConnection connection, TEntity entity) where TEntity : class;
         DbCommandInfo DeleteCommand<TEntity>(DbConnection connection, object id) where TEntity : class;
+        DbCommandInfo DeleteCommand<TEntity, TKey>(DbConnection connection, TKey id) where TEntity : class where TKey : notnull;
         DbCommandInfo DeleteCommand<TEntity>(DbConnection connection, Expression<Func<TEntity, bool>>? predicate) where TEntity : class;
         DbCommandInfo DeleteCommand<TEntity>(DbConnection connection, IFilterNode<TEntity>? filterNode) where TEntity : class;
         DbCommandInfo UpsertCommand<TEntity>(DbConnection connection, TEntity entity) where TEntity : class;
         IReadOnlyList<DbCommandInfo> GetByIdRangeCommands<TEntity>(DbConnection connection, IEnumerable ids, int batchSize, int chunkSize) where TEntity : class;
+        IReadOnlyList<DbCommandInfo> GetByIdRangeCommands<TEntity, TKey>(DbConnection connection, IEnumerable<TKey> ids, int batchSize, int chunkSize) where TEntity : class where TKey : notnull;
         IReadOnlyList<DbCommandInfo> UpdateRangeCommands<TEntity>(DbConnection connection, IEnumerable<TEntity> entities, int batchSize, int chunkSize) where TEntity : class;
         IReadOnlyList<DbCommandInfo> InsertRangeCommands<TEntity>(DbConnection connection, IEnumerable<TEntity> entities, int batchSize, int chunkSize) where TEntity : class;
         IReadOnlyList<DbCommandInfo> DeleteRangeCommands<TEntity>(DbConnection connection, IEnumerable<TEntity> entities, int batchSize, int chunkSize) where TEntity : class;
         IReadOnlyList<DbCommandInfo> DeleteRangeCommands<TEntity>(DbConnection connection, IEnumerable ids, int batchSize, int chunkSize) where TEntity : class;
+        IReadOnlyList<DbCommandInfo> DeleteRangeCommands<TEntity, TKey>(DbConnection connection, IEnumerable<TKey> ids, int batchSize, int chunkSize) where TEntity : class where TKey : notnull;
         IReadOnlyList<DbCommandInfo> UpsertRangeCommands<TEntity>(DbConnection connection, IEnumerable<TEntity> entities, int batchSize, int chunkSize) where TEntity : class;
         DbCommandInfo ExistsCommand<TEntity>(DbConnection connection, Expression<Func<TEntity, bool>>? predicate) where TEntity : class;
         DbCommandInfo ExistsCommand<TEntity>(DbConnection connection, IFilterNode<TEntity>? filterNode) where TEntity : class;

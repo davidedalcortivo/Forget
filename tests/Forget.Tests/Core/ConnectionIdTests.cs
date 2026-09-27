@@ -31,7 +31,7 @@ namespace Forget.Tests.Core
         [Fact]
         public void TwoConnectionsWithTheSameString_HaveTheSameId()
         {
-            foreach ((string provider, ISqlDialectStrategy dialect, DbConnection connection, string id) in Providers())
+            foreach ((string provider, ISqlDialectStrategy dialect, DbConnection connection, string _) in Providers())
             {
                 DbConnection other = (DbConnection)Activator.CreateInstance(connection.GetType(), connection.ConnectionString)!;
 
@@ -44,7 +44,7 @@ namespace Forget.Tests.Core
         {
             const int Calls = 1000;
 
-            foreach ((string provider, ISqlDialectStrategy dialect, DbConnection connection, string id) in Providers())
+            foreach ((string provider, ISqlDialectStrategy dialect, DbConnection connection, string _) in Providers())
             {
                 dialect.GetConnectionId(connection);
 

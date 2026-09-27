@@ -90,6 +90,16 @@ namespace Forget.Core.Utilities
                 throw new ArgumentException($"The type '{resultType}' cannot hold the values of the property '{property.Name}' ('{property.PropertyType}') for the entity '{typeof(TEntity).Name}'.");
         }
 
+        public static bool IsBoundAsIs<TKey>()
+        {
+            Type type = typeof(TKey);
+
+            if (type.IsValueType)
+                return !type.IsEnum && Nullable.GetUnderlyingType(type) is null;
+
+            return type == typeof(string) || type == typeof(byte[]);
+        }
+
         public static bool IsCompatible(Type propertyType, Type valueType)
         {
             propertyType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;

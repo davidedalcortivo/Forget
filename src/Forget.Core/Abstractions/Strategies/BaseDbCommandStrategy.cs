@@ -114,12 +114,19 @@ namespace Forget.Core.Abstractions.Strategies
             PropertyInfo idProperty = EntityInfoCache<TEntity>.IdProperty;
             EnsureIdType<TEntity>(idProperty, id);
 
-            DynamicParameters parameters = new();
-            string idParameterName = idProperty.Name;
+            return BuildGetByIdCommand<TEntity>(idProperty, id);
+        }
 
-            string sql = SqlBuilderCache<TEntity, TStrategy>.GetByIdSql.Render(SqlDialectStrategy.RenderParameter(idParameterName));
-            parameters.Add(idParameterName, id);
-            return new(sql, parameters);
+        public virtual DbCommandInfo GetByIdCommand<TEntity, TKey>(DbConnection connection, TKey id) where TEntity : class where TKey : notnull
+        {
+            PropertyInfo idProperty = EntityInfoCache<TEntity>.IdProperty;
+
+            if (PropertyHelper.IsBoundAsIs<TKey>())
+                EnsureIdType<TEntity, TKey>(idProperty, id);
+            else
+                EnsureIdType<TEntity>(idProperty, id);
+
+            return BuildGetByIdCommand<TEntity>(idProperty, id);
         }
 
         public virtual DbCommandInfo GetPageCommand<TEntity>(DbConnection connection, Expression<Func<TEntity, bool>>? predicate, IEnumerable<SortDescriptor<TEntity>>? sortDescriptors, int? skip, int? take) where TEntity : class
@@ -217,15 +224,19 @@ namespace Forget.Core.Abstractions.Strategies
             PropertyInfo idProperty = EntityInfoCache<TEntity>.IdProperty;
             EnsureIdType<TEntity>(idProperty, id);
 
-            ImmutableDictionary<string, string> columnNamesByPropertyName = EntityInfoCache<TEntity>.ColumnNamesByPropertyName;
+            return BuildDeleteCommand<TEntity>(idProperty, id);
+        }
 
-            DynamicParameters parameters = new();
-            string idParameterName = idProperty.Name;
+        public virtual DbCommandInfo DeleteCommand<TEntity, TKey>(DbConnection connection, TKey id) where TEntity : class where TKey : notnull
+        {
+            PropertyInfo idProperty = EntityInfoCache<TEntity>.IdProperty;
 
-            string clause = $"{SqlDialectStrategy.RenderIdentifier(columnNamesByPropertyName[idParameterName])} = {SqlDialectStrategy.RenderParameter(idParameterName)}";
-            parameters.Add(idParameterName, id);
+            if (PropertyHelper.IsBoundAsIs<TKey>())
+                EnsureIdType<TEntity, TKey>(idProperty, id);
+            else
+                EnsureIdType<TEntity>(idProperty, id);
 
-            return BuildDeleteCommand<TEntity>(clause, parameters);
+            return BuildDeleteCommand<TEntity>(idProperty, id);
         }
 
         public virtual DbCommandInfo DeleteCommand<TEntity>(DbConnection connection, Expression<Func<TEntity, bool>>? predicate) where TEntity : class
@@ -245,6 +256,19 @@ namespace Forget.Core.Abstractions.Strategies
         public virtual IReadOnlyList<DbCommandInfo> GetByIdRangeCommands<TEntity>(DbConnection connection, IEnumerable ids, int batchSize, int chunkSize) where TEntity : class
         {
             ArgumentNullException.ThrowIfNull(ids);
+
+            PropertyInfo idProperty = EntityInfoCache<TEntity>.IdProperty;
+            List<object> idList = ToIdList<TEntity>(idProperty, ids);
+
+            return BuildInRangeCommands(SqlDialectStrategy, SqlBuilderCache<TEntity, TStrategy>.GetByIdRangeSql, idList, batchSize, chunkSize, idProperty, true);
+        }
+
+        public virtual IReadOnlyList<DbCommandInfo> GetByIdRangeCommands<TEntity, TKey>(DbConnection connection, IEnumerable<TKey> ids, int batchSize, int chunkSize) where TEntity : class where TKey : notnull
+        {
+            ArgumentNullException.ThrowIfNull(ids);
+
+            if (PropertyHelper.IsBoundAsIs<TKey>())
+                return BuildInRangeCommands<TEntity, TKey>(SqlBuilderCache<TEntity, TStrategy>.GetByIdRangeSql, ids, batchSize, chunkSize, true);
 
             PropertyInfo idProperty = EntityInfoCache<TEntity>.IdProperty;
             List<object> idList = ToIdList<TEntity>(idProperty, ids);
@@ -335,6 +359,19 @@ namespace Forget.Core.Abstractions.Strategies
         public virtual IReadOnlyList<DbCommandInfo> DeleteRangeCommands<TEntity>(DbConnection connection, IEnumerable ids, int batchSize, int chunkSize) where TEntity : class
         {
             ArgumentNullException.ThrowIfNull(ids);
+
+            PropertyInfo idProperty = EntityInfoCache<TEntity>.IdProperty;
+            List<object> idList = ToIdList<TEntity>(idProperty, ids);
+
+            return BuildInRangeCommands(SqlDialectStrategy, SqlBuilderCache<TEntity, TStrategy>.DeleteRangeSql, idList, batchSize, chunkSize, idProperty, false);
+        }
+
+        public virtual IReadOnlyList<DbCommandInfo> DeleteRangeCommands<TEntity, TKey>(DbConnection connection, IEnumerable<TKey> ids, int batchSize, int chunkSize) where TEntity : class where TKey : notnull
+        {
+            ArgumentNullException.ThrowIfNull(ids);
+
+            if (PropertyHelper.IsBoundAsIs<TKey>())
+                return BuildInRangeCommands<TEntity, TKey>(SqlBuilderCache<TEntity, TStrategy>.DeleteRangeSql, ids, batchSize, chunkSize, false);
 
             PropertyInfo idProperty = EntityInfoCache<TEntity>.IdProperty;
             List<object> idList = ToIdList<TEntity>(idProperty, ids);

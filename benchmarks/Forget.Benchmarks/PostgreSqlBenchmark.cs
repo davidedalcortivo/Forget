@@ -13,7 +13,7 @@ namespace Forget.Benchmarks
     [CategoriesColumn]
     public abstract class PostgreSqlBenchmark
     {
-        protected const int RowCount = 10_000;
+        protected const int RowCount = 50_000;
 
         protected const string Select = "SELECT \"Id\", \"Name\", \"Category\", \"IsActive\", \"Price\", \"Note\" FROM dbo.\"Product\"";
 

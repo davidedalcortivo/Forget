@@ -1,6 +1,5 @@
 ﻿using Forget.Core.Abstractions.Strategies;
 using MySqlConnector;
-using System.Data.Common;
 using System.Text;
 
 

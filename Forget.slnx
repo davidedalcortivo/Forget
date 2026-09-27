@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="benchmarks/Forget.Benchmarks/Forget.Benchmarks.csproj" Id="47c18930-e497-4cd2-af20-50998985621d" />
   <Project Path="src/Forget.Core/Forget.Core.csproj" Id="2e090746-104c-48d1-a656-544f4b968cd5" />
   <Project Path="src/Forget.MySql/Forget.MySql.csproj" Id="bb5137ec-e261-4142-890b-f864d3ae4d6b" />
   <Project Path="src/Forget.Oracle/Forget.Oracle.csproj" Id="f43c00b8-4feb-4401-9bde-7901fb54c2ac" />

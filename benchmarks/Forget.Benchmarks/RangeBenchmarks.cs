@@ -16,7 +16,7 @@ namespace Forget.Benchmarks
 
         private Product[] _rows = null!;
 
-        [Params(100, 1000)]
+        [Params(100, 1000, 10000)]
         public int Count { get; set; }
 
         [GlobalSetup]
@@ -24,8 +24,8 @@ namespace Forget.Benchmarks
         {
             Start();
 
-            _ids = Enumerable.Range(0, Count).Select(i => 1 + i * 7 % RowCount).ToArray();
-            _rows = Connection.Query<Product>(Select + " WHERE \"Id\" = ANY(@ids)", new { ids = _ids }).ToArray();
+            _ids = [.. Enumerable.Range(0, Count).Select(i => 1 + i * 7 % RowCount)];
+            _rows = [.. Connection.Query<Product>(Select + " WHERE \"Id\" = ANY(@ids)", new { ids = _ids })];
 
             IReadOnlyList<Product> found = GetByIdRange_Dapper();
 
@@ -35,9 +35,12 @@ namespace Forget.Benchmarks
             }
 
             Same(nameof(GetByIdRange_Forget), found, GetByIdRange_Forget());
+            Same(nameof(GetByIdRange_Forget_OneRoundTrip), found, GetByIdRange_Forget_OneRoundTrip());
+            Same(nameof(GetByIdRange_Forget_Typed), found, GetByIdRange_Forget_Typed());
+            Same(nameof(GetByIdRange_Forget_Typed_OneRoundTrip), found, GetByIdRange_Forget_Typed_OneRoundTrip());
             Same(nameof(GetByIdRange_EfCore), found, GetByIdRange_EfCore());
 
-            foreach (Func<int> insert in new Func<int>[] { InsertRange_Dapper, InsertRange_Forget, InsertRange_EfCore })
+            foreach (Func<int> insert in new Func<int>[] { InsertRange_Dapper, InsertRange_Forget, InsertRange_Forget_OneRoundTrip, InsertRange_EfCore })
             {
                 if (insert() != Count)
                 {
@@ -47,9 +50,9 @@ namespace Forget.Benchmarks
                 Same(insert.Method.Name, _rows, StoredRows());
             }
 
-            _rows = Connection.Query<Product>(Select + " WHERE \"Id\" = ANY(@ids)", new { ids = _ids }).ToArray();
+            _rows = [.. Connection.Query<Product>(Select + " WHERE \"Id\" = ANY(@ids)", new { ids = _ids })];
 
-            foreach (Func<int> update in new Func<int>[] { UpdateRange_Dapper, UpdateRange_Forget, UpdateRange_EfCore })
+            foreach (Func<int> update in new Func<int>[] { UpdateRange_Dapper, UpdateRange_Forget, UpdateRange_Forget_OneRoundTrip, UpdateRange_EfCore })
             {
                 foreach (Product row in _rows)
                 {
@@ -74,11 +77,25 @@ namespace Forget.Benchmarks
         [Benchmark, BenchmarkCategory("GetByIdRange")]
         public IReadOnlyList<Product> GetByIdRange_Forget() => Connection.GetByIdRange<Product>(_ids);
 
+        // batchSize matches Count, so this is one round trip, like Dapper's and EF Core's own query — the batching
+        // GetByIdRange_Forget does above it is what a caller gets by default, and costs an extra round trip per
+        // 500 ids (see benchmarks/README.md); this variant isolates that cost from Forget's own per-row work.
+        [Benchmark, BenchmarkCategory("GetByIdRange")]
+        public IReadOnlyList<Product> GetByIdRange_Forget_OneRoundTrip() => Connection.GetByIdRange<Product>(_ids, batchSize: Count);
+
+        // The same two calls with the ids handed over as an int, which is what Dapper and EF Core get: nothing to box and
+        // nothing to look up one id at a time. Compare each with the variant above that has the same batchSize.
+        [Benchmark, BenchmarkCategory("GetByIdRange")]
+        public IReadOnlyList<Product> GetByIdRange_Forget_Typed() => Connection.GetByIdRange<Product, int>(_ids);
+
+        [Benchmark, BenchmarkCategory("GetByIdRange")]
+        public IReadOnlyList<Product> GetByIdRange_Forget_Typed_OneRoundTrip() => Connection.GetByIdRange<Product, int>(_ids, batchSize: Count);
+
         [Benchmark, BenchmarkCategory("GetByIdRange")]
         public IReadOnlyList<Product> GetByIdRange_EfCore()
         {
             using BenchmarkContext context = new(Options);
-            return context.Products.AsNoTracking().Where(p => _ids.Contains(p.Id)).ToList();
+            return [.. context.Products.AsNoTracking().Where(p => _ids.Contains(p.Id))];
         }
 
         [Benchmark(Baseline = true), BenchmarkCategory("InsertRange")]
@@ -97,6 +114,18 @@ namespace Forget.Benchmarks
             Product[] rows = Renumber();
             using var transaction = Connection.BeginTransaction();
             int written = Connection.InsertRange(rows, transaction: transaction);
+            transaction.Commit();
+            return written;
+        }
+
+        // batchSize matches Count, so this is one round trip; InsertRange_Forget above uses the default (500) and
+        // costs an extra round trip per 500 rows, same reasoning as GetByIdRange_Forget_OneRoundTrip.
+        [Benchmark, BenchmarkCategory("InsertRange")]
+        public int InsertRange_Forget_OneRoundTrip()
+        {
+            Product[] rows = Renumber();
+            using var transaction = Connection.BeginTransaction();
+            int written = Connection.InsertRange(rows, batchSize: Count, transaction: transaction);
             transaction.Commit();
             return written;
         }
@@ -124,6 +153,16 @@ namespace Forget.Benchmarks
         {
             using var transaction = Connection.BeginTransaction();
             int written = Connection.UpdateRange(_rows, transaction: transaction);
+            transaction.Commit();
+            return written;
+        }
+
+        // batchSize matches Count, so this is one round trip; UpdateRange_Forget above uses the default (500).
+        [Benchmark, BenchmarkCategory("UpdateRange")]
+        public int UpdateRange_Forget_OneRoundTrip()
+        {
+            using var transaction = Connection.BeginTransaction();
+            int written = Connection.UpdateRange(_rows, batchSize: Count, transaction: transaction);
             transaction.Commit();
             return written;
         }

@@ -20,6 +20,14 @@ namespace Forget.Core.Abstractions.Strategies
             PropertyHelper.EnsureValueType<TEntity>(idProperty, id.GetType());
         }
 
+        protected virtual void EnsureIdType<TEntity, TKey>(PropertyInfo idProperty, TKey id) where TEntity : class where TKey : notnull
+        {
+            if (!typeof(TKey).IsValueType)
+                ArgumentNullException.ThrowIfNull(id);
+
+            PropertyHelper.EnsureValueType<TEntity>(idProperty, typeof(TKey));
+        }
+
         protected virtual List<object> ToIdList<TEntity>(PropertyInfo idProperty, IEnumerable ids) where TEntity : class
         {
             List<object> idList = [];
@@ -73,6 +81,16 @@ namespace Forget.Core.Abstractions.Strategies
             parameters.Add(takeName, take);
 
             string sql = SqlBuilderCache<TEntity, TStrategy>.GetFirstSql.Render(sqlBuffer, SqlDialectStrategy.RenderParameter(takeName));
+            return new(sql, parameters);
+        }
+
+        protected virtual DbCommandInfo BuildGetByIdCommand<TEntity>(PropertyInfo idProperty, object id) where TEntity : class
+        {
+            DynamicParameters parameters = new();
+            string idParameterName = idProperty.Name;
+
+            string sql = SqlBuilderCache<TEntity, TStrategy>.GetByIdSql.Render(SqlDialectStrategy.RenderParameter(idParameterName));
+            parameters.Add(idParameterName, id);
             return new(sql, parameters);
         }
 
@@ -146,15 +164,48 @@ namespace Forget.Core.Abstractions.Strategies
             return new(sql, parameters);
         }
 
+        protected virtual DbCommandInfo BuildDeleteCommand<TEntity>(PropertyInfo idProperty, object id) where TEntity : class
+        {
+            ImmutableDictionary<string, string> columnNamesByPropertyName = EntityInfoCache<TEntity>.ColumnNamesByPropertyName;
+
+            DynamicParameters parameters = new();
+            string idParameterName = idProperty.Name;
+
+            string clause = $"{SqlDialectStrategy.RenderIdentifier(columnNamesByPropertyName[idParameterName])} = {SqlDialectStrategy.RenderParameter(idParameterName)}";
+            parameters.Add(idParameterName, id);
+
+            return BuildDeleteCommand<TEntity>(clause, parameters);
+        }
+
         protected virtual List<DbCommandInfo> BuildInRangeCommands(ISqlDialectStrategy sqlDialectStrategy, SqlTemplate sqlTemplate, IReadOnlyList<object> idList, int batchSize, int chunkSize, PropertyInfo idProperty, bool useUnion)
+        {
+            if (idList.Count == 0)
+                return [];
+
+            Type idType = idList[0].GetType();
+            Type? underlyingIdType = idType.IsEnum ? Enum.GetUnderlyingType(idType) : null;
+            Type elementType = underlyingIdType ?? idType;
+
+            return BuildInRangeCommands(sqlDialectStrategy, sqlTemplate, idList.Count, idType, (start, end) =>
+            {
+                Array idArray = Array.CreateInstance(elementType, end - start);
+
+                for (int i = start; i < end; i++)
+                    idArray.SetValue(underlyingIdType is null ? idList[i] : Convert.ChangeType(idList[i], underlyingIdType), i - start);
+
+                return idArray;
+            }, batchSize, chunkSize, idProperty, useUnion);
+        }
+
+        protected virtual List<DbCommandInfo> BuildInRangeCommands(ISqlDialectStrategy sqlDialectStrategy, SqlTemplate sqlTemplate, int idCount, Type idType, Func<int, int, Array> createIdArray, int batchSize, int chunkSize, PropertyInfo idProperty, bool useUnion)
         {
             List<DbCommandInfo> commands = [];
 
-            if (idList.Count == 0)
+            if (idCount == 0)
                 return commands;
 
             if (batchSize <= 0)
-                batchSize = idList.Count;
+                batchSize = idCount;
 
             StringBuilder batchBuffer = new();
             DynamicParameters parameters = new();
@@ -162,38 +213,28 @@ namespace Forget.Core.Abstractions.Strategies
             int j = 0;
             int s = 0;
 
-            Type idType = idList[0].GetType();
-
             if (idType == typeof(byte))
                 throw new ArgumentException("A list of bytes cannot be used as ids: the drivers bind a byte array as one binary value.");
 
-            Type? underlyingIdType = idType.IsEnum ? Enum.GetUnderlyingType(idType) : null;
-            Type elementType = underlyingIdType ?? idType;
-
-            for (int i = 0; i < idList.Count; i += _batchSize)
+            for (int i = 0; i < idCount; i += _batchSize)
             {
                 if (chunkSize > 0 && chunkSize < batchSize)
                     _batchSize = Math.Min(chunkSize, batchSize - s);
 
-                int end = Math.Min(i + _batchSize, idList.Count);
+                int end = Math.Min(i + _batchSize, idCount);
                 StringBuilder sqlBuffer = new();
 
                 string parameterName = $"{idProperty.Name}Array{j}";
                 sqlBuffer.Append(sqlDialectStrategy.RenderParameter(parameterName));
 
-                Array idArray = Array.CreateInstance(elementType, end - i);
-
-                for (int k = i; k < end; k++)
-                    idArray.SetValue(underlyingIdType is null ? idList[k] : Convert.ChangeType(idList[k], underlyingIdType), k - i);
-
-                parameters.Add(parameterName, idArray);
+                parameters.Add(parameterName, createIdArray(i, end));
 
                 j++;
                 s += end - i;
 
                 batchBuffer.Append(sqlTemplate.RenderWithoutLastTerminator(sqlBuffer));
 
-                if (s >= batchSize || end >= idList.Count)
+                if (s >= batchSize || end >= idCount)
                 {
                     batchBuffer.Append(sqlDialectStrategy.Terminator);
                     commands.Add(new(batchBuffer.ToString(), parameters));
@@ -214,6 +255,22 @@ namespace Forget.Core.Abstractions.Strategies
             }
 
             return commands;
+        }
+
+        protected virtual List<DbCommandInfo> BuildInRangeCommands<TEntity, TKey>(SqlTemplate sqlTemplate, IEnumerable<TKey> ids, int batchSize, int chunkSize, bool useUnion) where TEntity : class where TKey : notnull
+        {
+            PropertyInfo idProperty = EntityInfoCache<TEntity>.IdProperty;
+            PropertyHelper.EnsureValueType<TEntity>(idProperty, typeof(TKey));
+
+            TKey[] idArray = [.. ids];
+
+            if (!typeof(TKey).IsValueType)
+            {
+                foreach (TKey id in idArray)
+                    ArgumentNullException.ThrowIfNull(id);
+            }
+
+            return BuildInRangeCommands(SqlDialectStrategy, sqlTemplate, idArray.Length, typeof(TKey), (start, end) => start == 0 && end == idArray.Length ? idArray : idArray[start..end], batchSize, chunkSize, idProperty, useUnion);
         }
 
         protected virtual DbCommandInfo BuildExistsCommand<TEntity>(string? clause, DynamicParameters? parameters) where TEntity : class

@@ -73,7 +73,7 @@ namespace Forget.Benchmarks
         public IReadOnlyList<Product> GetAll_EfCore()
         {
             using BenchmarkContext context = new(Options);
-            return context.Products.AsNoTracking().Where(p => p.Category == _category && p.IsActive).ToList();
+            return [.. context.Products.AsNoTracking().Where(p => p.Category == _category && p.IsActive)];
         }
 
         [Benchmark(Baseline = true), BenchmarkCategory("Contains")]
@@ -88,7 +88,7 @@ namespace Forget.Benchmarks
         public IReadOnlyList<Product> GetAll_Contains_EfCore()
         {
             using BenchmarkContext context = new(Options);
-            return context.Products.AsNoTracking().Where(p => _ids.Contains(p.Id)).ToList();
+            return [.. context.Products.AsNoTracking().Where(p => _ids.Contains(p.Id))];
         }
 
         [Benchmark(Baseline = true), BenchmarkCategory("StartsWith")]
@@ -103,7 +103,7 @@ namespace Forget.Benchmarks
         public IReadOnlyList<Product> GetAll_StartsWith_EfCore()
         {
             using BenchmarkContext context = new(Options);
-            return context.Products.AsNoTracking().Where(p => p.Name.StartsWith(_prefix)).ToList();
+            return [.. context.Products.AsNoTracking().Where(p => p.Name.StartsWith(_prefix))];
         }
 
         [Benchmark(Baseline = true), BenchmarkCategory("GetPage")]
@@ -122,11 +122,10 @@ namespace Forget.Benchmarks
         public IReadOnlyList<Product> GetPage_EfCore()
         {
             using BenchmarkContext context = new(Options);
-            return context.Products.AsNoTracking()
+            return [.. context.Products.AsNoTracking()
                 .Where(p => p.Category == _category)
                 .OrderByDescending(p => p.Price).ThenBy(p => p.Id)
-                .Skip(10).Take(20)
-                .ToList();
+                .Skip(10).Take(20)];
         }
     }
 }

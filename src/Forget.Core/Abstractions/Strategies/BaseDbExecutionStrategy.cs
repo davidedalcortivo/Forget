@@ -1,11 +1,9 @@
 ﻿using Forget.Core.Abstractions.Models;
-using Forget.Core.Caching;
 using Forget.Core.Models;
 using Forget.Core.Utilities;
 using System.Collections;
 using System.Data.Common;
 using System.Linq.Expressions;
-using System.Reflection;
 
 
 namespace Forget.Core.Abstractions.Strategies
@@ -95,6 +93,12 @@ namespace Forget.Core.Abstractions.Strategies
             return await QueryFirstOrDefaultImplAsync<TEntity>(connection, sync, command, transaction, commandTimeout, cancellationToken);
         }
 
+        public virtual async Task<TEntity?> GetByIdImplAsync<TEntity, TKey>(DbConnection connection, bool sync, TKey id, DbTransaction? transaction, int? commandTimeout, CancellationToken cancellationToken) where TEntity : class where TKey : notnull
+        {
+            DbCommandInfo command = dbCommandStrategy.GetByIdCommand<TEntity, TKey>(connection, id);
+            return await QueryFirstOrDefaultImplAsync<TEntity>(connection, sync, command, transaction, commandTimeout, cancellationToken);
+        }
+
         public virtual async Task<IReadOnlyList<TEntity>> GetPageImplAsync<TEntity>(DbConnection connection, bool sync, Expression<Func<TEntity, bool>>? predicate, IEnumerable<SortDescriptor<TEntity>>? sortDescriptors, int? skip, int? take, DbTransaction? transaction, int? commandTimeout, CancellationToken cancellationToken) where TEntity : class
         {
             DbCommandInfo command = dbCommandStrategy.GetPageCommand(connection, predicate, sortDescriptors, skip, take);
@@ -143,6 +147,12 @@ namespace Forget.Core.Abstractions.Strategies
             return await ExecuteImplAsync(connection, sync, command, transaction, commandTimeout, cancellationToken);
         }
 
+        public virtual async Task<int> DeleteImplAsync<TEntity, TKey>(DbConnection connection, bool sync, TKey id, DbTransaction? transaction, int? commandTimeout, CancellationToken cancellationToken) where TEntity : class where TKey : notnull
+        {
+            DbCommandInfo command = dbCommandStrategy.DeleteCommand<TEntity, TKey>(connection, id);
+            return await ExecuteImplAsync(connection, sync, command, transaction, commandTimeout, cancellationToken);
+        }
+
         public virtual async Task<int> DeleteImplAsync<TEntity>(DbConnection connection, bool sync, Expression<Func<TEntity, bool>>? predicate, DbTransaction? transaction, int? commandTimeout, CancellationToken cancellationToken) where TEntity : class
         {
             DbCommandInfo command = dbCommandStrategy.DeleteCommand(connection, predicate);
@@ -165,33 +175,16 @@ namespace Forget.Core.Abstractions.Strategies
         {
             ArgumentNullException.ThrowIfNull(ids);
 
-            HashSet<object?> idSet = [];
+            IReadOnlyList<DbCommandInfo> commands = dbCommandStrategy.GetByIdRangeCommands<TEntity>(connection, ids, batchSize, chunkSize);
+            return await QueryByIdRangeImplAsync<TEntity>(connection, sync, commands, ids is ICollection collection ? collection.Count : 0, transaction, commandTimeout, cancellationToken);
+        }
 
-            foreach (object? id in ids)
-                idSet.Add(id);
+        public virtual async Task<IReadOnlyList<TEntity>> GetByIdRangeImplAsync<TEntity, TKey>(DbConnection connection, bool sync, IEnumerable<TKey> ids, int batchSize, int chunkSize, DbTransaction? transaction, int? commandTimeout, CancellationToken cancellationToken) where TEntity : class where TKey : notnull
+        {
+            ArgumentNullException.ThrowIfNull(ids);
 
-            IReadOnlyList<DbCommandInfo> commands = dbCommandStrategy.GetByIdRangeCommands<TEntity>(connection, idSet, batchSize, chunkSize);
-            List<TEntity> entityList = [];
-
-            if (commands.Count == 0)
-                return entityList;
-
-            PropertyInfo idProperty = EntityInfoCache<TEntity>.IdProperty;
-            Func<TEntity, object?> idGetter = EntityInfoCache<TEntity>.PropertyGettersByPropertyName[idProperty.Name];
-            HashSet<object> returnedIds = new(idSet.Count, IdEqualityComparer.Instance);
-
-            foreach (DbCommandInfo command in commands)
-            {
-                IReadOnlyList<TEntity> entities = await QueryImplAsync<TEntity>(connection, sync, command, null, transaction, commandTimeout, cancellationToken);
-
-                foreach (TEntity entity in entities)
-                {
-                    if (returnedIds.Add(idGetter(entity)!))
-                        entityList.Add(entity);
-                }
-            }
-
-            return entityList;
+            IReadOnlyList<DbCommandInfo> commands = dbCommandStrategy.GetByIdRangeCommands<TEntity, TKey>(connection, ids, batchSize, chunkSize);
+            return await QueryByIdRangeImplAsync<TEntity>(connection, sync, commands, ids is ICollection<TKey> collection ? collection.Count : 0, transaction, commandTimeout, cancellationToken);
         }
 
         public virtual async Task<int> UpdateRangeImplAsync<TEntity>(DbConnection connection, bool sync, IEnumerable<TEntity> entities, int batchSize, int chunkSize, DbTransaction? transaction, int? commandTimeout, CancellationToken cancellationToken) where TEntity : class
@@ -215,6 +208,12 @@ namespace Forget.Core.Abstractions.Strategies
         public virtual async Task<int> DeleteRangeImplAsync<TEntity>(DbConnection connection, bool sync, IEnumerable ids, int batchSize, int chunkSize, DbTransaction? transaction, int? commandTimeout, CancellationToken cancellationToken) where TEntity : class
         {
             IReadOnlyList<DbCommandInfo> commands = dbCommandStrategy.DeleteRangeCommands<TEntity>(connection, ids, batchSize, chunkSize);
+            return await ExecuteRangeImplAsync(connection, sync, commands, transaction, commandTimeout, cancellationToken);
+        }
+
+        public virtual async Task<int> DeleteRangeImplAsync<TEntity, TKey>(DbConnection connection, bool sync, IEnumerable<TKey> ids, int batchSize, int chunkSize, DbTransaction? transaction, int? commandTimeout, CancellationToken cancellationToken) where TEntity : class where TKey : notnull
+        {
+            IReadOnlyList<DbCommandInfo> commands = dbCommandStrategy.DeleteRangeCommands<TEntity, TKey>(connection, ids, batchSize, chunkSize);
             return await ExecuteRangeImplAsync(connection, sync, commands, transaction, commandTimeout, cancellationToken);
         }
 

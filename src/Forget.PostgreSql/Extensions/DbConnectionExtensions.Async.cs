@@ -484,6 +484,43 @@ namespace Forget.PostgreSql.Extensions
         }
 
         /// <summary>
+        /// Retrieves the <typeparamref name="TEntity"/> row with the specified identifier, asynchronously, when it is
+        /// held as a <typeparamref name="TKey"/>.
+        /// </summary>
+        /// <typeparam name="TEntity">The entity type to query.</typeparam>
+        /// <typeparam name="TKey">
+        /// The type of the identifier, which must be compatible with the type of <typeparamref name="TEntity"/>'s identifier
+        /// property (for instance the same type, or a <c>short</c>, <c>int</c> or <c>long</c> for an integer key).
+        /// </typeparam>
+        /// <param name="connection">The connection to query.</param>
+        /// <param name="id">The identifier of the row to retrieve.</param>
+        /// <param name="transaction">The transaction to execute the query within, or <see langword="null"/> to execute it outside of an explicit transaction.</param>
+        /// <param name="commandTimeout">The number of seconds to wait before timing out, or <see langword="null"/> to use the default timeout.</param>
+        /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+        /// <returns>
+        /// A task that represents the asynchronous operation. The task result contains the matching row, or
+        /// <see langword="null"/> if no row has that identifier.
+        /// </returns>
+        /// <remarks>
+        /// It behaves like the overload that takes an untyped identifier, and refuses the same identifiers. The type of the
+        /// identifier is checked against <typeparamref name="TKey"/> instead of being read from the value, so prefer it when the
+        /// identifier is already typed.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="connection"/> or <paramref name="id"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// <typeparamref name="TKey"/> is not compatible with the type of <typeparamref name="TEntity"/>'s identifier property,
+        /// or <paramref name="transaction"/> does not belong to <paramref name="connection"/>.
+        /// </exception>
+        /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
+        public static async Task<TEntity?> GetByIdAsync<TEntity, TKey>(this NpgsqlConnection connection, TKey id, NpgsqlTransaction? transaction = null, int? commandTimeout = null, CancellationToken cancellationToken = default) where TEntity : class where TKey : notnull
+        {
+            DbCommandStrategy.Instance.LoadRuntimeCache<TEntity>(connection);
+            return await DbExecutionStrategy.Instance.GetByIdImplAsync<TEntity, TKey>(connection, false, id, transaction, commandTimeout, cancellationToken);
+        }
+
+        /// <summary>
         /// Retrieves a page of <typeparamref name="TEntity"/> rows, asynchronously.
         /// </summary>
         /// <typeparam name="TEntity">The entity type to query.</typeparam>
@@ -823,6 +860,40 @@ namespace Forget.PostgreSql.Extensions
         }
 
         /// <summary>
+        /// Deletes the <typeparamref name="TEntity"/> row with the specified identifier, asynchronously, when it is
+        /// held as a <typeparamref name="TKey"/>.
+        /// </summary>
+        /// <typeparam name="TEntity">The entity type to delete.</typeparam>
+        /// <typeparam name="TKey">
+        /// The type of the identifier, which must be compatible with the type of <typeparamref name="TEntity"/>'s identifier
+        /// property (for instance the same type, or a <c>short</c>, <c>int</c> or <c>long</c> for an integer key).
+        /// </typeparam>
+        /// <param name="connection">The connection to execute the delete on.</param>
+        /// <param name="id">The identifier of the row to delete.</param>
+        /// <param name="transaction">The transaction to execute the delete within, or <see langword="null"/> to execute it outside of an explicit transaction.</param>
+        /// <param name="commandTimeout">The number of seconds to wait before timing out, or <see langword="null"/> to use the default timeout.</param>
+        /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the number of rows affected.</returns>
+        /// <remarks>
+        /// It behaves like the overload that takes an untyped identifier, and refuses the same identifiers. The type of the
+        /// identifier is checked against <typeparamref name="TKey"/> instead of being read from the value, so prefer it when the
+        /// identifier is already typed.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="connection"/> or <paramref name="id"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// <typeparamref name="TKey"/> is not compatible with the type of <typeparamref name="TEntity"/>'s identifier property,
+        /// or <paramref name="transaction"/> does not belong to <paramref name="connection"/>.
+        /// </exception>
+        /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
+        public static async Task<int> DeleteAsync<TEntity, TKey>(this NpgsqlConnection connection, TKey id, NpgsqlTransaction? transaction = null, int? commandTimeout = null, CancellationToken cancellationToken = default) where TEntity : class where TKey : notnull
+        {
+            DbCommandStrategy.Instance.LoadRuntimeCache<TEntity>(connection);
+            return await DbExecutionStrategy.Instance.DeleteImplAsync<TEntity, TKey>(connection, false, id, transaction, commandTimeout, cancellationToken);
+        }
+
+        /// <summary>
         /// Deletes every <typeparamref name="TEntity"/> row, asynchronously.
         /// </summary>
         /// <typeparam name="TEntity">The entity type to delete rows from.</typeparam>
@@ -973,6 +1044,58 @@ namespace Forget.PostgreSql.Extensions
         {
             DbCommandStrategy.Instance.LoadRuntimeCache<TEntity>(connection);
             return await DbExecutionStrategy.Instance.GetByIdRangeImplAsync<TEntity>(connection, false, ids, batchSize, 0, transaction, commandTimeout, cancellationToken);
+        }
+
+        /// <summary>
+        /// Retrieves the <typeparamref name="TEntity"/> rows with the specified identifiers, asynchronously, when they are
+        /// held as a <typeparamref name="TKey"/>.
+        /// </summary>
+        /// <typeparam name="TEntity">The entity type to query.</typeparam>
+        /// <typeparam name="TKey">
+        /// The type of the identifiers, which must be compatible with the type of <typeparamref name="TEntity"/>'s identifier
+        /// property (for instance the same type, or a <c>short</c>, <c>int</c> or <c>long</c> for an integer key).
+        /// </typeparam>
+        /// <param name="connection">The connection to query.</param>
+        /// <param name="ids">
+        /// The identifiers of the rows to retrieve. Neither the sequence nor any of its elements may be
+        /// <see langword="null"/>.
+        /// </param>
+        /// <param name="batchSize">
+        /// The maximum number of identifiers queried by a single round trip. When less than or equal to zero, every
+        /// identifier is queried in a single round trip.
+        /// </param>
+        /// <param name="transaction">The transaction to execute the query within, or <see langword="null"/> to execute it outside of an explicit transaction.</param>
+        /// <param name="commandTimeout">The number of seconds to wait before timing out, or <see langword="null"/> to use the default timeout.</param>
+        /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+        /// <returns>
+        /// A task that represents the asynchronous operation. The task result contains the rows that exist, each once.
+        /// Their order is not defined, and an identifier with no row does not appear in the result, which can therefore be
+        /// shorter than <paramref name="ids"/> (or empty).
+        /// </returns>
+        /// <remarks>
+        /// <para>
+        /// It returns what the overload that takes a non-generic sequence returns for the same identifiers, and refuses the same
+        /// ones. Because the type of the identifiers is known, it is checked once instead of once per identifier and the
+        /// identifiers are not boxed, so prefer it when they are already typed, for instance in an <c>int[]</c>.
+        /// </para>
+        /// <para>
+        /// Each row is returned once, however many of <paramref name="ids"/> match it. The identifier is assumed to be unique
+        /// in the table.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="connection"/> or <paramref name="ids"/> is <see langword="null"/>, or one of its
+        /// elements is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// <typeparamref name="TKey"/> is not compatible with the type of <typeparamref name="TEntity"/>'s identifier property,
+        /// or <paramref name="transaction"/> does not belong to <paramref name="connection"/>.
+        /// </exception>
+        /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
+        public static async Task<IReadOnlyList<TEntity>> GetByIdRangeAsync<TEntity, TKey>(this NpgsqlConnection connection, IEnumerable<TKey> ids, int batchSize = 500, NpgsqlTransaction? transaction = null, int? commandTimeout = null, CancellationToken cancellationToken = default) where TEntity : class where TKey : notnull
+        {
+            DbCommandStrategy.Instance.LoadRuntimeCache<TEntity>(connection);
+            return await DbExecutionStrategy.Instance.GetByIdRangeImplAsync<TEntity, TKey>(connection, false, ids, batchSize, 0, transaction, commandTimeout, cancellationToken);
         }
 
         /// <summary>
@@ -1144,6 +1267,61 @@ namespace Forget.PostgreSql.Extensions
         {
             DbCommandStrategy.Instance.LoadRuntimeCache<TEntity>(connection);
             return await DbExecutionStrategy.Instance.DeleteRangeImplAsync<TEntity>(connection, false, ids, batchSize, 0, transaction, commandTimeout, cancellationToken);
+        }
+
+        /// <summary>
+        /// Deletes the <typeparamref name="TEntity"/> rows with the specified identifiers, asynchronously, when they are
+        /// held as a <typeparamref name="TKey"/>.
+        /// </summary>
+        /// <typeparam name="TEntity">The entity type to delete.</typeparam>
+        /// <typeparam name="TKey">
+        /// The type of the identifiers, which must be compatible with the type of <typeparamref name="TEntity"/>'s identifier
+        /// property (for instance the same type, or a <c>short</c>, <c>int</c> or <c>long</c> for an integer key).
+        /// </typeparam>
+        /// <param name="connection">The connection to execute the delete on.</param>
+        /// <param name="ids">
+        /// The identifiers of the rows to delete. Neither the sequence nor any of its elements may be
+        /// <see langword="null"/>.
+        /// </param>
+        /// <param name="batchSize">
+        /// The maximum number of identifiers included in a single round trip. When less than or equal to zero,
+        /// every identifier is included in a single round trip.
+        /// </param>
+        /// <param name="transaction">The transaction to execute the delete within, or <see langword="null"/> to execute it outside of an explicit transaction.</param>
+        /// <param name="commandTimeout">The number of seconds to wait before timing out, or <see langword="null"/> to use the default timeout.</param>
+        /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+        /// <returns>
+        /// A task that represents the asynchronous operation. The task result contains the total number of rows
+        /// affected across all round trips.
+        /// </returns>
+        /// <remarks>
+        /// <para>
+        /// It returns what the overload that takes a non-generic sequence returns for the same identifiers, and refuses the same
+        /// ones. Because the type of the identifiers is known, it is checked once instead of once per identifier and the
+        /// identifiers are not boxed, so prefer it when they are already typed, for instance in an <c>int[]</c>.
+        /// </para>
+        /// <para>
+        /// When no <paramref name="transaction"/> is provided, this method begins one, commits it on success, and
+        /// rolls it back if execution fails — ensuring that the entire operation remains atomic regardless of
+        /// how many statements or round trips are required. Passing an explicit <paramref name="transaction"/>
+        /// opts out of this; committing or rolling back is then the caller's responsibility.
+        /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,
+        /// it also opens and closes the connection for the duration of the operation.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="connection"/> or <paramref name="ids"/> is <see langword="null"/>, or one of its
+        /// elements is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// <typeparamref name="TKey"/> is not compatible with the type of <typeparamref name="TEntity"/>'s identifier property,
+        /// or <paramref name="transaction"/> does not belong to <paramref name="connection"/>.
+        /// </exception>
+        /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
+        public static async Task<int> DeleteRangeAsync<TEntity, TKey>(this NpgsqlConnection connection, IEnumerable<TKey> ids, int batchSize = 500, NpgsqlTransaction? transaction = null, int? commandTimeout = null, CancellationToken cancellationToken = default) where TEntity : class where TKey : notnull
+        {
+            DbCommandStrategy.Instance.LoadRuntimeCache<TEntity>(connection);
+            return await DbExecutionStrategy.Instance.DeleteRangeImplAsync<TEntity, TKey>(connection, false, ids, batchSize, 0, transaction, commandTimeout, cancellationToken);
         }
 
         /// <summary>

@@ -1,6 +1,5 @@
 ﻿using Forget.Core.Abstractions.Strategies;
 using Oracle.ManagedDataAccess.Client;
-using System.Data.Common;
 
 
 namespace Forget.Oracle.Strategies

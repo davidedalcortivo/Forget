@@ -418,6 +418,38 @@ namespace Forget.MySql.Extensions
         }
 
         /// <summary>
+        /// Retrieves the <typeparamref name="TEntity"/> row with the specified identifier, synchronously, when it is
+        /// held as a <typeparamref name="TKey"/>.
+        /// </summary>
+        /// <typeparam name="TEntity">The entity type to query.</typeparam>
+        /// <typeparam name="TKey">
+        /// The type of the identifier, which must be compatible with the type of <typeparamref name="TEntity"/>'s identifier
+        /// property (for instance the same type, or a <c>short</c>, <c>int</c> or <c>long</c> for an integer key).
+        /// </typeparam>
+        /// <param name="connection">The connection to query.</param>
+        /// <param name="id">The identifier of the row to retrieve.</param>
+        /// <param name="transaction">The transaction to execute the query within, or <see langword="null"/> to execute it outside of an explicit transaction.</param>
+        /// <param name="commandTimeout">The number of seconds to wait before timing out, or <see langword="null"/> to use the default timeout.</param>
+        /// <returns>The matching row, or <see langword="null"/> if no row has that identifier.</returns>
+        /// <remarks>
+        /// It behaves like the overload that takes an untyped identifier, and refuses the same identifiers. The type of the
+        /// identifier is checked against <typeparamref name="TKey"/> instead of being read from the value, so prefer it when the
+        /// identifier is already typed.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="connection"/> or <paramref name="id"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// <typeparamref name="TKey"/> is not compatible with the type of <typeparamref name="TEntity"/>'s identifier property,
+        /// or <paramref name="transaction"/> does not belong to <paramref name="connection"/>.
+        /// </exception>
+        public static TEntity? GetById<TEntity, TKey>(this MySqlConnection connection, TKey id, MySqlTransaction? transaction = null, int? commandTimeout = null) where TEntity : class where TKey : notnull
+        {
+            DbCommandStrategy.Instance.LoadRuntimeCache<TEntity>(connection);
+            return DbExecutionStrategy.Instance.GetByIdImplAsync<TEntity, TKey>(connection, true, id, transaction, commandTimeout, CancellationToken.None).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
         /// Retrieves a page of <typeparamref name="TEntity"/> rows, synchronously.
         /// </summary>
         /// <typeparam name="TEntity">The entity type to query.</typeparam>
@@ -728,6 +760,38 @@ namespace Forget.MySql.Extensions
         }
 
         /// <summary>
+        /// Deletes the <typeparamref name="TEntity"/> row with the specified identifier, synchronously, when it is
+        /// held as a <typeparamref name="TKey"/>.
+        /// </summary>
+        /// <typeparam name="TEntity">The entity type to delete.</typeparam>
+        /// <typeparam name="TKey">
+        /// The type of the identifier, which must be compatible with the type of <typeparamref name="TEntity"/>'s identifier
+        /// property (for instance the same type, or a <c>short</c>, <c>int</c> or <c>long</c> for an integer key).
+        /// </typeparam>
+        /// <param name="connection">The connection to execute the delete on.</param>
+        /// <param name="id">The identifier of the row to delete.</param>
+        /// <param name="transaction">The transaction to execute the delete within, or <see langword="null"/> to execute it outside of an explicit transaction.</param>
+        /// <param name="commandTimeout">The number of seconds to wait before timing out, or <see langword="null"/> to use the default timeout.</param>
+        /// <returns>The number of rows affected.</returns>
+        /// <remarks>
+        /// It behaves like the overload that takes an untyped identifier, and refuses the same identifiers. The type of the
+        /// identifier is checked against <typeparamref name="TKey"/> instead of being read from the value, so prefer it when the
+        /// identifier is already typed.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="connection"/> or <paramref name="id"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// <typeparamref name="TKey"/> is not compatible with the type of <typeparamref name="TEntity"/>'s identifier property,
+        /// or <paramref name="transaction"/> does not belong to <paramref name="connection"/>.
+        /// </exception>
+        public static int Delete<TEntity, TKey>(this MySqlConnection connection, TKey id, MySqlTransaction? transaction = null, int? commandTimeout = null) where TEntity : class where TKey : notnull
+        {
+            DbCommandStrategy.Instance.LoadRuntimeCache<TEntity>(connection);
+            return DbExecutionStrategy.Instance.DeleteImplAsync<TEntity, TKey>(connection, true, id, transaction, commandTimeout, CancellationToken.None).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
         /// Deletes every <typeparamref name="TEntity"/> row, synchronously.
         /// </summary>
         /// <typeparam name="TEntity">The entity type to delete rows from.</typeparam>
@@ -863,6 +927,55 @@ namespace Forget.MySql.Extensions
         {
             DbCommandStrategy.Instance.LoadRuntimeCache<TEntity>(connection);
             return DbExecutionStrategy.Instance.GetByIdRangeImplAsync<TEntity>(connection, true, ids, batchSize, 0, transaction, commandTimeout, CancellationToken.None).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Retrieves the <typeparamref name="TEntity"/> rows with the specified identifiers, synchronously, when they are
+        /// held as a <typeparamref name="TKey"/>.
+        /// </summary>
+        /// <typeparam name="TEntity">The entity type to query.</typeparam>
+        /// <typeparam name="TKey">
+        /// The type of the identifiers, which must be compatible with the type of <typeparamref name="TEntity"/>'s identifier
+        /// property (for instance the same type, or a <c>short</c>, <c>int</c> or <c>long</c> for an integer key).
+        /// </typeparam>
+        /// <param name="connection">The connection to query.</param>
+        /// <param name="ids">
+        /// The identifiers of the rows to retrieve. Neither the sequence nor any of its elements may be
+        /// <see langword="null"/>.
+        /// </param>
+        /// <param name="batchSize">
+        /// The maximum number of identifiers queried by a single round trip. When less than or equal to zero, every
+        /// identifier is queried in a single round trip.
+        /// </param>
+        /// <param name="transaction">The transaction to execute the query within, or <see langword="null"/> to execute it outside of an explicit transaction.</param>
+        /// <param name="commandTimeout">The number of seconds to wait before timing out, or <see langword="null"/> to use the default timeout.</param>
+        /// <returns>
+        /// The rows that exist, each once. Their order is not defined, and an identifier with no row does not appear in the
+        /// result, which can therefore be shorter than <paramref name="ids"/> (or empty).
+        /// </returns>
+        /// <remarks>
+        /// <para>
+        /// It returns what the overload that takes a non-generic sequence returns for the same identifiers, and refuses the same
+        /// ones. Because the type of the identifiers is known, it is checked once instead of once per identifier and the
+        /// identifiers are not boxed, so prefer it when they are already typed, for instance in an <c>int[]</c>.
+        /// </para>
+        /// <para>
+        /// Each row is returned once, however many of <paramref name="ids"/> match it. The identifier is assumed to be unique
+        /// in the table.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="connection"/> or <paramref name="ids"/> is <see langword="null"/>, or one of its
+        /// elements is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// <typeparamref name="TKey"/> is not compatible with the type of <typeparamref name="TEntity"/>'s identifier property,
+        /// or <paramref name="transaction"/> does not belong to <paramref name="connection"/>.
+        /// </exception>
+        public static IReadOnlyList<TEntity> GetByIdRange<TEntity, TKey>(this MySqlConnection connection, IEnumerable<TKey> ids, int batchSize = 500, MySqlTransaction? transaction = null, int? commandTimeout = null) where TEntity : class where TKey : notnull
+        {
+            DbCommandStrategy.Instance.LoadRuntimeCache<TEntity>(connection);
+            return DbExecutionStrategy.Instance.GetByIdRangeImplAsync<TEntity, TKey>(connection, true, ids, batchSize, 0, transaction, commandTimeout, CancellationToken.None).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -1003,6 +1116,56 @@ namespace Forget.MySql.Extensions
         {
             DbCommandStrategy.Instance.LoadRuntimeCache<TEntity>(connection);
             return DbExecutionStrategy.Instance.DeleteRangeImplAsync<TEntity>(connection, true, ids, batchSize, 0, transaction, commandTimeout, CancellationToken.None).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Deletes the <typeparamref name="TEntity"/> rows with the specified identifiers, synchronously, when they are
+        /// held as a <typeparamref name="TKey"/>.
+        /// </summary>
+        /// <typeparam name="TEntity">The entity type to delete.</typeparam>
+        /// <typeparam name="TKey">
+        /// The type of the identifiers, which must be compatible with the type of <typeparamref name="TEntity"/>'s identifier
+        /// property (for instance the same type, or a <c>short</c>, <c>int</c> or <c>long</c> for an integer key).
+        /// </typeparam>
+        /// <param name="connection">The connection to execute the delete on.</param>
+        /// <param name="ids">
+        /// The identifiers of the rows to delete. Neither the sequence nor any of its elements may be
+        /// <see langword="null"/>.
+        /// </param>
+        /// <param name="batchSize">
+        /// The maximum number of identifiers included in a single round trip. When less than or equal to zero,
+        /// every identifier is included in a single round trip.
+        /// </param>
+        /// <param name="transaction">The transaction to execute the delete within, or <see langword="null"/> to execute it outside of an explicit transaction.</param>
+        /// <param name="commandTimeout">The number of seconds to wait before timing out, or <see langword="null"/> to use the default timeout.</param>
+        /// <returns>The total number of rows affected across all round trips.</returns>
+        /// <remarks>
+        /// <para>
+        /// It returns what the overload that takes a non-generic sequence returns for the same identifiers, and refuses the same
+        /// ones. Because the type of the identifiers is known, it is checked once instead of once per identifier and the
+        /// identifiers are not boxed, so prefer it when they are already typed, for instance in an <c>int[]</c>.
+        /// </para>
+        /// <para>
+        /// When no <paramref name="transaction"/> is provided, this method begins one, commits it on success, and
+        /// rolls it back if execution fails — ensuring that the entire operation remains atomic regardless of
+        /// how many statements or round trips are required. Passing an explicit <paramref name="transaction"/>
+        /// opts out of this; committing or rolling back is then the caller's responsibility.
+        /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,
+        /// it also opens and closes the connection for the duration of the operation.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="connection"/> or <paramref name="ids"/> is <see langword="null"/>, or one of its
+        /// elements is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// <typeparamref name="TKey"/> is not compatible with the type of <typeparamref name="TEntity"/>'s identifier property,
+        /// or <paramref name="transaction"/> does not belong to <paramref name="connection"/>.
+        /// </exception>
+        public static int DeleteRange<TEntity, TKey>(this MySqlConnection connection, IEnumerable<TKey> ids, int batchSize = 500, MySqlTransaction? transaction = null, int? commandTimeout = null) where TEntity : class where TKey : notnull
+        {
+            DbCommandStrategy.Instance.LoadRuntimeCache<TEntity>(connection);
+            return DbExecutionStrategy.Instance.DeleteRangeImplAsync<TEntity, TKey>(connection, true, ids, batchSize, 0, transaction, commandTimeout, CancellationToken.None).GetAwaiter().GetResult();
         }
 
         /// <summary>

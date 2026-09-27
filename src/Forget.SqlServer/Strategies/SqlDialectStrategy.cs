@@ -1,6 +1,5 @@
 ﻿using Forget.Core.Abstractions.Strategies;
 using Microsoft.Data.SqlClient;
-using System.Data.Common;
 
 
 namespace Forget.SqlServer.Strategies
