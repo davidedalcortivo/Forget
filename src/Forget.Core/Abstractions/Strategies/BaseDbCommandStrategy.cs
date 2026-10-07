@@ -283,10 +283,9 @@ namespace Forget.Core.Abstractions.Strategies
             ArgumentNullException.ThrowIfNull(entities);
 
             TEntity[] entityArray = entities as TEntity[] ?? [.. entities];
-            List<DbCommandInfo> commands = [];
 
             if (entityArray.Length == 0)
-                return commands;
+                return [];
 
             ImmutableArray<PropertyInfo> insertProperties = EntityInfoCache<TEntity>.InsertProperties;
             ImmutableDictionary<string, Func<TEntity, object?>> propertyGettersByPropertyName = EntityInfoCache<TEntity>.PropertyGettersByPropertyName;
@@ -295,6 +294,7 @@ namespace Forget.Core.Abstractions.Strategies
             if (batchSize <= 0)
                 batchSize = entityArray.Length;
 
+            List<DbCommandInfo> commands = new((entityArray.Length + batchSize - 1) / batchSize);
             StringBuilder batchBuffer = new();
             DynamicParameters parameters = new();
             int _batchSize = batchSize;

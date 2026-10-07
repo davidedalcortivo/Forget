@@ -113,14 +113,14 @@ namespace Forget.Tests.Oracle
                 """);
 
             await ExecuteAsync(Connection, """
-                CREATE TABLE "StringKeyed" (
+                CREATE TABLE "StringIdRow" (
                     "Code" VARCHAR2(50) PRIMARY KEY,
                     "Name" VARCHAR2(100) NOT NULL
                 )
                 """);
 
             await ExecuteAsync(Connection, """
-                CREATE TABLE "BinaryKeyed" (
+                CREATE TABLE "BinaryIdRow" (
                     "Id" RAW(16) PRIMARY KEY,
                     "Name" VARCHAR2(100) NOT NULL
                 )

@@ -184,7 +184,12 @@ namespace Forget.Core.Abstractions.Strategies
             ArgumentNullException.ThrowIfNull(ids);
 
             IReadOnlyList<DbCommandInfo> commands = dbCommandStrategy.GetByIdRangeCommands<TEntity, TKey>(connection, ids, batchSize, chunkSize);
-            return await QueryByIdRangeImplAsync<TEntity>(connection, sync, commands, ids is ICollection<TKey> collection ? collection.Count : 0, transaction, commandTimeout, cancellationToken);
+            int idCount = ids is ICollection<TKey> collection ? collection.Count : 0;
+
+            if (PropertyHelper.IsBoundAsIs<TKey>())
+                return await QueryByIdRangeImplAsync<TEntity, TKey>(connection, sync, commands, idCount, transaction, commandTimeout, cancellationToken);
+
+            return await QueryByIdRangeImplAsync<TEntity>(connection, sync, commands, idCount, transaction, commandTimeout, cancellationToken);
         }
 
         public virtual async Task<int> UpdateRangeImplAsync<TEntity>(DbConnection connection, bool sync, IEnumerable<TEntity> entities, int batchSize, int chunkSize, DbTransaction? transaction, int? commandTimeout, CancellationToken cancellationToken) where TEntity : class

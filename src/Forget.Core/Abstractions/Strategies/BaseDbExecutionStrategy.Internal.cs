@@ -95,6 +95,30 @@ namespace Forget.Core.Abstractions.Strategies
             return entityList;
         }
 
+        protected virtual async Task<IReadOnlyList<TEntity>> QueryByIdRangeImplAsync<TEntity, TKey>(DbConnection connection, bool sync, IReadOnlyList<DbCommandInfo> commands, int idCount, DbTransaction? transaction, int? commandTimeout, CancellationToken cancellationToken) where TEntity : class where TKey : notnull
+        {
+            List<TEntity> entityList = [];
+
+            if (commands.Count == 0)
+                return entityList;
+
+            Func<TEntity, TKey> idGetter = TypedIdGetterCache<TEntity, TKey>.Getter;
+            HashSet<TKey> ids = new(idCount, TypedIdEqualityComparer<TKey>.Instance);
+
+            foreach (DbCommandInfo command in commands)
+            {
+                IReadOnlyList<TEntity> entities = await QueryImplAsync<TEntity>(connection, sync, command, null, transaction, commandTimeout, cancellationToken);
+
+                foreach (TEntity entity in entities)
+                {
+                    if (ids.Add(idGetter(entity)))
+                        entityList.Add(entity);
+                }
+            }
+
+            return entityList;
+        }
+
         protected virtual async Task<int> ExecuteImplAsync(DbConnection connection, bool sync, DbCommandInfo command, DbTransaction? transaction, int? commandTimeout, CancellationToken cancellationToken)
         {
             EnsureTransaction(connection, transaction);

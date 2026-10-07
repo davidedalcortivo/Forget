@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.3.1] - 2026-10-07
+
+### Changed
+
+- The typed `GetByIdRange<TEntity, TKey>` deduplicates the rows it returns with a `HashSet<TKey>` instead of the shared
+  `HashSet<object>`, so the id of each row is no longer boxed; a `TKey` of `byte[]` is still compared by content, the
+  same as the non-generic overload. With one round trip, this takes the typed call from measurably behind a
+  hand-written Dapper query and EF Core's own query to about even with both, and it now allocates less than EF Core
+  instead of more (3,129 KB against 3,573 KB at 10,000 ids, down from 3,403 KB before this release).
+- `GetByIdRange` and `DeleteRange` (the non-generic overloads, and the typed ones for an id whose `TKey` is an enum or a
+  nullable type) size the list of boxed ids they build before filling it, instead of growing it one at a time, since the
+  count is known and exact: building the commands for 10,000 ids now takes about 210 µs and 355 KB instead of 353 µs and
+  533 KB for `GetByIdRange`, and about 209 µs and 354 KB instead of 387 µs and 532 KB for `DeleteRange`.
+- `InsertRangeCommands`, `UpdateRangeCommands` and `UpsertRangeCommands` on the four providers size the list of commands
+  they build to the number of batches, computed up front instead of grown one batch at a time; and the list of values a
+  `Contains`/`In` filter builds is sized to the source collection when it is one. Both are correct upper bounds, with no
+  measurable effect at the sizes benchmarked (a few dozen batches; 10 ids in the `Contains` benchmark), included here
+  for the same reason as the two changes above.
+
 ## [2.3.0] - 2026-09-27
 
 ### Added
@@ -273,6 +292,7 @@ Initial release.
   syntax constraints (e.g. Oracle's `UNION ALL`/`DUAL`-based multi-row insert with automatic per-column cast
   discovery, since Oracle has no native `VALUES (...), (...)` syntax).
 
+[2.3.1]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.3.1
 [2.3.0]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.3.0
 [2.2.0]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.2.0
 [2.1.1]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.1.1

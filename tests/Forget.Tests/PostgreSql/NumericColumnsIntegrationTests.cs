@@ -83,14 +83,14 @@ namespace Forget.Tests.PostgreSql
         }
 
         [Fact]
-        public async Task AnIntegerKeyValue_OnAnEnumKey_FindsTheRow()
+        public async Task AnIntegerIdValue_OnAnEnumId_FindsTheRow()
         {
-            await _fixture.Connection.InsertAsync(new EnumKeyed { Id = TypeMatrixKind.None, Name = "zero" }, cancellationToken: Ct);
+            await _fixture.Connection.InsertAsync(new EnumIdRow { Id = TypeMatrixKind.None, Name = "zero" }, cancellationToken: Ct);
 
-            EnumKeyed? byInt = await _fixture.Connection.GetByIdAsync<EnumKeyed>(0, cancellationToken: Ct);
-            EnumKeyed? byLong = await _fixture.Connection.GetByIdAsync<EnumKeyed>(0L, cancellationToken: Ct);
-            IReadOnlyList<EnumKeyed> range = await _fixture.Connection.GetByIdRangeAsync<EnumKeyed>(new int[] { 0 }, cancellationToken: Ct);
-            int deleted = await _fixture.Connection.DeleteRangeAsync<EnumKeyed>(new long[] { 0 }, cancellationToken: Ct);
+            EnumIdRow? byInt = await _fixture.Connection.GetByIdAsync<EnumIdRow>(0, cancellationToken: Ct);
+            EnumIdRow? byLong = await _fixture.Connection.GetByIdAsync<EnumIdRow>(0L, cancellationToken: Ct);
+            IReadOnlyList<EnumIdRow> range = await _fixture.Connection.GetByIdRangeAsync<EnumIdRow>(new int[] { 0 }, cancellationToken: Ct);
+            int deleted = await _fixture.Connection.DeleteRangeAsync<EnumIdRow>(new long[] { 0 }, cancellationToken: Ct);
 
             Assert.Equal("zero", byInt?.Name);
             Assert.Equal("zero", byLong?.Name);

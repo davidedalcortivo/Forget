@@ -62,7 +62,7 @@ namespace Forget.Core.Utilities
             }
             else if (f.ComparisonOperator is ComparisonOperator.In && f.Value is IEnumerable enumerable && f.Value is not string)
             {
-                List<object> values = [];
+                List<object> values = enumerable is ICollection collection ? new(collection.Count) : [];
                 bool hasNull = false;
 
                 foreach (object? item in enumerable)

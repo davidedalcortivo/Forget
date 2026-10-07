@@ -30,7 +30,7 @@ namespace Forget.Core.Abstractions.Strategies
 
         protected virtual List<object> ToIdList<TEntity>(PropertyInfo idProperty, IEnumerable ids) where TEntity : class
         {
-            List<object> idList = [];
+            List<object> idList = ids is ICollection collection ? new(collection.Count) : [];
             Type? idType = null;
 
             foreach (object? id in ids)
@@ -199,14 +199,13 @@ namespace Forget.Core.Abstractions.Strategies
 
         protected virtual List<DbCommandInfo> BuildInRangeCommands(ISqlDialectStrategy sqlDialectStrategy, SqlTemplate sqlTemplate, int idCount, Type idType, Func<int, int, Array> createIdArray, int batchSize, int chunkSize, PropertyInfo idProperty, bool useUnion)
         {
-            List<DbCommandInfo> commands = [];
-
             if (idCount == 0)
-                return commands;
+                return [];
 
             if (batchSize <= 0)
                 batchSize = idCount;
 
+            List<DbCommandInfo> commands = new((idCount + batchSize - 1) / batchSize);
             StringBuilder batchBuffer = new();
             DynamicParameters parameters = new();
             int _batchSize = batchSize;

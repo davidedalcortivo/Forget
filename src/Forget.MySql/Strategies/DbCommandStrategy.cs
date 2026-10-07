@@ -46,17 +46,18 @@ namespace Forget.MySql.Strategies
             ArgumentNullException.ThrowIfNull(entities);
 
             TEntity[] entityArray = entities as TEntity[] ?? [.. entities];
-            List<DbCommandInfo> commands = [];
 
             if (entityArray.Length == 0)
-                return commands;
-            
+                return [];
+
             ImmutableArray<PropertyInfo> properties = EntityInfoCache<TEntity>.Properties;
             ImmutableDictionary<string, Func<TEntity, object?>> propertyGettersByPropertyName = EntityInfoCache<TEntity>.PropertyGettersByPropertyName;
             SqlTemplate updateRangeSql = SqlBuilderCache<TEntity, SqlBuilderStrategy>.UpdateRangeSql;
 
             if (batchSize <= 0)
                 batchSize = entityArray.Length;
+
+            List<DbCommandInfo> commands = new((entityArray.Length + batchSize - 1) / batchSize);
 
             for (int i = 0; i < entityArray.Length; i += batchSize)
             {
@@ -98,10 +99,9 @@ namespace Forget.MySql.Strategies
             ArgumentNullException.ThrowIfNull(entities);
 
             TEntity[] entityArray = entities as TEntity[] ?? [.. entities];
-            List<DbCommandInfo> commands = [];
 
             if (entityArray.Length == 0)
-                return commands;
+                return [];
 
             ImmutableArray<PropertyInfo> insertProperties = EntityInfoCache<TEntity>.InsertProperties;
             ImmutableDictionary<string, Func<TEntity, object?>> propertyGettersByPropertyName = EntityInfoCache<TEntity>.PropertyGettersByPropertyName;
@@ -109,6 +109,8 @@ namespace Forget.MySql.Strategies
 
             if (batchSize <= 0)
                 batchSize = entityArray.Length;
+
+            List<DbCommandInfo> commands = new((entityArray.Length + batchSize - 1) / batchSize);
 
             for (int i = 0; i < entityArray.Length; i += batchSize)
             {

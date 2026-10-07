@@ -77,10 +77,10 @@ namespace Forget.Tests.PostgreSql
                     "NullableLabel" TEXT NULL
                 );
 
-                CREATE TABLE dbo."EnumKeyed" ("Id" INTEGER PRIMARY KEY, "Name" TEXT NOT NULL);
-                CREATE TABLE dbo."GuidKeyed" ("Id" UUID PRIMARY KEY, "Name" TEXT NOT NULL);
-                CREATE TABLE dbo."StringKeyed" ("Code" TEXT PRIMARY KEY, "Name" TEXT NOT NULL);
-                CREATE TABLE dbo."BinaryKeyed" ("Id" BYTEA PRIMARY KEY, "Name" TEXT NOT NULL);
+                CREATE TABLE dbo."EnumIdRow" ("Id" INTEGER PRIMARY KEY, "Name" TEXT NOT NULL);
+                CREATE TABLE dbo."GuidIdRow" ("Id" UUID PRIMARY KEY, "Name" TEXT NOT NULL);
+                CREATE TABLE dbo."StringIdRow" ("Code" TEXT PRIMARY KEY, "Name" TEXT NOT NULL);
+                CREATE TABLE dbo."BinaryIdRow" ("Id" BYTEA PRIMARY KEY, "Name" TEXT NOT NULL);
                 CREATE TABLE dbo."NumericRow" ("Id" INTEGER PRIMARY KEY, "DoubleValue" DOUBLE PRECISION NOT NULL, "SingleValue" REAL NOT NULL);
                 """;
             await command.ExecuteNonQueryAsync();

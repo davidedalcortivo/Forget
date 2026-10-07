@@ -47,10 +47,9 @@ namespace Forget.PostgreSql.Strategies
             ArgumentNullException.ThrowIfNull(entities);
 
             TEntity[] entityArray = entities as TEntity[] ?? [.. entities];
-            List<DbCommandInfo> commands = [];
 
             if (entityArray.Length == 0)
-                return commands;
+                return [];
 
             string tableName = EntityInfoCache<TEntity>.TableName;
             string schemaName = EntityInfoCache<TEntity>.SchemaName ?? SqlDialectStrategy.DefaultSchemaName;
@@ -70,6 +69,8 @@ namespace Forget.PostgreSql.Strategies
 
             if (batchSize <= 0)
                 batchSize = entityArray.Length;
+
+            List<DbCommandInfo> commands = new((entityArray.Length + batchSize - 1) / batchSize);
 
             for (int i = 0; i < entityArray.Length; i += batchSize)
             {
@@ -121,10 +122,9 @@ namespace Forget.PostgreSql.Strategies
             ArgumentNullException.ThrowIfNull(entities);
 
             TEntity[] entityArray = entities as TEntity[] ?? [.. entities];
-            List<DbCommandInfo> commands = [];
 
             if (entityArray.Length == 0)
-                return commands;
+                return [];
 
             ImmutableArray<PropertyInfo> insertProperties = EntityInfoCache<TEntity>.InsertProperties;
             ImmutableDictionary<string, Func<TEntity, object?>> propertyGettersByPropertyName = EntityInfoCache<TEntity>.PropertyGettersByPropertyName;
@@ -132,6 +132,8 @@ namespace Forget.PostgreSql.Strategies
 
             if (batchSize <= 0)
                 batchSize = entityArray.Length;
+
+            List<DbCommandInfo> commands = new((entityArray.Length + batchSize - 1) / batchSize);
 
             for (int i = 0; i < entityArray.Length; i += batchSize)
             {

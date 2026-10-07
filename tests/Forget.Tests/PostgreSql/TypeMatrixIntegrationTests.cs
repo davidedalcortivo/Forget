@@ -314,28 +314,28 @@ namespace Forget.Tests.PostgreSql
         }
 
         [Fact]
-        public async Task GetByIdRangeAsync_AndDeleteRangeAsync_WithAnEnumKey_BindEveryId()
+        public async Task GetByIdRangeAsync_AndDeleteRangeAsync_WithAnEnumId_BindEveryId()
         {
-            await _fixture.Connection.InsertRangeAsync([new EnumKeyed { Id = TypeMatrixKind.Alpha, Name = "a" }, new EnumKeyed { Id = TypeMatrixKind.Beta, Name = "b" }], cancellationToken: Ct);
+            await _fixture.Connection.InsertRangeAsync([new EnumIdRow { Id = TypeMatrixKind.Alpha, Name = "a" }, new EnumIdRow { Id = TypeMatrixKind.Beta, Name = "b" }], cancellationToken: Ct);
             TypeMatrixKind[] ids = [TypeMatrixKind.Alpha, TypeMatrixKind.Beta];
 
-            IReadOnlyList<EnumKeyed> fetched = await _fixture.Connection.GetByIdRangeAsync<EnumKeyed>(ids, cancellationToken: Ct);
-            int deleted = await _fixture.Connection.DeleteRangeAsync<EnumKeyed>(ids, cancellationToken: Ct);
+            IReadOnlyList<EnumIdRow> fetched = await _fixture.Connection.GetByIdRangeAsync<EnumIdRow>(ids, cancellationToken: Ct);
+            int deleted = await _fixture.Connection.DeleteRangeAsync<EnumIdRow>(ids, cancellationToken: Ct);
 
             Assert.Equal(2, fetched.Count);
             Assert.Equal(2, deleted);
         }
 
         [Fact]
-        public async Task GetByIdRangeAsync_AndDeleteRangeAsync_WithAGuidKey_BindEveryId()
+        public async Task GetByIdRangeAsync_AndDeleteRangeAsync_WithAGuidId_BindEveryId()
         {
             Guid first = Guid.NewGuid();
             Guid second = Guid.NewGuid();
-            await _fixture.Connection.InsertRangeAsync([new GuidKeyed { Id = first, Name = "a" }, new GuidKeyed { Id = second, Name = "b" }], cancellationToken: Ct);
+            await _fixture.Connection.InsertRangeAsync([new GuidIdRow { Id = first, Name = "a" }, new GuidIdRow { Id = second, Name = "b" }], cancellationToken: Ct);
             Guid[] ids = [first, second];
 
-            IReadOnlyList<GuidKeyed> fetched = await _fixture.Connection.GetByIdRangeAsync<GuidKeyed>(ids, cancellationToken: Ct);
-            int deleted = await _fixture.Connection.DeleteRangeAsync<GuidKeyed>(ids, cancellationToken: Ct);
+            IReadOnlyList<GuidIdRow> fetched = await _fixture.Connection.GetByIdRangeAsync<GuidIdRow>(ids, cancellationToken: Ct);
+            int deleted = await _fixture.Connection.DeleteRangeAsync<GuidIdRow>(ids, cancellationToken: Ct);
 
             Assert.Equal(2, fetched.Count);
             Assert.Equal(2, deleted);

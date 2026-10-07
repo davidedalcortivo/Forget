@@ -179,5 +179,20 @@ namespace Forget.Core.Utilities
 
             return Expression.Lambda<Func<T, object?>>(convertResult, instanceParam).Compile();
         }
+
+        public static Func<TEntity, TKey> BuildTypedGetterExpression<TEntity, TKey>(PropertyInfo property) where TEntity : class
+        {
+            Type type = typeof(TEntity);
+            ParameterExpression instanceParam = Expression.Parameter(type, "instance");
+            Expression instanceCast = instanceParam;
+
+            if (property.DeclaringType is not null && property.DeclaringType != type)
+                instanceCast = Expression.Convert(instanceParam, property.DeclaringType);
+
+            Expression propertyAccess = Expression.Property(instanceCast, property);
+            UnaryExpression convertResult = Expression.Convert(propertyAccess, typeof(TKey));
+
+            return Expression.Lambda<Func<TEntity, TKey>>(convertResult, instanceParam).Compile();
+        }
     }
 }

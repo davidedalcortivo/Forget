@@ -609,7 +609,7 @@ namespace Forget.Core.Utilities
             if (raw is not IEnumerable coll)
                 throw new NotSupportedException("Contains requires an IEnumerable source.");
 
-            List<object> values = [];
+            List<object> values = coll is ICollection collection ? new(collection.Count) : [];
             bool hasNull = false;
 
             foreach (object? item in coll)

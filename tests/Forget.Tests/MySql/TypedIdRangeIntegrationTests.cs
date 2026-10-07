@@ -1,28 +1,28 @@
 using Forget.Core.Models;
-using Forget.Oracle.Extensions;
-using Oracle.ManagedDataAccess.Client;
+using Forget.MySql.Extensions;
+using MySqlConnector;
 
 
-namespace Forget.Tests.Oracle
+namespace Forget.Tests.MySql
 {
     /// <summary>
     /// <c>GetByIdRange&lt;TEntity, TKey&gt;</c> is the same operation as <c>GetByIdRange&lt;TEntity&gt;</c> for a caller that
     /// already holds its ids as a <c>TKey</c>: it only skips the work of finding out, one boxed id at a time, what the
     /// type is. Whatever it returns, or refuses, must therefore be what the untyped overload does with the same ids.
     /// </summary>
-    [Collection(OracleCollection.Name)]
-    public class TypedKeyRangeIntegrationTests
+    [Collection(MySqlCollection.Name)]
+    public class TypedIdRangeIntegrationTests
     {
-        private readonly OracleFixture _fixture;
+        private readonly MySqlFixture _fixture;
 
-        public TypedKeyRangeIntegrationTests(OracleFixture fixture)
+        public TypedIdRangeIntegrationTests(MySqlFixture fixture)
         {
             _fixture = fixture;
         }
 
         private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-        private static Widget NewWidget(int id) => new() { Id = id, Name = "typed", IsActive = 1, Price = 1m };
+        private static Widget NewWidget(int id) => new() { Id = id, Name = "typed", IsActive = true, Price = 1m };
 
         private static void AssertSameCommands(IReadOnlyList<DbCommandInfo> expected, IReadOnlyList<DbCommandInfo> actual)
         {
@@ -104,7 +104,7 @@ namespace Forget.Tests.Oracle
         [Fact]
         public async Task GetByIdRangeAsync_InATransaction_SeesTheUncommittedRows()
         {
-            using OracleTransaction transaction = _fixture.Connection.BeginTransaction();
+            using MySqlTransaction transaction = _fixture.Connection.BeginTransaction();
             await _fixture.Connection.InsertAsync(NewWidget(800_031), transaction: transaction, cancellationToken: Ct);
 
             IReadOnlyList<Widget> inside = await _fixture.Connection.GetByIdRangeAsync<Widget, int>([800_031], transaction: transaction, cancellationToken: Ct);
@@ -116,28 +116,28 @@ namespace Forget.Tests.Oracle
         }
 
         [Fact]
-        public async Task GetByIdRangeAsync_WithAStringKeyOfAnotherCase_ReturnsOnlyTheRowTheDatabaseMatches()
+        public async Task GetByIdRangeAsync_WithAStringIdOfAnotherCase_ReturnsOnlyTheRowTheDatabaseMatches()
         {
-            await _fixture.Connection.InsertAsync(new StringKeyed { Code = "TYPED-1", Name = "one" }, cancellationToken: Ct);
+            await _fixture.Connection.InsertAsync(new StringIdRow { Code = "TYPED-1", Name = "one" }, cancellationToken: Ct);
 
-            IReadOnlyList<StringKeyed> rows = await _fixture.Connection.GetByIdRangeAsync<StringKeyed, string>(["typed-1", "TYPED-1"], batchSize: 1, cancellationToken: Ct);
+            IReadOnlyList<StringIdRow> rows = await _fixture.Connection.GetByIdRangeAsync<StringIdRow, string>(["typed-1", "TYPED-1"], batchSize: 1, cancellationToken: Ct);
 
             Assert.Equal(["TYPED-1"], rows.Select(r => r.Code));
         }
 
         [Fact]
-        public async Task GetByIdRangeAsync_WithABinaryKeyRequestedTwiceInDifferentBatches_ReturnsTheRowOnce()
+        public async Task GetByIdRangeAsync_WithABinaryIdRequestedTwiceInDifferentBatches_ReturnsTheRowOnce()
         {
-            await _fixture.Connection.InsertAsync(new BinaryKeyed { Id = [9, 0, 1], Name = "only" }, cancellationToken: Ct);
+            await _fixture.Connection.InsertAsync(new BinaryIdRow { Id = [9, 0, 1], Name = "only" }, cancellationToken: Ct);
             byte[][] ids = [[9, 0, 1], [9, 0, 1]];
 
-            IReadOnlyList<BinaryKeyed> rows = await _fixture.Connection.GetByIdRangeAsync<BinaryKeyed, byte[]>(ids, batchSize: 1, cancellationToken: Ct);
+            IReadOnlyList<BinaryIdRow> rows = await _fixture.Connection.GetByIdRangeAsync<BinaryIdRow, byte[]>(ids, batchSize: 1, cancellationToken: Ct);
 
             Assert.Equal(["only"], rows.Select(r => r.Name));
         }
 
         [Fact]
-        public async Task GetByIdRangeAsync_WithTheKeyTypedAsObject_BehavesLikeTheUntypedOverload()
+        public async Task GetByIdRangeAsync_WithTheIdTypedAsObject_BehavesLikeTheUntypedOverload()
         {
             await _fixture.Connection.InsertRangeAsync([NewWidget(800_041), NewWidget(800_042)], cancellationToken: Ct);
 
@@ -148,7 +148,7 @@ namespace Forget.Tests.Oracle
         }
 
         [Fact]
-        public async Task GetByIdRangeAsync_WithATypeThatDoesNotFitTheKey_IsRejected()
+        public async Task GetByIdRangeAsync_WithATypeThatDoesNotFitTheId_IsRejected()
         {
             ArgumentException text = await Assert.ThrowsAsync<ArgumentException>(() => _fixture.Connection.GetByIdRangeAsync<Widget, string>(["800"], cancellationToken: Ct));
             ArgumentException unsigned = await Assert.ThrowsAsync<ArgumentException>(() => _fixture.Connection.GetByIdRangeAsync<Widget, ushort>([800], cancellationToken: Ct));
@@ -167,28 +167,8 @@ namespace Forget.Tests.Oracle
         [Fact]
         public async Task GetByIdRangeAsync_WithANullId_IsRejected()
         {
-            await Assert.ThrowsAsync<ArgumentNullException>(() => _fixture.Connection.GetByIdRangeAsync<StringKeyed, string>(["typed-2", null!], cancellationToken: Ct));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => _fixture.Connection.GetByIdRangeAsync<StringIdRow, string>(["typed-2", null!], cancellationToken: Ct));
             await Assert.ThrowsAsync<ArgumentNullException>(() => _fixture.Connection.GetByIdRangeAsync<Widget, int>(null!, cancellationToken: Ct));
-        }
-
-        [Fact]
-        public async Task GetByIdRangeAsync_WithMoreIdsThanAnInListCanHold_SplitsTheList()
-        {
-            int[] ids = [.. Enumerable.Range(800_200, 1_500)];
-
-            IReadOnlyList<Widget> rows = await _fixture.Connection.GetByIdRangeAsync<Widget, int>(ids, batchSize: 0, cancellationToken: Ct);
-
-            Assert.Empty(rows);
-        }
-
-        [Fact]
-        public void GetByIdRange_WithMoreIdsThanAnInListCanHold_SplitsTheList()
-        {
-            int[] ids = [.. Enumerable.Range(810_200, 1_500)];
-
-            IReadOnlyList<Widget> rows = _fixture.Connection.GetByIdRange<Widget, int>(ids, batchSize: 2_000);
-
-            Assert.Empty(rows);
         }
 
         [Fact]
@@ -214,14 +194,9 @@ namespace Forget.Tests.Oracle
 
             AssertSameCommands(_fixture.Connection.GetByIdRangeCommands<Widget>(ints, batchSize: 2), _fixture.Connection.GetByIdRangeCommands<Widget, int>(ints, batchSize: 2));
             AssertSameCommands(_fixture.Connection.GetByIdRangeCommands<Widget>(longs, batchSize: 500), _fixture.Connection.GetByIdRangeCommands<Widget, long>(longs, batchSize: 500));
-            AssertSameCommands(_fixture.Connection.GetByIdRangeCommands<StringKeyed>(strings, batchSize: 2), _fixture.Connection.GetByIdRangeCommands<StringKeyed, string>(strings, batchSize: 2));
-            AssertSameCommands(_fixture.Connection.GetByIdRangeCommands<BinaryKeyed>(binaries, batchSize: 1), _fixture.Connection.GetByIdRangeCommands<BinaryKeyed, byte[]>(binaries, batchSize: 1));
+            AssertSameCommands(_fixture.Connection.GetByIdRangeCommands<StringIdRow>(strings, batchSize: 2), _fixture.Connection.GetByIdRangeCommands<StringIdRow, string>(strings, batchSize: 2));
+            AssertSameCommands(_fixture.Connection.GetByIdRangeCommands<BinaryIdRow>(binaries, batchSize: 1), _fixture.Connection.GetByIdRangeCommands<BinaryIdRow, byte[]>(binaries, batchSize: 1));
             AssertSameCommands(_fixture.Connection.GetByIdRangeCommands<Widget>(ints, batchSize: 0), _fixture.Connection.GetByIdRangeCommands<Widget, int>(ints, batchSize: 0));
-
-            int[] many = [.. Enumerable.Range(800_100, 2_500)];
-            IReadOnlyList<DbCommandInfo> typedMany = _fixture.Connection.GetByIdRangeCommands<Widget, int>(many, batchSize: 0);
-            AssertSameCommands(_fixture.Connection.GetByIdRangeCommands<Widget>(many, batchSize: 0), typedMany);
-            Assert.Contains("UNION ALL", typedMany[0].Sql);
         }
 
         [Fact]

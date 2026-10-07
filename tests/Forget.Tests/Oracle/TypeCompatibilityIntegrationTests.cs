@@ -165,9 +165,9 @@ namespace Forget.Tests.Oracle
         [Fact]
         public async Task GetAllAsync_WithAByteArrayValue_MatchesTheRow()
         {
-            await _fixture.Connection.InsertAsync(new BinaryKeyed { Id = [5, 0, 1], Name = "bin" }, cancellationToken: Ct);
+            await _fixture.Connection.InsertAsync(new BinaryIdRow { Id = [5, 0, 1], Name = "bin" }, cancellationToken: Ct);
 
-            IReadOnlyList<BinaryKeyed> rows = await _fixture.Connection.GetAllAsync(new FilterDescriptor<BinaryKeyed>("Id", new byte[] { 5, 0, 1 }), cancellationToken: Ct);
+            IReadOnlyList<BinaryIdRow> rows = await _fixture.Connection.GetAllAsync(new FilterDescriptor<BinaryIdRow>("Id", new byte[] { 5, 0, 1 }), cancellationToken: Ct);
 
             Assert.Equal(["bin"], rows.Select(r => r.Name));
         }

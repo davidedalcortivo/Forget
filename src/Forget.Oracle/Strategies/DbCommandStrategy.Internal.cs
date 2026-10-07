@@ -18,10 +18,9 @@ namespace Forget.Oracle.Strategies
             ArgumentNullException.ThrowIfNull(entities);
 
             TEntity[] entityArray = entities as TEntity[] ?? [.. entities];
-            List<DbCommandInfo> commands = [];
 
             if (entityArray.Length == 0)
-                return commands;
+                return [];
 
             ImmutableDictionary<string, Func<TEntity, object?>> propertyGettersByPropertyName = EntityInfoCache<TEntity>.PropertyGettersByPropertyName;
             ImmutableDictionary<string, string> columnNamesByPropertyName = EntityInfoCache<TEntity>.ColumnNamesByPropertyName;
@@ -31,6 +30,8 @@ namespace Forget.Oracle.Strategies
 
             if (batchSize <= 0)
                 batchSize = entityArray.Length;
+
+            List<DbCommandInfo> commands = new((entityArray.Length + batchSize - 1) / batchSize);
 
             for (int i = 0; i < entityArray.Length; i += batchSize)
             {

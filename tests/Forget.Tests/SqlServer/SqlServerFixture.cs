@@ -77,12 +77,12 @@ namespace Forget.Tests.SqlServer
                     NullableLabel NVARCHAR(200) NULL
                 );
 
-                CREATE TABLE dbo.StringKeyed (
+                CREATE TABLE dbo.StringIdRow (
                     Code NVARCHAR(50) PRIMARY KEY,
                     Name NVARCHAR(100) NOT NULL
                 );
 
-                CREATE TABLE dbo.BinaryKeyed (
+                CREATE TABLE dbo.BinaryIdRow (
                     Id VARBINARY(16) PRIMARY KEY,
                     Name NVARCHAR(100) NOT NULL
                 );

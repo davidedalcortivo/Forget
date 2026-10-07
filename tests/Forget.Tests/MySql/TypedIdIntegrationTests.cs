@@ -1,28 +1,28 @@
 using Forget.Core.Models;
-using Forget.Oracle.Extensions;
-using Oracle.ManagedDataAccess.Client;
+using Forget.MySql.Extensions;
+using MySqlConnector;
 
 
-namespace Forget.Tests.Oracle
+namespace Forget.Tests.MySql
 {
     /// <summary>
     /// <c>GetById</c>, <c>Delete</c> and <c>DeleteRange</c> with a <c>TKey</c> are the same operations as the ones that take an
     /// untyped identifier, for a caller that already holds it as a <c>TKey</c>: whatever they return, or refuse, must be what
     /// the untyped overloads do with the same identifiers.
     /// </summary>
-    [Collection(OracleCollection.Name)]
-    public class TypedKeyIntegrationTests
+    [Collection(MySqlCollection.Name)]
+    public class TypedIdIntegrationTests
     {
-        private readonly OracleFixture _fixture;
+        private readonly MySqlFixture _fixture;
 
-        public TypedKeyIntegrationTests(OracleFixture fixture)
+        public TypedIdIntegrationTests(MySqlFixture fixture)
         {
             _fixture = fixture;
         }
 
         private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-        private static Widget NewWidget(int id) => new() { Id = id, Name = "typed", IsActive = 1, Price = 1m };
+        private static Widget NewWidget(int id) => new() { Id = id, Name = "typed", IsActive = true, Price = 1m };
 
         private static void AssertSameCommand(DbCommandInfo expected, DbCommandInfo actual)
         {
@@ -97,27 +97,27 @@ namespace Forget.Tests.Oracle
         }
 
         [Fact]
-        public async Task GetByIdAsync_WithAStringKey_ReturnsTheRow()
+        public async Task GetByIdAsync_WithAStringId_ReturnsTheRow()
         {
-            await _fixture.Connection.InsertAsync(new StringKeyed { Code = "TYPED-G1", Name = "one" }, cancellationToken: Ct);
+            await _fixture.Connection.InsertAsync(new StringIdRow { Code = "TYPED-G1", Name = "one" }, cancellationToken: Ct);
 
-            StringKeyed? row = await _fixture.Connection.GetByIdAsync<StringKeyed, string>("TYPED-G1", cancellationToken: Ct);
+            StringIdRow? row = await _fixture.Connection.GetByIdAsync<StringIdRow, string>("TYPED-G1", cancellationToken: Ct);
 
             Assert.Equal("one", row?.Name);
         }
 
         [Fact]
-        public async Task GetByIdAsync_WithABinaryKey_ReturnsTheRow()
+        public async Task GetByIdAsync_WithABinaryId_ReturnsTheRow()
         {
-            await _fixture.Connection.InsertAsync(new BinaryKeyed { Id = [7, 0, 1], Name = "bin" }, cancellationToken: Ct);
+            await _fixture.Connection.InsertAsync(new BinaryIdRow { Id = [7, 0, 1], Name = "bin" }, cancellationToken: Ct);
 
-            BinaryKeyed? row = await _fixture.Connection.GetByIdAsync<BinaryKeyed, byte[]>([7, 0, 1], cancellationToken: Ct);
+            BinaryIdRow? row = await _fixture.Connection.GetByIdAsync<BinaryIdRow, byte[]>([7, 0, 1], cancellationToken: Ct);
 
             Assert.Equal("bin", row?.Name);
         }
 
         [Fact]
-        public async Task GetByIdAsync_WithTheKeyTypedAsObject_BehavesLikeTheUntypedOverload()
+        public async Task GetByIdAsync_WithTheIdTypedAsObject_BehavesLikeTheUntypedOverload()
         {
             await _fixture.Connection.InsertAsync(NewWidget(820_003), cancellationToken: Ct);
 
@@ -128,7 +128,7 @@ namespace Forget.Tests.Oracle
         }
 
         [Fact]
-        public async Task GetByIdAsync_WithATypeThatDoesNotFitTheKey_IsRejected()
+        public async Task GetByIdAsync_WithATypeThatDoesNotFitTheId_IsRejected()
         {
             ArgumentException text = await Assert.ThrowsAsync<ArgumentException>(() => _fixture.Connection.GetByIdAsync<Widget, string>("820", cancellationToken: Ct));
             ArgumentException unsigned = await Assert.ThrowsAsync<ArgumentException>(() => _fixture.Connection.GetByIdAsync<Widget, ushort>(820, cancellationToken: Ct));
@@ -139,7 +139,7 @@ namespace Forget.Tests.Oracle
         [Fact]
         public async Task GetByIdAsync_WithANullId_IsRejected()
         {
-            await Assert.ThrowsAsync<ArgumentNullException>(() => _fixture.Connection.GetByIdAsync<StringKeyed, string>(null!, cancellationToken: Ct));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => _fixture.Connection.GetByIdAsync<StringIdRow, string>(null!, cancellationToken: Ct));
         }
 
         [Fact]
@@ -147,8 +147,8 @@ namespace Forget.Tests.Oracle
         {
             AssertSameCommand(_fixture.Connection.GetByIdCommand<Widget>(820_004), _fixture.Connection.GetByIdCommand<Widget, int>(820_004));
             AssertSameCommand(_fixture.Connection.GetByIdCommand<Widget>(820_004L), _fixture.Connection.GetByIdCommand<Widget, long>(820_004L));
-            AssertSameCommand(_fixture.Connection.GetByIdCommand<StringKeyed>("a"), _fixture.Connection.GetByIdCommand<StringKeyed, string>("a"));
-            AssertSameCommand(_fixture.Connection.GetByIdCommand<BinaryKeyed>(new byte[] { 1, 2 }), _fixture.Connection.GetByIdCommand<BinaryKeyed, byte[]>([1, 2]));
+            AssertSameCommand(_fixture.Connection.GetByIdCommand<StringIdRow>("a"), _fixture.Connection.GetByIdCommand<StringIdRow, string>("a"));
+            AssertSameCommand(_fixture.Connection.GetByIdCommand<BinaryIdRow>(new byte[] { 1, 2 }), _fixture.Connection.GetByIdCommand<BinaryIdRow, byte[]>([1, 2]));
         }
 
         [Fact]
@@ -177,13 +177,13 @@ namespace Forget.Tests.Oracle
         }
 
         [Fact]
-        public async Task DeleteAsync_WithAStringAndABinaryKey_DeletesTheRows()
+        public async Task DeleteAsync_WithAStringAndABinaryId_DeletesTheRows()
         {
-            await _fixture.Connection.InsertAsync(new StringKeyed { Code = "TYPED-D1", Name = "one" }, cancellationToken: Ct);
-            await _fixture.Connection.InsertAsync(new BinaryKeyed { Id = [7, 0, 2], Name = "bin" }, cancellationToken: Ct);
+            await _fixture.Connection.InsertAsync(new StringIdRow { Code = "TYPED-D1", Name = "one" }, cancellationToken: Ct);
+            await _fixture.Connection.InsertAsync(new BinaryIdRow { Id = [7, 0, 2], Name = "bin" }, cancellationToken: Ct);
 
-            int text = await _fixture.Connection.DeleteAsync<StringKeyed, string>("TYPED-D1", cancellationToken: Ct);
-            int binary = await _fixture.Connection.DeleteAsync<BinaryKeyed, byte[]>([7, 0, 2], cancellationToken: Ct);
+            int text = await _fixture.Connection.DeleteAsync<StringIdRow, string>("TYPED-D1", cancellationToken: Ct);
+            int binary = await _fixture.Connection.DeleteAsync<BinaryIdRow, byte[]>([7, 0, 2], cancellationToken: Ct);
 
             Assert.Equal([1, 1], [text, binary]);
         }
@@ -193,7 +193,7 @@ namespace Forget.Tests.Oracle
         {
             await _fixture.Connection.InsertAsync(NewWidget(820_014), cancellationToken: Ct);
 
-            using OracleTransaction transaction = _fixture.Connection.BeginTransaction();
+            using MySqlTransaction transaction = _fixture.Connection.BeginTransaction();
             int inside = await _fixture.Connection.DeleteAsync<Widget, int>(820_014, transaction: transaction, cancellationToken: Ct);
             transaction.Rollback();
 
@@ -202,11 +202,11 @@ namespace Forget.Tests.Oracle
         }
 
         [Fact]
-        public async Task DeleteAsync_WithATypeThatDoesNotFitTheKey_OrANullId_IsRejected()
+        public async Task DeleteAsync_WithATypeThatDoesNotFitTheId_OrANullId_IsRejected()
         {
             ArgumentException text = await Assert.ThrowsAsync<ArgumentException>(() => _fixture.Connection.DeleteAsync<Widget, string>("820", cancellationToken: Ct));
             ArgumentException unsigned = await Assert.ThrowsAsync<ArgumentException>(() => _fixture.Connection.DeleteAsync<Widget, ushort>(820, cancellationToken: Ct));
-            await Assert.ThrowsAsync<ArgumentNullException>(() => _fixture.Connection.DeleteAsync<StringKeyed, string>(null!, cancellationToken: Ct));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => _fixture.Connection.DeleteAsync<StringIdRow, string>(null!, cancellationToken: Ct));
 
             Assert.All([text, unsigned], ex => Assert.Contains("The type of the provided value", ex.Message));
         }
@@ -216,7 +216,7 @@ namespace Forget.Tests.Oracle
         {
             AssertSameCommand(_fixture.Connection.DeleteCommand<Widget>(820_015), _fixture.Connection.DeleteCommand<Widget, int>(820_015));
             AssertSameCommand(_fixture.Connection.DeleteCommand<Widget>(820_015L), _fixture.Connection.DeleteCommand<Widget, long>(820_015L));
-            AssertSameCommand(_fixture.Connection.DeleteCommand<StringKeyed>("a"), _fixture.Connection.DeleteCommand<StringKeyed, string>("a"));
+            AssertSameCommand(_fixture.Connection.DeleteCommand<StringIdRow>("a"), _fixture.Connection.DeleteCommand<StringIdRow, string>("a"));
         }
 
         [Fact]
@@ -260,13 +260,13 @@ namespace Forget.Tests.Oracle
         }
 
         [Fact]
-        public async Task DeleteRangeAsync_WithAStringAndABinaryKey_DeletesTheRowsWhateverTheBatchSize()
+        public async Task DeleteRangeAsync_WithAStringAndABinaryId_DeletesTheRowsWhateverTheBatchSize()
         {
-            await _fixture.Connection.InsertRangeAsync([new StringKeyed { Code = "TYPED-R1", Name = "a" }, new StringKeyed { Code = "TYPED-R2", Name = "b" }], cancellationToken: Ct);
-            await _fixture.Connection.InsertRangeAsync([new BinaryKeyed { Id = [8, 0, 1], Name = "a" }, new BinaryKeyed { Id = [8, 0, 2], Name = "b" }], cancellationToken: Ct);
+            await _fixture.Connection.InsertRangeAsync([new StringIdRow { Code = "TYPED-R1", Name = "a" }, new StringIdRow { Code = "TYPED-R2", Name = "b" }], cancellationToken: Ct);
+            await _fixture.Connection.InsertRangeAsync([new BinaryIdRow { Id = [8, 0, 1], Name = "a" }, new BinaryIdRow { Id = [8, 0, 2], Name = "b" }], cancellationToken: Ct);
 
-            int text = await _fixture.Connection.DeleteRangeAsync<StringKeyed, string>(["TYPED-R1", "TYPED-R2"], batchSize: 1, cancellationToken: Ct);
-            int binary = await _fixture.Connection.DeleteRangeAsync<BinaryKeyed, byte[]>([[8, 0, 1], [8, 0, 2]], batchSize: 1, cancellationToken: Ct);
+            int text = await _fixture.Connection.DeleteRangeAsync<StringIdRow, string>(["TYPED-R1", "TYPED-R2"], batchSize: 1, cancellationToken: Ct);
+            int binary = await _fixture.Connection.DeleteRangeAsync<BinaryIdRow, byte[]>([[8, 0, 1], [8, 0, 2]], batchSize: 1, cancellationToken: Ct);
 
             Assert.Equal([2, 2], [text, binary]);
         }
@@ -276,7 +276,7 @@ namespace Forget.Tests.Oracle
         {
             await _fixture.Connection.InsertRangeAsync([NewWidget(820_051), NewWidget(820_052)], cancellationToken: Ct);
 
-            using OracleTransaction transaction = _fixture.Connection.BeginTransaction();
+            using MySqlTransaction transaction = _fixture.Connection.BeginTransaction();
             int inside = await _fixture.Connection.DeleteRangeAsync<Widget, int>([820_051, 820_052], transaction: transaction, cancellationToken: Ct);
             transaction.Rollback();
 
@@ -285,7 +285,7 @@ namespace Forget.Tests.Oracle
         }
 
         [Fact]
-        public async Task DeleteRangeAsync_WithTheKeyTypedAsObject_BehavesLikeTheUntypedOverload()
+        public async Task DeleteRangeAsync_WithTheIdTypedAsObject_BehavesLikeTheUntypedOverload()
         {
             await _fixture.Connection.InsertRangeAsync([NewWidget(820_061), NewWidget(820_062)], cancellationToken: Ct);
 
@@ -296,12 +296,12 @@ namespace Forget.Tests.Oracle
         }
 
         [Fact]
-        public async Task DeleteRangeAsync_WithATypeThatDoesNotFitTheKey_AListOfBytes_OrANullId_IsRejected()
+        public async Task DeleteRangeAsync_WithATypeThatDoesNotFitTheId_AListOfBytes_OrANullId_IsRejected()
         {
             ArgumentException text = await Assert.ThrowsAsync<ArgumentException>(() => _fixture.Connection.DeleteRangeAsync<Widget, string>(["820"], cancellationToken: Ct));
             ArgumentException unsigned = await Assert.ThrowsAsync<ArgumentException>(() => _fixture.Connection.DeleteRangeAsync<Widget, ushort>([820], cancellationToken: Ct));
             ArgumentException bytes = await Assert.ThrowsAsync<ArgumentException>(() => _fixture.Connection.DeleteRangeAsync<Widget, byte>("N"u8.ToArray(), cancellationToken: Ct));
-            await Assert.ThrowsAsync<ArgumentNullException>(() => _fixture.Connection.DeleteRangeAsync<StringKeyed, string>(["typed-2", null!], cancellationToken: Ct));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => _fixture.Connection.DeleteRangeAsync<StringIdRow, string>(["typed-2", null!], cancellationToken: Ct));
             await Assert.ThrowsAsync<ArgumentNullException>(() => _fixture.Connection.DeleteRangeAsync<Widget, int>(null!, cancellationToken: Ct));
 
             Assert.All([text, unsigned], ex => Assert.Contains("The type of the provided value", ex.Message));
@@ -320,25 +320,6 @@ namespace Forget.Tests.Oracle
         }
 
         [Fact]
-        public async Task DeleteRangeAsync_WithMoreIdsThanAnInListCanHold_SplitsTheList()
-        {
-            int[] ids = [.. Enumerable.Range(830_000, 1_500)];
-
-            int deleted = await _fixture.Connection.DeleteRangeAsync<Widget, int>(ids, batchSize: 0, cancellationToken: Ct);
-
-            Assert.Equal(0, deleted);
-        }
-
-        [Fact]
-        public void DeleteRange_WithMoreIdsThanAnInListCanHold_SplitsTheList()
-        {
-            int[] ids = [.. Enumerable.Range(840_000, 1_500)];
-
-            int deleted = _fixture.Connection.DeleteRange<Widget, int>(ids, batchSize: 2_000);
-
-            Assert.Equal(0, deleted);
-        }
-        [Fact]
         public void DeleteRangeCommands_BuildTheSameCommandsAsTheUntypedOverload()
         {
             int[] ints = [820_071, 820_072, 820_073, 820_074, 820_075];
@@ -348,12 +329,9 @@ namespace Forget.Tests.Oracle
 
             AssertSameCommands(_fixture.Connection.DeleteRangeCommands<Widget>(ints, batchSize: 2), _fixture.Connection.DeleteRangeCommands<Widget, int>(ints, batchSize: 2));
             AssertSameCommands(_fixture.Connection.DeleteRangeCommands<Widget>(longs, batchSize: 500), _fixture.Connection.DeleteRangeCommands<Widget, long>(longs, batchSize: 500));
-            AssertSameCommands(_fixture.Connection.DeleteRangeCommands<StringKeyed>(strings, batchSize: 2), _fixture.Connection.DeleteRangeCommands<StringKeyed, string>(strings, batchSize: 2));
-            AssertSameCommands(_fixture.Connection.DeleteRangeCommands<BinaryKeyed>(binaries, batchSize: 1), _fixture.Connection.DeleteRangeCommands<BinaryKeyed, byte[]>(binaries, batchSize: 1));
+            AssertSameCommands(_fixture.Connection.DeleteRangeCommands<StringIdRow>(strings, batchSize: 2), _fixture.Connection.DeleteRangeCommands<StringIdRow, string>(strings, batchSize: 2));
+            AssertSameCommands(_fixture.Connection.DeleteRangeCommands<BinaryIdRow>(binaries, batchSize: 1), _fixture.Connection.DeleteRangeCommands<BinaryIdRow, byte[]>(binaries, batchSize: 1));
             AssertSameCommands(_fixture.Connection.DeleteRangeCommands<Widget>(ints, batchSize: 0), _fixture.Connection.DeleteRangeCommands<Widget, int>(ints, batchSize: 0));
-
-            int[] many = [.. Enumerable.Range(830_100, 2_500)];
-            AssertSameCommands(_fixture.Connection.DeleteRangeCommands<Widget>(many, batchSize: 0), _fixture.Connection.DeleteRangeCommands<Widget, int>(many, batchSize: 0));
         }
 
         [Fact]

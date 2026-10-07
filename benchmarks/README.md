@@ -65,7 +65,7 @@ sensitive to the disk and vary the most from one run to the next.
 Server accepts at most 2100 per command — and to avoid handing the database one statement with thousands of parameters),
 so more ids means more round trips (2 at 1000, 20 at 10,000), while Dapper's and EF Core's own `= ANY(...)`/`IN (...)`
 send them all in a single query regardless of count. `GetByIdRange_Forget_OneRoundTrip` (`batchSize` set to the id count)
-removes that variable: about 1.07x, 1.04x and 1.07x at 100, 1000 and 10,000, so the round trips are most of the gap at
+removes that variable: about 1.11x, 1.04x and 1.04x at 100, 1000 and 10,000, so the round trips are most of the gap at
 1000 and 10,000. The exact cost of an extra round trip also varies a bit with the network path of the day (WSL 2, see
 below), which is why this specific number is the least stable one in the whole suite.
 
@@ -75,33 +75,36 @@ below), which is why this specific number is the least stable one in the whole s
 have to find out their type one boxed id at a time. Each checks `TKey` once against the type of the key, copies the ids
 once into a `TKey[]` and hands that array to the driver as the parameter when one batch covers all of it, or a slice of
 it for each batch otherwise. The non-generic overloads build a list of boxed ids, check the type of each one and rebuild
-a typed array with reflection. `RangeGenerationBenchmarks` measures only that work, without a database, which is why its
-numbers are steady: for 100, 1000 and 10,000 ids, building the commands takes
+a typed array with reflection; that list is now sized to the id count up front instead of grown one at a time, since the
+count is known and exact. `RangeGenerationBenchmarks` measures only the command-building work, without a database, which
+is why its numbers are steady: for 100, 1000 and 10,000 ids, building the commands takes
 
 | | 100 ids | 1000 ids | 10,000 ids |
 |---|---|---|---|
-| `GetByIdRange`, non-generic | 3,372 ns (8.4 KB) | 26,171 ns (47.1 KB) | 352,760 ns (533 KB) |
-| `GetByIdRange`, typed | 494 ns (3.8 KB) | 571 ns (7.4 KB) | 2,832 ns (42.5 KB) |
-| `DeleteRange`, non-generic | 3,059 ns (7.1 KB) | 26,033 ns (45.8 KB) | 386,997 ns (532 KB) |
-| `DeleteRange`, typed | 356 ns (2.6 KB) | 706 ns (6.1 KB) | 2,843 ns (41.2 KB) |
+| `GetByIdRange`, non-generic | 2,401 ns (7.0 KB) | 20,694 ns (38.7 KB) | 210,245 ns (355 KB) |
+| `GetByIdRange`, typed | 325 ns (3.8 KB) | 457 ns (7.3 KB) | 2,207 ns (42.5 KB) |
+| `DeleteRange`, non-generic | 2,378 ns (5.8 KB) | 20,912 ns (37.4 KB) | 208,969 ns (354 KB) |
+| `DeleteRange`, typed | 325 ns (2.5 KB) | 405 ns (6.1 KB) | 2,100 ns (41.2 KB) |
 
-that is, the typed overloads are 7x to 136x faster and allocate 55% to 92% less, and the gap widens with the id count in
+that is, the typed overloads are 7x to 100x faster and allocate 44% to 88% less, and the gap widens with the id count in
 both directions, because the non-generic overload's cost grows with the id count while the typed one barely moves.
 
-`GetByIdRange`'s non-generic overload also stopped copying the ids into a `HashSet` before building the commands, since
-the database returns a row once however many times its id is listed and the rows that come back are deduplicated by id
-when the ids are split over more than one query: that alone accounts for part of its numbers above being lower than they
-would otherwise be. `DeleteRange` never had that `HashSet` (there is no row to deduplicate for a delete), so this does
-not apply to it.
+`GetByIdRange` also deduplicates the rows it returns, by id, since the database returns a row once however many times
+its id is listed but the rows that come back are only guaranteed unique within one query, not across the several
+queries a split over batches sends. The typed overload does this with a `HashSet<TKey>` (a byte-content comparer when
+`TKey` is `byte[]`, since .NET compares a `byte[]` by reference), the non-generic one with the same `HashSet<object>` as
+before; both are now sized to the id count, the same true upper bound the `TKey[]`/boxed list above is sized to, since
+an unsized set growing from empty to 10,000 entries allocates more than the boxed ids it would otherwise save.
+`DeleteRange` never deduplicates (there is no row to deduplicate for a delete), so none of this applies to it.
 
-Against the database, that is a smaller share of the total, and shows only when the round trips are equalised. For
-`GetByIdRange` with one round trip the typed call was measured at 1.04x, 1.02x and 1.04x Dapper at 100, 1000 and 10,000
-ids, against 1.07x, 1.04x and 1.07x for the non-generic one (the differences at 100 and 1000 are inside the noise; at
-10,000 the gap to Dapper goes from about 0.9 to about 0.5 ms), and it allocates less than EF Core: 3.4 MB against 3.6 at
-10,000. With the default batch of 500 the round trips dominate and the typed call is no faster. What is left of the gap
-to Dapper is the deduplication of the rows that come back and the fixed cost of building the command, and how much each
-is has not been measured. `DeleteRange` was not measured end to end against Dapper and EF Core (there is no
-`DeleteRange` group in `RangeBenchmarks`), only with `RangeGenerationBenchmarks`.
+Against the database, that is a smaller share of the total, and shows only when the round trips are equalised. With one
+round trip, the typed call was measured at 1.05x, 1.02x and 1.03x Dapper at 100, 1000 and 10,000 ids, against 1.11x,
+1.04x and 1.04x for the non-generic one, and against 1.29x, 1.13x and 1.03x for EF Core's own query — EF Core is the
+slowest of the three below 10,000 ids (its per-call `DbContext` overhead is a bigger share of a shorter call) and roughly
+level with the typed call at 10,000. The typed call also allocates less than EF Core at every count measured: 35 KB
+against 76 at 100 ids, 298 KB against 384 at 1000, 3,129 KB against 3,573 at 10,000. With the default batch of 500 the
+round trips dominate and the typed call is no faster. `DeleteRange` was not measured end to end against Dapper and
+EF Core (there is no `DeleteRange` group in `RangeBenchmarks`), only with `RangeGenerationBenchmarks`.
 
 ### GetById and Delete with typed ids: no gain, and that is expected
 

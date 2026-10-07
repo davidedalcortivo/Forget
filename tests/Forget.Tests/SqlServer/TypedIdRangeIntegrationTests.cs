@@ -11,11 +11,11 @@ namespace Forget.Tests.SqlServer
     /// type is. Whatever it returns, or refuses, must therefore be what the untyped overload does with the same ids.
     /// </summary>
     [Collection(SqlServerCollection.Name)]
-    public class TypedKeyRangeIntegrationTests
+    public class TypedIdRangeIntegrationTests
     {
         private readonly SqlServerFixture _fixture;
 
-        public TypedKeyRangeIntegrationTests(SqlServerFixture fixture)
+        public TypedIdRangeIntegrationTests(SqlServerFixture fixture)
         {
             _fixture = fixture;
         }
@@ -116,28 +116,28 @@ namespace Forget.Tests.SqlServer
         }
 
         [Fact]
-        public async Task GetByIdRangeAsync_WithAStringKeyOfAnotherCase_ReturnsOnlyTheRowTheDatabaseMatches()
+        public async Task GetByIdRangeAsync_WithAStringIdOfAnotherCase_ReturnsOnlyTheRowTheDatabaseMatches()
         {
-            await _fixture.Connection.InsertAsync(new StringKeyed { Code = "TYPED-1", Name = "one" }, cancellationToken: Ct);
+            await _fixture.Connection.InsertAsync(new StringIdRow { Code = "TYPED-1", Name = "one" }, cancellationToken: Ct);
 
-            IReadOnlyList<StringKeyed> rows = await _fixture.Connection.GetByIdRangeAsync<StringKeyed, string>(["typed-1", "TYPED-1"], batchSize: 1, cancellationToken: Ct);
+            IReadOnlyList<StringIdRow> rows = await _fixture.Connection.GetByIdRangeAsync<StringIdRow, string>(["typed-1", "TYPED-1"], batchSize: 1, cancellationToken: Ct);
 
             Assert.Equal(["TYPED-1"], rows.Select(r => r.Code));
         }
 
         [Fact]
-        public async Task GetByIdRangeAsync_WithABinaryKeyRequestedTwiceInDifferentBatches_ReturnsTheRowOnce()
+        public async Task GetByIdRangeAsync_WithABinaryIdRequestedTwiceInDifferentBatches_ReturnsTheRowOnce()
         {
-            await _fixture.Connection.InsertAsync(new BinaryKeyed { Id = [9, 0, 1], Name = "only" }, cancellationToken: Ct);
+            await _fixture.Connection.InsertAsync(new BinaryIdRow { Id = [9, 0, 1], Name = "only" }, cancellationToken: Ct);
             byte[][] ids = [[9, 0, 1], [9, 0, 1]];
 
-            IReadOnlyList<BinaryKeyed> rows = await _fixture.Connection.GetByIdRangeAsync<BinaryKeyed, byte[]>(ids, batchSize: 1, cancellationToken: Ct);
+            IReadOnlyList<BinaryIdRow> rows = await _fixture.Connection.GetByIdRangeAsync<BinaryIdRow, byte[]>(ids, batchSize: 1, cancellationToken: Ct);
 
             Assert.Equal(["only"], rows.Select(r => r.Name));
         }
 
         [Fact]
-        public async Task GetByIdRangeAsync_WithTheKeyTypedAsObject_BehavesLikeTheUntypedOverload()
+        public async Task GetByIdRangeAsync_WithTheIdTypedAsObject_BehavesLikeTheUntypedOverload()
         {
             await _fixture.Connection.InsertRangeAsync([NewWidget(800_041), NewWidget(800_042)], cancellationToken: Ct);
 
@@ -148,7 +148,7 @@ namespace Forget.Tests.SqlServer
         }
 
         [Fact]
-        public async Task GetByIdRangeAsync_WithATypeThatDoesNotFitTheKey_IsRejected()
+        public async Task GetByIdRangeAsync_WithATypeThatDoesNotFitTheId_IsRejected()
         {
             ArgumentException text = await Assert.ThrowsAsync<ArgumentException>(() => _fixture.Connection.GetByIdRangeAsync<Widget, string>(["800"], cancellationToken: Ct));
             ArgumentException unsigned = await Assert.ThrowsAsync<ArgumentException>(() => _fixture.Connection.GetByIdRangeAsync<Widget, ushort>([800], cancellationToken: Ct));
@@ -167,7 +167,7 @@ namespace Forget.Tests.SqlServer
         [Fact]
         public async Task GetByIdRangeAsync_WithANullId_IsRejected()
         {
-            await Assert.ThrowsAsync<ArgumentNullException>(() => _fixture.Connection.GetByIdRangeAsync<StringKeyed, string>(["typed-2", null!], cancellationToken: Ct));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => _fixture.Connection.GetByIdRangeAsync<StringIdRow, string>(["typed-2", null!], cancellationToken: Ct));
             await Assert.ThrowsAsync<ArgumentNullException>(() => _fixture.Connection.GetByIdRangeAsync<Widget, int>(null!, cancellationToken: Ct));
         }
 
@@ -214,8 +214,8 @@ namespace Forget.Tests.SqlServer
 
             AssertSameCommands(_fixture.Connection.GetByIdRangeCommands<Widget>(ints, batchSize: 2), _fixture.Connection.GetByIdRangeCommands<Widget, int>(ints, batchSize: 2));
             AssertSameCommands(_fixture.Connection.GetByIdRangeCommands<Widget>(longs, batchSize: 500), _fixture.Connection.GetByIdRangeCommands<Widget, long>(longs, batchSize: 500));
-            AssertSameCommands(_fixture.Connection.GetByIdRangeCommands<StringKeyed>(strings, batchSize: 2), _fixture.Connection.GetByIdRangeCommands<StringKeyed, string>(strings, batchSize: 2));
-            AssertSameCommands(_fixture.Connection.GetByIdRangeCommands<BinaryKeyed>(binaries, batchSize: 1), _fixture.Connection.GetByIdRangeCommands<BinaryKeyed, byte[]>(binaries, batchSize: 1));
+            AssertSameCommands(_fixture.Connection.GetByIdRangeCommands<StringIdRow>(strings, batchSize: 2), _fixture.Connection.GetByIdRangeCommands<StringIdRow, string>(strings, batchSize: 2));
+            AssertSameCommands(_fixture.Connection.GetByIdRangeCommands<BinaryIdRow>(binaries, batchSize: 1), _fixture.Connection.GetByIdRangeCommands<BinaryIdRow, byte[]>(binaries, batchSize: 1));
             AssertSameCommands(_fixture.Connection.GetByIdRangeCommands<Widget>(ints, batchSize: 0), _fixture.Connection.GetByIdRangeCommands<Widget, int>(ints, batchSize: 0));
 
             int[] many = [.. Enumerable.Range(800_100, 2_500)];

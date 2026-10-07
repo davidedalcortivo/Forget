@@ -82,12 +82,12 @@ namespace Forget.Tests.MySql
 
             await using MySqlCommand keyedCommand = Connection.CreateCommand();
             keyedCommand.CommandText = """
-                CREATE TABLE `StringKeyed` (
+                CREATE TABLE `StringIdRow` (
                     `Code` VARCHAR(50) PRIMARY KEY,
                     `Name` VARCHAR(100) NOT NULL
                 );
 
-                CREATE TABLE `BinaryKeyed` (
+                CREATE TABLE `BinaryIdRow` (
                     `Id` VARBINARY(16) PRIMARY KEY,
                     `Name` VARCHAR(100) NOT NULL
                 );
