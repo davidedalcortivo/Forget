@@ -355,6 +355,10 @@ It also doesn't do change tracking, migrations, or lazy loading — if you need 
 - Generated SQL is cached as a template per `(entity type, provider)` pair and rendered by substituting only the
   parts that vary per call (the filter, the sort, the parameter values) — not rebuilt from scratch every time.
 
+See [benchmarks/README.md](benchmarks/README.md) for the full numbers against hand-written Dapper and EF Core, and
+[The Batch Size Bug](https://davidedalcortivo.github.io/Forget/the-batch-size-bug.html) for the story behind some of
+them.
+
 ## Inspecting generated SQL without running it
 
 Every execution method (`GetAll`/`GetAllAsync`, `Upsert`/`UpsertAsync`, `InsertRange`/`InsertRangeAsync`, ...) has

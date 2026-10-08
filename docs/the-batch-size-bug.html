@@ -1,0 +1,516 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>The Batch Size Bug</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Sans:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #fbfbfc;
+    --surface: #f1f3f5;
+    --text: #1a1f26;
+    --text-dim: #5a6472;
+    --border: #e2e5e9;
+    --accent: #0f7d8c;
+    --accent-soft: #e3f2f3;
+    --code-bg: #11161c;
+    --code-text: #d9e0e8;
+    --code-key: #5fc9c9;
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14181d;
+      --surface: #1a1f26;
+      --text: #e7ebee;
+      --text-dim: #9aa4b2;
+      --border: #2a2f37;
+      --accent: #5fc9c9;
+      --accent-soft: #16292b;
+      --code-bg: #0b0e12;
+      --code-text: #dbe2ea;
+      --code-key: #6fd6d6;
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #14181d;
+    --surface: #1a1f26;
+    --text: #e7ebee;
+    --text-dim: #9aa4b2;
+    --border: #2a2f37;
+    --accent: #5fc9c9;
+    --accent-soft: #16292b;
+    --code-bg: #0b0e12;
+    --code-text: #dbe2ea;
+    --code-key: #6fd6d6;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
+    font-size: 1.08rem;
+    line-height: 1.68;
+    padding: 0 16px;
+  }
+
+  .page {
+    max-width: 700px;
+    margin: 0 auto;
+    padding-block: 56px 88px;
+  }
+
+  .kicker {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+  }
+
+  h1 {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.9rem, 5vw, 2.6rem);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin: 0 0 20px;
+    text-wrap: balance;
+  }
+
+  .dek {
+    font-size: 1.18rem;
+    color: var(--text-dim);
+    margin: 0 0 40px;
+    padding-bottom: 36px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h2 {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-weight: 600;
+    font-size: 1.4rem;
+    letter-spacing: -0.005em;
+    margin: 56px 0 18px;
+    text-wrap: balance;
+  }
+
+  p { margin: 0 0 20px; }
+
+  strong { font-weight: 600; }
+
+  em { font-style: italic; }
+
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+  code {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.86em;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.08em 0.35em;
+  }
+
+  pre {
+    background: var(--code-bg);
+    color: var(--code-text);
+    border-radius: 10px;
+    padding: 18px 20px;
+    overflow-x: auto;
+    margin: 0 0 24px;
+    font-size: 0.86rem;
+    line-height: 1.6;
+  }
+
+  pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: inherit;
+  }
+
+  .comment { color: #7a8a97; }
+
+  .table-wrap {
+    overflow-x: auto;
+    margin: 0 0 28px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 0.92rem;
+  }
+
+  th, td {
+    padding: 11px 16px;
+    text-align: right;
+    border-bottom: 1px solid var(--border);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  th:first-child, td:first-child { text-align: left; white-space: normal; }
+
+  thead th {
+    background: var(--surface);
+    font-weight: 600;
+    color: var(--text-dim);
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+
+  .callout {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 16px 20px;
+    margin: 0 0 28px;
+    font-size: 1rem;
+  }
+
+  ul.links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 0.95rem;
+  }
+
+  ul.links li::before {
+    content: "→ ";
+    color: var(--accent);
+  }
+
+  footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+
+  @media (max-width: 520px) {
+    th, td { padding: 9px 10px; font-size: 0.84rem; }
+  }
+</style>
+
+<div class="page">
+  <div class="kicker">Forget · benchmarking notes</div>
+  <h1>The batch size bug my benchmarks found</h1>
+  <p class="dek">A write-up of what happened when I benchmarked a Dapper extension honestly against
+  hand-written Dapper and EF Core — including a real bug in already-shipped code that the benchmarks
+  caught before a user would have, and a second chase, one release later, for a gap the first round of
+  fixes didn't quite close.</p>
+
+  <p>Forget is a thin, provider-aware layer over Dapper for MySQL, Oracle, PostgreSQL and SQL Server:
+  type-safe CRUD, filtering, sorting and paging, each translated into the SQL that engine actually
+  wants. This isn't a "here's my library" post. It's what happened when I sat down to benchmark it
+  properly.</p>
+
+  <h2>The rule: publish the numbers even where they don't flatter you</h2>
+
+  <p>The benchmark suite lives in the repository, runs with BenchmarkDotNet against real PostgreSQL
+  containers, and its results are in the README as they came out, not cherry-picked. If Forget loses
+  to something, that's in there too. That rule is what actually produced this post: it's easy to stop
+  measuring once the numbers look good enough to publish. It's harder, and more useful, to keep asking
+  "why does this specific number move the way it does," even after you've already got a number you're
+  happy to show people.</p>
+
+  <p>Two of those "why" questions turned into real findings. The third turned into a bug fix. A fourth,
+  one release later, turned into a smaller gap than any of these — and into watching an obvious-looking
+  fix make things worse before it made them better.</p>
+
+  <h2>Reads bottleneck on round trips</h2>
+
+  <p><code>GetByIdRange</code> fetches many rows by id in one call. Forget batches the ids — 500 per
+  round trip by default — partly to stay under some engines' parameter limits (SQL Server accepts at
+  most ~2,100 per command) and partly to avoid handing the database one statement with thousands of
+  parameters. Dapper's hand-written equivalent and EF Core's own query both send all the ids in a
+  single <code>= ANY(...)</code> / <code>IN (...)</code>, regardless of count.</p>
+
+  <p>That difference should show up as more ids costing Forget more round trips, and it does. What's
+  less obvious is which way EF Core's own number moves as ids grow:</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ids</th><th>Forget, default batch (500)</th><th>EF Core</th></tr></thead>
+      <tbody>
+        <tr><td>100</td><td>1.05x Dapper</td><td>1.30x Dapper</td></tr>
+        <tr><td>1,000</td><td>1.27x Dapper</td><td>1.08x Dapper</td></tr>
+        <tr><td>10,000</td><td>1.74x Dapper</td><td>1.04x Dapper</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>Forget gets <em>worse</em> as the id count grows. EF Core gets <em>better</em>. Both are
+  consistent with the same cause: EF Core's single <code>IN</code>/<code>= ANY</code> query doesn't
+  need batching at any scale, so its relative cost only reflects fixed overhead, which matters less as
+  the row count grows. Forget's default batch does need more round trips as ids grow — 2 at 1,000, 20
+  at 10,000 — and each one costs something.</p>
+
+  <p>To confirm that story rather than just believe it, I added a variant that sets
+  <code>batchSize</code> to the id count, so it always makes one round trip, the same as Dapper and EF
+  Core:</p>
+
+  <pre><code>connection.GetByIdRange&lt;Product&gt;(ids, batchSize: ids.Length);</code></pre>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ids</th><th>One round trip</th></tr></thead>
+      <tbody>
+        <tr><td>100</td><td>1.11x Dapper</td></tr>
+        <tr><td>1,000</td><td>1.04x Dapper</td></tr>
+        <tr><td>10,000</td><td>1.04x Dapper</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>Flat, and close to Dapper at every scale. Round trips were most of the story for reads — the rest
+  is below. The batch exists for a real reason (those parameter limits are real, and a statement with
+  thousands of parameters is its own cost), but on the one engine this benchmark runs against, a caller
+  who wants a single round trip and knows their id count can ask for exactly that.</p>
+
+  <h2>Writes bottleneck on something else entirely</h2>
+
+  <p><code>InsertRange</code> and <code>UpdateRange</code> looked like they should tell the same
+  story: EF Core generates one statement per row, so I expected round trips to explain its cost here
+  too, and expected it to get <em>worse</em> than Forget as the row count grew, the same shape as the
+  read case.</p>
+
+  <p>The first surprise: EF Core doesn't actually make one round trip per row. Counting
+  <code>DbCommand</code> executions with <code>LogTo</code> filtered to <code>CommandExecuted</code>
+  showed it batches statements into chunks of exactly 1,000 per round trip — 1 round trip for 1,000
+  rows, 10 for 10,000. Not "one round trip," but not "one per row" either.</p>
+
+  <p>The second surprise is the one that mattered: at 10,000 rows, EF Core makes <em>fewer</em> round
+  trips than Forget's own default batching (10 against 20, since Forget batches at 500). If round
+  trips were the cost driver here, EF Core should be closing the gap, the same as it did on the read
+  side. It doesn't:</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>rows</th><th>InsertRange, EF / Forget</th><th>UpdateRange, EF / Forget</th></tr></thead>
+      <tbody>
+        <tr><td>100</td><td>1.9x</td><td>2.7x</td></tr>
+        <tr><td>1,000</td><td>2.0x</td><td>2.2x</td></tr>
+        <tr><td>10,000</td><td>2.3x</td><td>3.0x</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>EF Core gets <em>worse</em> relative to Forget as the row count grows, with fewer round trips the
+  whole time. What actually scales badly is the number of separate SQL statements the database has to
+  parse and plan: 10,000 single-row statements for EF Core against 20 multi-row statements (500 rows
+  each) for Forget, at 10,000 rows. Round trips and statement count usually move together, which is
+  why it's easy to credit the wrong one; here they didn't, and that's what made the real cause
+  visible. Forget itself stayed close to a flat 13x–16x faster than the naive per-row Dapper baseline
+  at every scale, batched or not — a number this second round of work never touched, because nothing
+  in it needed to.</p>
+
+  <h2>Making the client-side work disappear, for the operations that have any</h2>
+
+  <p>A caller who already holds their ids as a typed array — <code>int[] ids</code> — was still going
+  through a non-generic <code>IEnumerable</code> parameter, which means every id comes back boxed from
+  the enumerator, gets its type checked individually, and gets copied into a runtime-typed array
+  reflectively before it's bound as a query parameter. None of that is free, and none of it is
+  necessary when the caller's type is already known at compile time.</p>
+
+  <p>So <code>GetByIdRange</code> and <code>DeleteRange</code> got a generic overload:</p>
+
+  <pre><code>IReadOnlyList&lt;Product&gt; rows = connection.GetByIdRange&lt;Product, int&gt;(ids);</code></pre>
+
+  <p>With <code>TKey</code> known, the type is checked once instead of once per id, the ids aren't
+  boxed, and the array is built directly instead of through
+  <code>Array.CreateInstance</code>/<code>SetValue</code>. The non-generic overload's own list of ids
+  is also sized to the id count now, instead of grown one at a time — a smaller change, from the same
+  family as the one the rest of this post is about, and the reason its own numbers below are lower than
+  they were when this overload first shipped. Measured without a database, building the commands for
+  100, 1,000 and 10,000 ids takes</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th></th><th>100 ids</th><th>1,000 ids</th><th>10,000 ids</th></tr></thead>
+      <tbody>
+        <tr><td>GetByIdRange, non-generic</td><td>2,401 ns (7.0 KB)</td><td>20,694 ns (38.7 KB)</td><td>210,245 ns (355 KB)</td></tr>
+        <tr><td>GetByIdRange, typed</td><td>325 ns (3.8 KB)</td><td>457 ns (7.3 KB)</td><td>2,207 ns (42.5 KB)</td></tr>
+        <tr><td>DeleteRange, non-generic</td><td>2,378 ns (5.8 KB)</td><td>20,912 ns (37.4 KB)</td><td>208,969 ns (354 KB)</td></tr>
+        <tr><td>DeleteRange, typed</td><td>325 ns (2.5 KB)</td><td>405 ns (6.1 KB)</td><td>2,100 ns (41.2 KB)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>7x to 100x faster, 44% to 88% less memory, and the gap widens with the id count, since the
+  non-generic cost grows with it while the typed one barely moves. Against a real database, with round
+  trips already equalized, the typed call landed at 1.04x Dapper at 10,000 ids against 1.07x for the
+  non-generic one — a real but much smaller slice, because most of the total cost is still the query
+  itself. That specific pair of numbers didn't stay still; the next section is about why.</p>
+
+  <p><code>GetById</code> and <code>Delete</code> take a single identifier, not a sequence, and got
+  the same typed overload for consistency. Here's the part I'd rather report than skip: it made no
+  measurable difference. 204 ns against 194 ns, identical memory, both well inside the noise. A single
+  id has no per-element loop for the typed path to skip — checking one id's type once is the same
+  amount of work whether the compiler already knows the type or not. The win was in the loop, not in
+  the concept, and a result that isn't there is still a result worth writing down.</p>
+
+  <h2>The bug the benchmarks found, twice</h2>
+
+  <p>Adding the typed <code>GetByIdRange</code>/<code>DeleteRange</code> overloads meant writing a
+  test that both overloads build the same commands for the same ids. On SQL Server, with enough ids
+  and an explicit large <code>batchSize</code>, that test failed — <code>DeleteRangeCommands</code>
+  produced a command that, when actually executed, SQL Server rejected:</p>
+
+  <div class="callout">"The incoming request has too many parameters. The server supports a maximum
+  of 2100 parameters."</div>
+
+  <p>My first read of that failure was that my new test was asking for more than a single command
+  could hold, and that fixing the test — not the library — was the right call. It was pointed out to
+  me that this deserved a second look before I moved on, so I went back to the code instead of
+  trusting that first read.</p>
+
+  <p><code>GetByIdRangeCommands</code> caps <code>batchSize</code> itself to the parameter limit
+  before building anything. <code>DeleteRangeCommands</code> didn't: it capped the size of each chunk
+  it builds at a time, and let <code>batchSize</code> — however large the caller passed — control how
+  many chunks get combined into one command. Its own documentation already promised the parameter cap;
+  the code just didn't do it:</p>
+
+  <pre><code><span class="comment">// what it did</span>
+return DbCommandStrategy.Instance.DeleteRangeCommands(connection, entities, batchSize, SqlDialectStrategy.Instance.MaxParameterCount);
+
+<span class="comment">// what it does now</span>
+batchSize = batchSize > 0 ? Math.Min(batchSize, SqlDialectStrategy.Instance.MaxParameterCount) : SqlDialectStrategy.Instance.MaxParameterCount;
+return DbCommandStrategy.Instance.DeleteRangeCommands(connection, entities, batchSize, 0);</code></pre>
+
+  <p><code>DeleteRange</code>/<code>DeleteRangeAsync</code> — the methods that actually execute —
+  already capped <code>batchSize</code> correctly and were never affected. Only the method that just
+  builds the commands for inspection or manual execution had the gap, and it had been there since
+  before this round of work started.</p>
+
+  <p>Once that was confirmed, the obvious next question was whether
+  <code>InsertRangeCommands</code>, <code>UpdateRangeCommands</code> and
+  <code>UpsertRangeCommands</code> on SQL Server had the same shape of bug, since they build commands
+  the same way. They did — same missing cap, same fix, same three tests written to build and actually
+  execute the commands against a real database before trusting that the fix worked, because a command
+  that merely looks reasonable and a command that actually runs are two different claims.</p>
+
+  <p>None of this showed up by reading the code and reasoning about it. It showed up because a test
+  asked SQL Server to run something, and SQL Server said no.</p>
+
+  <h2>What's in 2.3.0</h2>
+
+  <p>Typed <code>GetByIdRange</code>, <code>DeleteRange</code>, <code>GetById</code> and
+  <code>Delete</code> overloads on all four providers, and the parameter-limit fix above, on SQL
+  Server's <code>DeleteRangeCommands</code>, <code>InsertRangeCommands</code>,
+  <code>UpdateRangeCommands</code> and <code>UpsertRangeCommands</code>. The full numbers, the
+  benchmark code, and how the suite is kept fair (same connection for every library, no change
+  tracking for EF Core, every result checked against the Dapper baseline before it's trusted) are in
+  the repository.</p>
+
+  <h2>The typed overload still boxed on the way out</h2>
+
+  <p>That shipped as 2.3.0. Re-running the same benchmarks against the release after it, the typed
+  <code>GetByIdRange</code> had stopped boxing ids on the way in, but it still boxed them on the way
+  out: a batched call deduplicates the rows it returns by id, which needs a set keyed by id, and that
+  set was still a <code>HashSet&lt;object&gt;</code> — the same one the non-generic overload uses —
+  because nobody had made it generic when the typed overload shipped. With round trips equalized, the
+  typed call still measured a couple of percent behind EF Core's own query: small, but real across
+  repeated runs, and the kind of gap this suite exists to chase rather than wave away.</p>
+
+  <p>The first guess was the dedup pass itself. A diagnostic variant — the same Dapper query, then the
+  same <code>HashSet</code>-and-copy Forget does, with nothing else from Forget in between — cost
+  about 0.1 to 0.3 ms per 10,000 rows, with the noise between runs wider than the cost. Real, but not
+  <em>the</em> cost: on its own it didn't explain the gap.</p>
+
+  <p>The next step ran the exact command Forget builds, verbatim, through Dapper directly — no Forget
+  code at all past the query. That landed at parity with the plain Dapper baseline. So the gap wasn't
+  in the SQL or the parameters; it was somewhere in the few hundred lines of C# between the query
+  returning and the typed overload returning. Rebuilding that work piece by piece, inside the same
+  database benchmark, didn't settle it either — each piece moved by anywhere from 0.2 to 0.9 ms between
+  otherwise identical runs, more than the effect being measured. The database round trip was too noisy
+  an instrument for a question this small.</p>
+
+  <p>Moving the comparison out of the database, into a plain benchmark over 10,000 rows already
+  sitting in memory, did settle it — measured both at rest and again after manufacturing about 2.7 MB
+  of short-lived garbage first, to stand in for what a query leaves behind before the dedup pass runs:</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Dedup pass</th><th>At rest</th><th>After ~2.7 MB of garbage</th></tr></thead>
+      <tbody>
+        <tr><td><code>HashSet&lt;object&gt;</code> (boxed)</td><td>202 µs</td><td>~550–600 µs</td></tr>
+        <tr><td><code>HashSet&lt;int&gt;</code> (typed)</td><td>89 µs</td><td>~120 µs</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>At rest, boxing 10,000 ids costs what boxing 10,000 integers should cost — real, but on its own
+  still too small to explain a gap closer to a millisecond against a real database. Under a bit of
+  memory pressure, the boxed version got about three times slower; the typed one barely moved.
+  Measuring the garbage collector's own pause time directly
+  (<code>GC.GetTotalPauseDuration()</code>, before and after each block) showed the pause itself
+  accounted for almost all of that jump. A small harness that measured the same pause directly around
+  the real database call confirmed it there too: the boxed dedup pass added about 290 µs of pause over
+  the bare command; the typed one added none the harness could detect.</p>
+
+  <p>The fix was the one already applied to the input side in 2.3.0: make the dedup pass generic too.
+  The typed overload now deduplicates with a <code>HashSet&lt;TKey&gt;</code> — a byte-content
+  comparer when <code>TKey</code> is <code>byte[]</code>, since .NET's own equality for a byte array is
+  by reference — instead of boxing every id into the same set the non-generic overload uses.</p>
+
+  <p>The first measurement after that fix was a regression, not a win: allocation went <em>up</em>,
+  from 3,403 KB to about 3,500 KB at 10,000 ids. The new set had no capacity hint, so it grew from
+  empty to 10,000 entries through several internal reallocations, and that cost more than the boxed
+  ids it had just stopped creating. The set can never hold more entries than ids given — a correct,
+  exact upper bound, not a guess — so giving it that capacity up front, the same way the non-generic
+  set already did, fixed it: 3,129 KB, below where it started before any of this, and the same number
+  across three separate runs.</p>
+
+  <p>The same oversight — a collection grown one item at a time instead of sized to a count already in
+  hand — turned up in a few other places once it was worth looking for: the boxed id list the
+  non-generic overloads build (sized to the id count, since it's never discarded — the reason its own
+  numbers in the section above are lower than when the typed overload first shipped), the list of
+  commands the four providers build one batch at a time, and the list of values a
+  <code>Contains</code>/<code>In</code> filter collects. The last two are correct upper bounds too,
+  with no measurable effect at the sizes this suite benchmarks — a few dozen batches, 10 ids in the
+  <code>Contains</code> case — fixed anyway, for the same reason, not for a number to report.</p>
+
+  <p>With one round trip, the typed call now measures at 1.05x, 1.02x and 1.03x Dapper at 100, 1,000
+  and 10,000 ids, against 1.29x, 1.13x and 1.03x for EF Core's own query. EF Core is the slowest of the
+  three below 10,000 ids, where its per-call overhead is a bigger share of a shorter call, and roughly
+  level with Forget at 10,000. The typed call also allocates less than EF Core at every count measured:
+  35 KB against 76 at 100 ids, 298 KB against 384 at 1,000, 3,129 KB against 3,573 at 10,000.</p>
+
+  <h2>What's in 2.3.1</h2>
+
+  <p>The typed <code>GetByIdRange</code>'s dedup pass, no longer boxing ids; the boxed id list the
+  non-generic <code>GetByIdRange</code>/<code>DeleteRange</code> overloads build, the list of commands
+  the four providers build in batches, and the list of values a <code>Contains</code>/<code>In</code>
+  filter collects, all now sized up front instead of grown one item at a time. No change in behaviour
+  and no change to the public API; the numbers above, and the full suite in the
+  <a href="https://github.com/davidedalcortivo/Forget/blob/main/benchmarks/README.md">benchmarks README</a>,
+  are the ones to quote now.</p>
+
+  <footer>
+    <ul class="links">
+      <li><a href="https://github.com/davidedalcortivo/Forget">github.com/davidedalcortivo/Forget</a></li>
+      <li><a href="https://github.com/davidedalcortivo/Forget/blob/main/benchmarks/README.md">Benchmark methodology and full results</a></li>
+      <li><a href="https://github.com/davidedalcortivo/Forget/blob/main/CHANGELOG.md">Changelog</a></li>
+    </ul>
+  </footer>
+</div>
+
+</body></html>
