@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.3.2] - 2026-10-10
+
+### Changed
+
+- New package icon.
+
 ## [2.3.1] - 2026-10-07
 
 ### Changed
@@ -292,6 +298,7 @@ Initial release.
   syntax constraints (e.g. Oracle's `UNION ALL`/`DUAL`-based multi-row insert with automatic per-column cast
   discovery, since Oracle has no native `VALUES (...), (...)` syntax).
 
+[2.3.2]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.3.2
 [2.3.1]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.3.1
 [2.3.0]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.3.0
 [2.2.0]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.2.0
