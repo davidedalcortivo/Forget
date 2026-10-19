@@ -1,5 +1,24 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>The Batch Size Bug</title>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>The batch size bug I found while benchmarking</title>
+<meta name="description" content="Benchmarking Forget, a Dapper extension, against hand-written Dapper and EF Core: why reads bottleneck on round trips and writes on statement count, and the bug in shipped code that turned up along the way.">
+<meta name="author" content="Davide Dal Cortivo">
+<link rel="canonical" href="https://davidedalcortivo.github.io/Forget/the-batch-size-bug.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Forget">
+<meta property="og:title" content="The batch size bug I found while benchmarking">
+<meta property="og:description" content="Benchmarking Forget, a Dapper extension, against hand-written Dapper and EF Core: why reads bottleneck on round trips and writes on statement count, and the bug in shipped code that turned up along the way.">
+<meta property="og:url" content="https://davidedalcortivo.github.io/Forget/the-batch-size-bug.html">
+<meta property="og:image" content="https://raw.githubusercontent.com/davidedalcortivo/Forget/main/assets/icon.png">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
+<meta property="article:published_time" content="2026-10-08">
+<meta property="article:author" content="Davide Dal Cortivo">
+<meta name="twitter:card" content="summary">
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Sans:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
   :root {
@@ -79,6 +98,13 @@
     letter-spacing: -0.01em;
     margin: 0 0 20px;
     text-wrap: balance;
+  }
+
+  .byline {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    margin: -6px 0 22px;
   }
 
   .dek {
@@ -208,13 +234,16 @@
     th, td { padding: 9px 10px; font-size: 0.84rem; }
   }
 </style>
+</head>
+<body>
 
 <div class="page">
   <div class="kicker">Forget · benchmarking notes</div>
-  <h1>The batch size bug my benchmarks found</h1>
+  <h1>The batch size bug I found while benchmarking</h1>
+  <p class="byline">Davide Dal Cortivo · <time datetime="2026-10-08">October 8, 2026</time></p>
   <p class="dek">A write-up of what happened when I benchmarked a Dapper extension honestly against
-  hand-written Dapper and EF Core — including a real bug in already-shipped code that the benchmarks
-  caught before a user would have, and a second chase, one release later, for a gap the first round of
+  hand-written Dapper and EF Core — including a real bug in already-shipped code that turned up
+  before a user hit it, and a second chase, one release later, for a gap the first round of
   fixes didn't quite close.</p>
 
   <p>Forget is a thin, provider-aware layer over Dapper for MySQL, Oracle, PostgreSQL and SQL Server:
@@ -367,7 +396,7 @@
   amount of work whether the compiler already knows the type or not. The win was in the loop, not in
   the concept, and a result that isn't there is still a result worth writing down.</p>
 
-  <h2>The bug the benchmarks found, twice</h2>
+  <h2>The bug a test found, twice</h2>
 
   <p>Adding the typed <code>GetByIdRange</code>/<code>DeleteRange</code> overloads meant writing a
   test that both overloads build the same commands for the same ids. On SQL Server, with enough ids

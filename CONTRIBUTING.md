@@ -26,7 +26,7 @@ The test runner is Microsoft Testing Platform (see `global.json`). To run one pr
 
 ```bash
 dotnet test --project tests/Forget.Tests -- --filter-namespace "Forget.Tests.SqlServer"
-dotnet test --project tests/Forget.Tests -- --filter-class "*KeyedRangeIntegrationTests"
+dotnet test --project tests/Forget.Tests -- --filter-class "*IdTypeRangeIntegrationTests"
 ```
 
 ## How the code is laid out

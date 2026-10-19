@@ -18,7 +18,7 @@ boilerplate for every entity.
 |                                                    | Dapper           | Forget                              | EF Core                                   |
 |----------------------------------------------------|-------------------|--------------------------------------------|--------------------------------------------|
 | Single-row CRUD                                      | You write the SQL | Generated, one line per call                | Generated                                   |
-| Multi-row update/insert/delete/upsert                | You write the SQL | ✅ Generated as one atomic multi-row statement, with a configurable batch size | Generated, but one statement per row, batched into fewer round trips — not a single multi-row statement |
+| Multi-row update/insert/delete/upsert                | You write the SQL | ✅ Generated as one atomic multi-row statement, with a configurable batch size | Generated, but inconsistently: one statement per row or one multi-row statement, depending on provider and operation |
 | Filter built from a compile-time LINQ expression     | You write the SQL | ✅ `Expression<Func<T, bool>>`              | ✅                                           |
 | Filter built dynamically at runtime (e.g. from a query string, with no `Expression` in sight) | You write the SQL | ✅ `FilterDescriptor`/`FilterGroup`, by property name | Needs `Expression.Lambda` plumbing or a package like `System.Linq.Dynamic.Core` |
 | Upsert on a natural (non-identity) key               | You write the SQL | ✅ `[UpsertKey]`, one call across all 4 providers | Needs manual logic or a third-party package |
@@ -258,9 +258,9 @@ Forget generates this shape automatically, but with every value cast to its colu
 INSERT INTO "app"."Products" (
     "Id", "Name", "Price"
 )
-SELECT CAST(:Id0 AS NUMBER(10)) AS "Id", :Name0 AS "Name", CAST(:Price0 AS NUMBER(18,2)) AS "Price" FROM DUAL
+SELECT CAST(:Id0 AS NUMBER(10)) AS "Id", CAST(:Name0 AS VARCHAR2(100)) AS "Name", CAST(:Price0 AS NUMBER(18,2)) AS "Price" FROM DUAL
 UNION ALL
-SELECT CAST(:Id1 AS NUMBER(10)) AS "Id", :Name1 AS "Name", CAST(:Price1 AS NUMBER(18,2)) AS "Price" FROM DUAL
+SELECT CAST(:Id1 AS NUMBER(10)) AS "Id", CAST(:Name1 AS VARCHAR2(100)) AS "Name", CAST(:Price1 AS NUMBER(18,2)) AS "Price" FROM DUAL
 ```
 
 The cast expression for each column isn't hard-coded — on the first call for a given entity and connection,

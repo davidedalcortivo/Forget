@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.3.3] - 2026-10-19
+
+No code changes: the package metadata and the documentation.
+
+### Changed
+
+- The package tags add `batch`, `linq` and `upsert`, so that a NuGet search for them finds the packages; the other tags
+  are the same as in 2.3.2, and all of them stay in alphabetical order.
+- README: the comparison table says that EF Core is inconsistent on multi-row writes (one statement per row or one
+  multi-row statement, depending on the provider and the operation), instead of one statement per row: on SQL Server,
+  it combines the inserts of a batch into one `MERGE`.
+- README: the Oracle multi-row insert example casts the text column too (`CAST(:Name0 AS VARCHAR2(100))`), as the
+  statement Forget generates does once it has read the column types from the data dictionary.
+
 ## [2.3.2] - 2026-10-10
 
 ### Changed
@@ -298,6 +312,7 @@ Initial release.
   syntax constraints (e.g. Oracle's `UNION ALL`/`DUAL`-based multi-row insert with automatic per-column cast
   discovery, since Oracle has no native `VALUES (...), (...)` syntax).
 
+[2.3.3]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.3.3
 [2.3.2]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.3.2
 [2.3.1]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.3.1
 [2.3.0]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.3.0
