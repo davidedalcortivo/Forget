@@ -6,7 +6,7 @@ using Forget.Oracle.Extensions;
 namespace Forget.Tests.Oracle
 {
     /// <summary>
-    /// Oracle has no native multi-row <c>VALUES (...), (...)</c>, so Forget builds <c>SELECT ... FROM DUAL UNION ALL
+    /// Oracle has no multi-row <c>VALUES (...), (...)</c> before 23ai, so Forget builds <c>SELECT ... FROM DUAL UNION ALL
     /// ...</c> and wraps each bound value in a <c>CAST</c> discovered from the data dictionary (otherwise a first row
     /// full of nulls gives <c>ORA-01790</c>). These tests run that discovery against a real schema and check that the
     /// cast it picks does not change the value on its way into the column — in particular for <c>NUMBER</c> columns

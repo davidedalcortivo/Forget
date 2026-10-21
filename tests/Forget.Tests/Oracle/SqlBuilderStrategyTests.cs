@@ -431,7 +431,7 @@ namespace Forget.Tests.Oracle
         [Fact]
         public void InsertRange_HasNoValuesKeywordOfItsOwn()
         {
-            // Unlike the other three providers, Oracle has no multi-row VALUES(...),(...) syntax: the row batch
+            // Unlike the other three providers, Oracle has no multi-row VALUES(...),(...) before 23ai: the row batch
             // placeholder stands in for a whole "SELECT ... FROM DUAL UNION ALL ..." block built elsewhere
             // (Forget.Oracle.Strategies.DbCommandStrategy.BuildUpsertRangeCommands), not a VALUES clause.
             string sql = _strategy.InsertRangeSqlBuilder<Widget>().Render("<<ROWS>>");

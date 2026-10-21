@@ -230,10 +230,11 @@ is rounded off, and only a magnitude that genuinely doesn't fit throws `Overflow
 already had, so it reads the native decimal scalar directly.
 The exact SQL each provider uses to produce that text is visible via `AvgCommand`, if you want to see it.
 
-### Oracle: no native multi-row `VALUES (...), (...)` — update, insert, and upsert all need a way around it
+### Oracle: multi-row writes the backward-compatible way — update, insert, and upsert all need it
 
-Oracle has no native multi-row insert syntax.
-The common workaround is:
+Multi-row `VALUES (...), (...)` (the table value constructor) only arrived with Oracle 23ai, and many production
+databases still run older releases such as 19c. So Forget uses the backward-compatible form that Oracle has always
+supported:
 
 ```sql
 INSERT INTO products (id, name, price)
@@ -242,9 +243,10 @@ UNION ALL
 SELECT :id1, :name1, :price1 FROM DUAL
 ```
 
-which immediately runs into `ORA-01790` ("expression must have same datatype as corresponding expression") the
-moment two rows disagree on the inferred type of a bound parameter in the same `SELECT` position — which happens
-constantly, since a `NULL` or a numeric literal in one row and a string in another are common in real data.
+Written like this, though, it runs into `ORA-01790` ("expression must have same datatype as corresponding
+expression") the moment two rows disagree on the inferred type of a bound parameter in the same `SELECT` position —
+which happens constantly, since a `NULL` or a numeric literal in one row and a string in another are common in real
+data.
 
 This isn't only an `InsertRange`/`InsertRangeAsync` problem: `UpdateRange`/`UpdateRangeAsync` and
 `UpsertRange`/`UpsertRangeAsync` build on the exact same `UNION ALL`/`DUAL` block as their source rowset
