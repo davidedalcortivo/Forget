@@ -230,7 +230,7 @@ is rounded off, and only a magnitude that genuinely doesn't fit throws `Overflow
 already had, so it reads the native decimal scalar directly.
 The exact SQL each provider uses to produce that text is visible via `AvgCommand`, if you want to see it.
 
-### Oracle: multi-row writes the backward-compatible way — update, insert, and upsert all need it
+### Oracle: multi-row writes that work on every release
 
 Multi-row `VALUES (...), (...)` (the table value constructor) only arrived with Oracle 23ai, and many production
 databases still run older releases such as 19c. So Forget uses the backward-compatible form that Oracle has always
