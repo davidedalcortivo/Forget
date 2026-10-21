@@ -201,8 +201,8 @@ What actually runs is deliberately *not* the same statement re-parameterized fou
   Instead: `UPDATE ... WITH (UPDLOCK, HOLDLOCK) SET ... WHERE ...` followed by a conditional `INSERT` guarded by
   `IF @@ROWCOUNT = 0`, wrapped in a transaction Forget manages for you if you don't supply one.
 
-Each statement is the one that is right for that engine — instead of one statement that happens to parse everywhere
-but is subtly wrong (or slow, or unsafe under concurrency) on at least one of them.
+Each engine gets the statement that is right for it, rather than one statement that parses everywhere but is slow or
+unsafe under concurrency on at least one of them.
 
 Upserts from many connections at once, on the same new keys, are covered by tests on all 4 providers. Single-row
 upserts succeeded for every caller on MySQL, PostgreSQL and SQL Server, and so did multi-row upserts on MySQL and
@@ -284,11 +284,11 @@ That cast doesn't (and can't, without inventing an arbitrary precision) give `Av
 T-SQL's own `AVG` returns the same exact numeric type as its input, so averaging an integer-typed column still
 returns a truncated whole number — `AVG` of `1, 2, 4` is `2`, not `2.33`, identical to what a hand-written
 `AVG(column)` query returns.
-We looked at "fixing" this and decided against it: unlike a real translation bug (an unnecessary escape character
-silently breaking a search, say), there's no single objectively correct alternative here to fall back on — only
-an arbitrary policy decision about precision that isn't ours to make.
-This behavior is documented on every `Avg`/`AvgAsync`/`AvgCommand` overload and locked in by a regression test,
-precisely because it fails silently (a plausible-looking wrong number, no exception) rather than loudly.
+We considered "fixing" this and decided not to. A translation bug, like an extra escape character that silently breaks
+a search, has one correct answer. Here there is none: any fractional precision would be an arbitrary choice, and it
+isn't Forget's to make.
+Because it fails silently, with a plausible number and no exception, this behavior is documented on every
+`Avg`/`AvgAsync`/`AvgCommand` overload and covered by a regression test.
 
 ## Entity mapping attributes
 

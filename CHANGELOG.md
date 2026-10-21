@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.3.4] - 2026-10-21
+
+No code changes: the documentation.
+
+### Changed
+
+- README: two passages say the same thing in plainer words: why each engine gets its own upsert statement, and why
+  `Avg` on an integer column of SQL Server is left truncated.
+
 ## [2.3.3] - 2026-10-19
 
 No code changes: the package metadata and the documentation.
@@ -312,6 +321,7 @@ Initial release.
   syntax constraints (e.g. Oracle's `UNION ALL`/`DUAL`-based multi-row insert with automatic per-column cast
   discovery, since Oracle has no native `VALUES (...), (...)` syntax).
 
+[2.3.4]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.3.4
 [2.3.3]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.3.3
 [2.3.2]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.3.2
 [2.3.1]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.3.1
