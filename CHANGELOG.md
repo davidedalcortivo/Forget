@@ -5,6 +5,22 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.4.2] - 2026-10-23
+
+No code changes: dependency updates.
+
+### Changed
+
+- Forget.Oracle depends on Oracle.ManagedDataAccess.Core 23.26.400 (it was 23.26.301), and Forget.SqlServer on
+  Microsoft.Data.SqlClient 7.1.1 (it was 7.1.0).
+- The packages are built with the Source Link of the .NET SDK instead of the `Microsoft.SourceLink.GitHub` package; the
+  symbol packages still link every file to its source on GitHub.
+
+### Security
+
+- Forget.Oracle and Forget.SqlServer depend on System.Security.Cryptography.Pkcs 8.0.2, so the 8.0.1 their drivers
+  bring in, affected by two denial-of-service vulnerabilities (CVE-2026-84008, CVE-2026-70162), is no longer used.
+
 ## [2.4.1] - 2026-10-23
 
 No code changes: the documentation.
@@ -426,6 +442,7 @@ Initial release.
   syntax constraints (e.g. Oracle's `UNION ALL`/`DUAL`-based multi-row insert with automatic per-column cast
   discovery, since Oracle has no native `VALUES (...), (...)` syntax).
 
+[2.4.2]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.4.2
 [2.4.1]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.4.1
 [2.4.0]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.4.0
 [2.3.5]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.3.5
