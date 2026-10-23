@@ -43,9 +43,14 @@ dotnet test --project tests/Forget.Tests -- --filter-class "*IdTypeRangeIntegrat
 
 - The same operations, with the same names, exist on all four providers, each with a synchronous and an asynchronous
   overload. A change to one provider's extension methods usually applies to all four.
+- In the strategies (dialect, SQL builder, command, execution), a public method never calls another public method of
+  the same class: shared logic goes in a protected `Build*` (or `*ImplAsync`) method, and those may call each other.
+  Every inheritable method is `virtual`, except `GetConnectionId`. Public members go in the main file, protected and
+  private methods in the class's `.Internal.cs` partial file.
 - The public API has XML documentation. Keep it short, and say what Forget decides, not what Dapper or the driver does.
-- Comments only where the code cannot say why. Nullable reference types are on, and the build has no warnings
-  (`dotnet build --no-incremental` shows the analyzer ones too).
+- In `src`, the only comments are the XML documentation of the public API: no `//` comments, and no XML documentation
+  on internal types. Tests may say in a comment what they check and why. Nullable reference types are on, and the
+  build has no warnings (`dotnet build --no-incremental` shows the analyzer ones too).
 - Anything a provider does differently is verified against a real engine, not by reading its documentation.
 
 ## Making a change

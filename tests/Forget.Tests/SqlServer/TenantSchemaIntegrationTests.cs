@@ -5,7 +5,7 @@ using Microsoft.Data.SqlClient;
 namespace Forget.Tests.SqlServer
 {
     /// <summary>
-    /// An entity without <c>[Table(Schema = ...)]</c> is left unqualified, so SQL Server resolves it as it resolves
+    /// An entity without a schema in <c>[Table]</c> is left unqualified, so SQL Server resolves it as it resolves
     /// hand-written SQL: in the default schema of the connection's user, then in dbo. Forget used to write [dbo] for every
     /// user, so a user whose default schema is tenant_a read and wrote dbo's table.
     /// </summary>

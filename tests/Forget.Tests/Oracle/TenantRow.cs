@@ -1,7 +1,7 @@
 namespace Forget.Tests.Oracle
 {
     /// <summary>
-    /// No <c>[Table(Schema = ...)]</c>: the database resolves the table from the session, as it resolves hand-written SQL.
+    /// No schema in <c>[Table]</c>: the database resolves the table from the session, as it resolves hand-written SQL.
     /// The table is in <c>"dbo"</c> and in <c>"tenant_b"</c>, with different rows.
     /// </summary>
     internal sealed class TenantRow
@@ -11,7 +11,7 @@ namespace Forget.Tests.Oracle
         public int Amount { get; set; }
     }
 
-    /// <summary>No <c>[Table(Schema = ...)]</c>, and the table is only in <c>"tenant_b"</c>.</summary>
+    /// <summary>No schema in <c>[Table]</c>, and the table is only in <c>"tenant_b"</c>.</summary>
     internal sealed class TenantOnlyRow
     {
         public int Id { get; set; }

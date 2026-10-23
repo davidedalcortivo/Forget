@@ -5,8 +5,9 @@ using Oracle.ManagedDataAccess.Client;
 namespace Forget.Tests.Oracle
 {
     /// <summary>
-    /// An entity without <c>[Table(Schema = ...)]</c> is left unqualified, so Oracle resolves it in the current schema of the
-    /// session, as it resolves hand-written SQL: the user's, or the one set with <c>ALTER SESSION SET CURRENT_SCHEMA</c>.
+    /// An entity without a schema in <c>[Table]</c> is left unqualified, so Oracle resolves it in the current schema of
+    /// the session, as it resolves hand-written SQL: the user's, or the one set with
+    /// <c>ALTER SESSION SET CURRENT_SCHEMA</c>.
     /// Forget used to qualify it with the user of the first connection that reached it, for the whole process.
     /// </summary>
     [Collection(OracleCollection.Name)]

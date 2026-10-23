@@ -7,7 +7,7 @@ namespace Forget.Tests.MySql
     /// <summary>
     /// Starts one real MySql container (via Testcontainers) for the lifetime of a test class, and creates the
     /// <c>Widget</c> table the integration tests run against. The container's database is named <c>dbo</c> so it
-    /// matches <see cref="Widget"/>'s <c>[Table(Schema = "dbo")]</c> — MySql treats "schema" and
+    /// matches <see cref="Widget"/>'s <c>Schema = "dbo"</c> — MySql treats "schema" and
     /// "database" as the same thing.
     /// </summary>
     public sealed class MySqlFixture : IAsyncLifetime

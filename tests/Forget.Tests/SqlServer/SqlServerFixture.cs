@@ -8,7 +8,7 @@ namespace Forget.Tests.SqlServer
     /// Starts one real SqlServer container (via Testcontainers) for the lifetime of a test class, and creates the
     /// <c>dbo.Widget</c> table the integration tests run against. No explicit schema creation is needed: every
     /// SqlServer database already has a <c>dbo</c> schema by default, matching
-    /// <see cref="Widget"/>'s <c>[Table(Schema = "dbo")]</c>.
+    /// <see cref="Widget"/>'s <c>Schema = "dbo"</c>.
     /// </summary>
     public sealed class SqlServerFixture : IAsyncLifetime
     {

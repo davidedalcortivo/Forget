@@ -8,7 +8,7 @@ namespace Forget.Tests.Oracle
     /// <summary>
     /// Starts one real Oracle container (via the official <c>Testcontainers.Oracle</c> module) for the lifetime
     /// of a test class. Creates a <c>"dbo"</c> user/schema (quoted and lowercase, matching <see cref="Widget"/>'s
-    /// <c>[Table(Schema = "dbo")]</c> exactly — Oracle folds unquoted identifiers to uppercase, which would not
+    /// <c>Schema = "dbo"</c> exactly — Oracle folds unquoted identifiers to uppercase, which would not
     /// match) owning the <c>"Widget"</c> table, then calls the real <c>LoadDbCacheAsync</c> so the column-cast
     /// PL/SQL block
     /// (<see cref="SqlBuilderStrategyTests.GetColumns_EmitsPlSqlBlockThatDiscoversColumnCastExpressions"/>) runs

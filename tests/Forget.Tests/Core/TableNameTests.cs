@@ -6,11 +6,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Forget.Tests.Core
 {
     /// <summary>
-    /// An entity with <c>[Table(Schema = ...)]</c> is qualified with that schema in every statement. An entity without one
-    /// is left unqualified, so the database resolves the table from the session, as it resolves hand-written SQL: the
+    /// An entity with a schema in <c>[Table]</c> is qualified with that schema in every statement. An entity without
+    /// one is left unqualified, so the database resolves the table from the session, as it resolves hand-written SQL: the
     /// database of the connection on MySQL, the current schema on Oracle, the search_path on PostgreSQL, the user's
-    /// default schema on SQL Server. Forget used to qualify it with a schema of its own (the database or user of the first
-    /// connection, public, dbo), which ignored the session.
+    /// default schema on SQL Server. Forget used to qualify it with a schema of its own (the database or user of the
+    /// first connection, public, dbo), which ignored the session.
     /// </summary>
     public class TableNameTests
     {

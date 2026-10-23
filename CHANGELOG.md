@@ -5,6 +5,24 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.4.1] - 2026-10-23
+
+No code changes: the documentation.
+
+### Changed
+
+- README: the table of mapping attributes showed `[Table(Name = ..., Schema = ...)]` and `[Column(Name = ...)]`, which
+  do not compile: both take the name in their constructor. It now shows `[Table("...", Schema = "...")]` and
+  `[Column("...")]`, and the passage on tables without a schema gives `[Table("Products", Schema = "sales")]` as the
+  example.
+- README: the comparison table said that a multi-row write is one atomic multi-row statement. It is one statement per
+  batch, and all the batches run in one transaction.
+- README: the PostgreSQL examples use the parameter name Forget generates (`= ANY(@p_0_)`), and a placeholder for the
+  conflict target of the upsert, like the other engines.
+- CONTRIBUTING: the conventions say how the strategies are organized (a public method never calls another public one,
+  shared logic goes in protected methods, in the `.Internal.cs` file) and that in `src` the only comments are the XML
+  documentation of the public API.
+
 ## [2.4.0] - 2026-10-23
 
 ### Changed
@@ -408,6 +426,7 @@ Initial release.
   syntax constraints (e.g. Oracle's `UNION ALL`/`DUAL`-based multi-row insert with automatic per-column cast
   discovery, since Oracle has no native `VALUES (...), (...)` syntax).
 
+[2.4.1]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.4.1
 [2.4.0]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.4.0
 [2.3.5]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.3.5
 [2.3.4]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.3.4

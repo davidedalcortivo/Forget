@@ -5,7 +5,7 @@ using MySqlConnector;
 namespace Forget.Tests.MySql
 {
     /// <summary>
-    /// An entity without <c>[Table(Schema = ...)]</c> is left unqualified, so MySql resolves it in the database of the
+    /// An entity without a schema in <c>[Table]</c> is left unqualified, so MySql resolves it in the database of the
     /// connection, as it resolves hand-written SQL. Forget used to qualify it with the database of the first connection
     /// that reached it, for the whole process, so with a database per tenant every tenant read and wrote the first one's.
     /// </summary>

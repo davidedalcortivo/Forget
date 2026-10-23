@@ -5,7 +5,7 @@ using Npgsql;
 namespace Forget.Tests.PostgreSql
 {
     /// <summary>
-    /// An entity without <c>[Table(Schema = ...)]</c> is left unqualified, so PostgreSQL resolves it through the
+    /// An entity without a schema in <c>[Table]</c> is left unqualified, so PostgreSQL resolves it through the
     /// search_path, as it resolves hand-written SQL. Forget used to write "public" for every connection, so with a schema per
     /// tenant chosen by the search_path it read and wrote public's table, or failed when public had none.
     /// </summary>

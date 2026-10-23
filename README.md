@@ -18,7 +18,7 @@ boilerplate for every entity.
 |                                                    | Dapper           | Forget                              | EF Core                                   |
 |----------------------------------------------------|-------------------|--------------------------------------------|--------------------------------------------|
 | Single-row CRUD                                      | You write the SQL | Generated, one line per call                | Generated                                   |
-| Multi-row update/insert/delete/upsert                | You write the SQL | ✅ Generated as one atomic multi-row statement, with a configurable batch size | Generated, but inconsistently: one statement per row or one multi-row statement, depending on provider and operation |
+| Multi-row update/insert/delete/upsert                | You write the SQL | ✅ Generated as multi-row statements, one per batch of a size you choose, all in one transaction | Generated, but inconsistently: one statement per row or one multi-row statement, depending on provider and operation |
 | Filter built from a compile-time LINQ expression     | You write the SQL | ✅ `Expression<Func<T, bool>>`              | ✅                                           |
 | Filter built dynamically at runtime (e.g. from a query string, with no `Expression` in sight) | You write the SQL | ✅ `FilterDescriptor`/`FilterGroup`, by property name | Needs `Expression.Lambda` plumbing or a package like `System.Linq.Dynamic.Core` |
 | Upsert on a natural (non-identity) key               | You write the SQL | ✅ `[UpsertKey]`, one call across all 4 providers | Needs manual logic or a third-party package |
@@ -177,7 +177,7 @@ A few smaller, mostly mechanical ones:
 - **MySQL** escapes `LIKE` patterns (for `Contains`/`StartsWith`/`EndsWith`) accounting for MySQL's own C-style
   backslash escaping inside string literals — different from the other three engines, and easy to get wrong with
   one shared `ESCAPE` clause.
-- **PostgreSQL** translates `Enumerable.Contains`/`ComparisonOperator.In` to `= ANY(@p)` when the collection is
+- **PostgreSQL** translates `Enumerable.Contains`/`ComparisonOperator.In` to `= ANY(@p_0_)` when the collection is
   homogeneously typed (Npgsql needs a genuinely typed array for that). A list of mixed types is written out as
   `IN (@p_0_0, @p_0_1, ...)`, one parameter per element, as Dapper expands a list on the other three providers; on
   Npgsql Dapper does not, because it binds a list as one array.
@@ -197,7 +197,7 @@ What actually runs is deliberately *not* the same statement re-parameterized fou
   (a `MERGE` is not atomic against a concurrent insert of the same key: if two sessions upsert a key that doesn't
   exist yet at the same moment, one of them can fail with `ORA-00001`. Forget doesn't retry — handle that error and
   call again; the row exists by then, and it is updated. It never leaves a duplicate row.)
-- **PostgreSQL**: `INSERT INTO ... VALUES (...) ON CONFLICT (sku) DO UPDATE SET col = EXCLUDED.col, ...`
+- **PostgreSQL**: `INSERT INTO ... VALUES (...) ON CONFLICT (...) DO UPDATE SET col = EXCLUDED.col, ...`
 - **SQL Server**: *not* `MERGE` — a documented, well-known source of concurrency correctness bugs.
   Instead: `UPDATE ... WITH (UPDLOCK, HOLDLOCK) SET ... WHERE ...` followed by a conditional `INSERT` guarded by
   `IF @@ROWCOUNT = 0`, wrapped in a transaction Forget manages for you if you don't supply one.
@@ -335,8 +335,8 @@ Because it fails silently, with a plausible number and no exception, this behavi
 |------------------------------------------|---------------------------------------------------------------------|
 | `[Key]`                                   | Marks the identifier property. If omitted, a property named `Id` is used. |
 | `[UpsertKey]`                             | Marks one or more properties as the natural key used to match rows on upsert, instead of the identifier. Multiple properties form a composite key. |
-| `[Table(Name = ..., Schema = ...)]`       | Overrides the table name and/or schema (defaults: CLR type name, no schema; see below). |
-| `[Column(Name = ...)]`                    | Overrides the SQL column name for a property.                        |
+| `[Table("...", Schema = "...")]`          | Sets the table name and, optionally, its schema (without the attribute: the class name, no schema; see below). |
+| `[Column("...")]`                         | Overrides the SQL column name for a property.                        |
 | `[NotMapped]`                             | Excludes a property entirely.                                        |
 | `[DatabaseGenerated(...)]`                | A property with `Identity` or `Computed` is never written by the library, only read back. |
 
@@ -365,11 +365,12 @@ Because it fails silently, with a plausible number and no exception, this behavi
       ...
   }
   ```
-- **Without a schema, the database finds the table.** An entity with `[Table(Schema = ...)]` is always qualified with
-  that schema. Without one, the table is left unqualified, so each connection gets the table its own session resolves,
-  as with hand-written SQL: the connection's database on MySQL, the current schema on Oracle (the user's, or the one
-  set with `ALTER SESSION SET CURRENT_SCHEMA`), the `search_path` on PostgreSQL, the user's default schema (then `dbo`)
-  on SQL Server. One entity works with a database or a schema per tenant.
+- **Without a schema, the database finds the table.** An entity with a schema, such as
+  `[Table("Products", Schema = "sales")]`, is always qualified with that schema. Without one, the table is left
+  unqualified, so each connection gets the table its own session resolves, as with hand-written SQL: the connection's
+  database on MySQL, the current schema on Oracle (the user's, or the one set with `ALTER SESSION SET CURRENT_SCHEMA`),
+  the `search_path` on PostgreSQL, the user's default schema (then `dbo`) on SQL Server. One entity works with a
+  database or a schema per tenant.
 - **Types are Dapper's.** Forget does not map or convert types. Any type Dapper can bind, or that you register a
   `SqlMapper.TypeHandler` for, works the same way through Forget (the Oracle section above registers one that binds
   `bool` as a number).
