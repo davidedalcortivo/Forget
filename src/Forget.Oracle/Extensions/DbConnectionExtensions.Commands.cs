@@ -13,10 +13,11 @@ namespace Forget.Oracle.Extensions
     public static partial class DbConnectionExtensions
     {
         /// <summary>
-        /// Ensures the cached SQL commands and Oracle dialect settings for <typeparamref name="TEntity"/> are initialized.
+        /// Ensures the cached SQL commands for <typeparamref name="TEntity"/> are initialized.
         /// </summary>
         /// <typeparam name="TEntity">The entity type to initialize the cache for.</typeparam>
-        /// <param name="connection">The connection used to resolve Oracle-specific settings, such as the default schema.</param>
+        /// <param name="connection">The connection the commands are for. The cached SQL does not depend on it: a table without a
+        /// schema is left unqualified and resolved by each connection's session.</param>
         /// <remarks>
         /// Every other extension method in this class calls this method automatically before doing its own work, so
         /// calling it directly is only useful to pay the one-time initialization cost ahead of time (for example,

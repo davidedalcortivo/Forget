@@ -1,19 +1,15 @@
-﻿using Forget.Core.Utilities;
+﻿using Forget.Core.Abstractions.Strategies;
 using Oracle.ManagedDataAccess.Client;
-using System.Data.Common;
 
 
 namespace Forget.Oracle.Strategies
 {
-    internal sealed partial class SqlDialectStrategy
+    internal sealed partial class SqlDialectStrategy : BaseSqlDialectStrategy
     {
-        protected override void InitializeImpl(DbConnection connection)
+        protected override string BuildConnectionId(string connectionString)
         {
-            OracleConnectionStringBuilder builder = new(connection.ConnectionString);
-            DefaultSchemaName = builder.UserID;
-
-            if (!IdentifierHelper.CharsetRegex().IsMatch(DefaultSchemaName))
-                throw new InvalidOperationException($"The default schema name '{DefaultSchemaName}' contains invalid characters.");
+            OracleConnectionStringBuilder builder = new(connectionString);
+            return $"oracle://{builder.DataSource}/{builder.UserID}";
         }
     }
 }

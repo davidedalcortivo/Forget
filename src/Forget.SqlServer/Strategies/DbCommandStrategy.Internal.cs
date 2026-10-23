@@ -47,66 +47,24 @@ namespace Forget.SqlServer.Strategies
                 return [];
 
             ImmutableArray<PropertyInfo> properties = EntityInfoCache<TEntity>.Properties;
-            ImmutableDictionary<string, Func<TEntity, object?>> propertyGettersByPropertyName = EntityInfoCache<TEntity>.PropertyGettersByPropertyName;
 
-            if (batchSize <= 0)
-                batchSize = entityArray.Length;
-
-            List<DbCommandInfo> commands = new((entityArray.Length + batchSize - 1) / batchSize);
-            StringBuilder batchBuffer = new();
-            DynamicParameters parameters = new();
-            int _batchSize = batchSize;
-            int s = 0;
-
-            for (int i = 0; i < entityArray.Length; i += _batchSize)
+            return BuildRangeCommands(entityArray.Length, batchSize, chunkSize, (start, end, parameters) =>
             {
-                if (chunkSize > 0 && chunkSize < batchSize)
-                    _batchSize = Math.Min(chunkSize, batchSize - s);
-
-                int end = Math.Min(i + _batchSize, entityArray.Length);
                 StringBuilder sqlBuffer = new();
 
-                for (int j = i; j < end; j++)
+                for (int j = start; j < end; j++)
                 {
                     sqlBuffer.Append("        (");
-
-                    for (int k = 0; k < properties.Length; k++)
-                    {
-                        string parameterName = properties[k].Name;
-                        object? parameterValue = propertyGettersByPropertyName[parameterName](entityArray[j]);
-
-                        sqlBuffer.AppendAndBindParameter(SqlDialectStrategy, parameters, parameterName + j, parameterValue);
-                        sqlBuffer.AppendSeparator(k, properties.Length, true);
-                    }
-
+                    sqlBuffer.AppendRowParameters(SqlDialectStrategy, parameters, properties, entityArray[j], j);
                     sqlBuffer.Append(')');
                     sqlBuffer.AppendSeparator(j, end, false);
-
-                    s++;
                 }
 
-                if (updateOnly)
-                    batchBuffer.Append(sqlTemplate.Render(sqlBuffer));
-                else
-                    batchBuffer.Append(sqlTemplate.Render(sqlBuffer, sqlBuffer));
-
-                if (s >= batchSize || end >= entityArray.Length)
-                {
-                    commands.Add(new(batchBuffer.ToString(), parameters));
-                    batchBuffer.Clear();
-                    parameters = new();
-                    s = 0;
-                }
-                else
-                {
-                    batchBuffer.AppendLine();
-                }
-            }
-
-            return commands;
+                return updateOnly ? sqlTemplate.Render(sqlBuffer) : sqlTemplate.Render(sqlBuffer, sqlBuffer);
+            }, Environment.NewLine, string.Empty);
         }
 
-        private DbCommandInfo BuildSafeAggregateCommand<TEntity>(DbConnection connection, SqlTemplate sqlTemplate, PropertyInfo property, string? clause, DynamicParameters? parameters) where TEntity : class
+        protected override DbCommandInfo BuildSumOrAvgCommand<TEntity>(DbConnection connection, SqlTemplate sqlTemplate, PropertyInfo property, string? clause, DynamicParameters? parameters) where TEntity : class
         {
             ImmutableDictionary<string, string> columnNamesByPropertyName = EntityInfoCache<TEntity>.ColumnNamesByPropertyName;
 

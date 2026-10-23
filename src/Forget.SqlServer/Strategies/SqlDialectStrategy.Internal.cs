@@ -1,17 +1,20 @@
-﻿using Forget.Core.Utilities;
-using System.Data.Common;
+﻿using Forget.Core.Abstractions.Strategies;
+using Microsoft.Data.SqlClient;
 
 
 namespace Forget.SqlServer.Strategies
 {
-    internal sealed partial class SqlDialectStrategy
+    internal sealed partial class SqlDialectStrategy : BaseSqlDialectStrategy
     {
-        protected override void InitializeImpl(DbConnection connection)
+        protected override string BuildIdentifier(string name)
         {
-            DefaultSchemaName = "dbo";
+            return $"[{name.Replace("]", "]]")}]";
+        }
 
-            if (!IdentifierHelper.CharsetRegex().IsMatch(DefaultSchemaName))
-                throw new InvalidOperationException($"The default schema name '{DefaultSchemaName}' contains invalid characters.");
+        protected override string BuildConnectionId(string connectionString)
+        {
+            SqlConnectionStringBuilder builder = new(connectionString);
+            return $"sqlserver://{builder.DataSource}/{builder.InitialCatalog}/{builder.UserID}";
         }
     }
 }

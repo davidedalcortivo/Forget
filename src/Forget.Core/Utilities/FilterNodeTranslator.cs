@@ -92,17 +92,21 @@ namespace Forget.Core.Utilities
 
                         if (values.Any(x => x.GetType() != valueType))
                         {
-                            string p = _ctx.AddParameter(values.ToArray());
+                            string p = _ctx.SqlDialectStrategy.BindsListsAsArrays ? _ctx.AddParameterList(values) : _ctx.AddParameter(values.ToArray());
                             parts.Add($"({_ctx.SqlDialectStrategy.In(left, p, true)})");
                         }
                         else
                         {
-                            bool isEnum = valueType.IsEnum;
-                            Type type = isEnum ? Enum.GetUnderlyingType(valueType) : valueType;
+                            Type type = valueType.IsEnum ? Enum.GetUnderlyingType(valueType) : valueType;
+
+                            if (type == typeof(byte))
+                                type = typeof(short);
+
+                            bool convert = type != valueType;
                             Array array = Array.CreateInstance(type, values.Count);
 
                             for (int i = 0; i < values.Count; i++)
-                                array.SetValue(isEnum ? Convert.ChangeType(values[i], type) : values[i], i);
+                                array.SetValue(convert ? Convert.ChangeType(values[i], type) : values[i], i);
 
                             string p = _ctx.AddParameter(array);
                             parts.Add($"({_ctx.SqlDialectStrategy.In(left, p, false)})");

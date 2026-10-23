@@ -5,7 +5,84 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [2.4.0] - 2026-10-23
+
+### Changed
+
+- The names of the parameters Forget generates follow one rule: every number in a name follows an underscore, and a
+  parameter that holds a list ends with an underscore. Filter values are `p_0`, `p_1`, … (they were `p0`, `p1`, …), a
+  list is `p_2_`, which Dapper expands into `p_2_1`, `p_2_2`, …, multi-row writes use `Name_0`, `Name_1`, … (they were
+  `Name0`, `Name1`, …) and the ids of `GetByIdRange`/`DeleteRange` are `IdArray_0_`, … (they were `IdArray0`, …). This
+  is visible in the `*Command` and `*Commands` methods, for code that reads a parameter by name. Names without a number
+  (a property's own name, `Skip`, `Take`) are unchanged.
+- The property names reserved for those parameters are now every name of their shape (`p_0`, `p_1_`, `p_1_1`,
+  `p_1_1_1`, and so on, in any case), so a property named `p0` or `P1`, which was refused, is accepted.
+- A list of bytes is accepted as ids (`GetByIdRange`, `DeleteRange`, also the typed overloads with a `TKey` of `byte`)
+  and as the values of an `In` filter or a `Contains`, and bound as a list of `short`: every driver binds a `byte[]` as
+  one binary value, and a `short` holds every byte, so the values compared are the same. It was refused with an
+  `ArgumentException` since 2.1.0 (and failed in the database in a `Contains`). With any other operator a list of bytes
+  is still refused.
+- An `In` filter whose value is a single value of the type of the property, such as a `byte[]` on a `byte[]` property,
+  is refused with an `ArgumentException` that says so (use `Equal`, or a list of byte arrays). It used to reach the
+  database and fail there.
+- Table, schema and column names are no longer limited to letters, digits and underscores. Forget quotes every name and
+  doubles the closing quote character inside it (` `` ` on MySQL, `""` on Oracle and PostgreSQL, `]]` on SQL Server), so
+  any name the database accepts can be mapped: spaces, accented letters, `#`, `$`, hyphens, a leading digit or
+  underscore. Two kinds of name are still refused, because they would be rewritten before the database reads the SQL:
+  one with a curly brace, and one containing what Dapper takes for a parameter, such as `@p_1_` or `?Name?`. On Oracle,
+  the cast discovery reads every column of the table and escapes the names in its result; it used to skip the columns
+  whose names were not made of letters, digits and underscores.
+- An entity without `[Table(Schema = ...)]` is no longer qualified with a schema of Forget's choosing: its table is left
+  unqualified, so each connection gets the table its own session resolves, as with hand-written SQL (the connection's
+  database on MySQL; the current schema on Oracle; the `search_path` on PostgreSQL; the user's default schema, then
+  `dbo`, on SQL Server). With the defaults nothing changes: on PostgreSQL a `search_path` of `"$user", public`, as long
+  as no schema named after the user holds a table of the same name, and on SQL Server `dbo`. A connection with another
+  `search_path`, or a user with another default schema, now gets the table its hand-written SQL gets, where Forget wrote
+  `"public"` or `[dbo]`. To keep using `"public"` or `[dbo]`, name the schema on the entity:
+  `[Table("Products", Schema = "dbo")]`. No schema is read from the connection string any more: a MySQL connection
+  without `Database=` gets MySQL's own error for such an entity, and a MySQL database such as `my-app` or an Oracle user
+  such as `C##APP` needs nothing. The catalog queries that `LoadDbCache` and some operations run look the table up the
+  same way, and the columns they cache are kept apart per `search_path` on PostgreSQL and per user on SQL Server.
+- README: the two Oracle multi-row examples use the same table, columns and layout, so that the casts are the only
+  difference between them. They show the statement exactly as Forget generates it for the example entity (one column
+  per line, the casts Oracle 21c reports for that table), with the columns the entity writes (`Sku`, `Name`, `Category`,
+  `Price`, `IsActive`) instead of an `Id` that the entity marks as database-generated (Forget never writes it). A new
+  passage shows a Dapper type handler that binds `bool` as a number, which the example entity needs on Oracle before
+  23ai (it fails with `ORA-00932` there otherwise).
+
+### Fixed
+
+- A list of enum values whose underlying type is byte (`enum Status : byte`) failed on every provider, in a `Contains`,
+  in an `In` filter and as the ids of `GetByIdRange`/`DeleteRange`: the values were bound as their underlying type, so
+  as a `byte[]`, which the drivers bind as one binary value. They are now bound as a list of `short`.
+- Multi-row writes (`InsertRange`, `UpdateRange`, `UpsertRange` and their `*Commands`, on all four providers) wrote some
+  rows with another row's value, without an error, when two properties had names that differ only by trailing digits,
+  such as `Address` and `Address2`, and a command held more than 20 rows: each parameter was named after the property
+  and the row, so `Address` in row 20 and `Address2` in row 0 were both `Address20`, and the later value replaced the
+  earlier one. Every parameter now has its own name.
+- On MySQL, Oracle and SQL Server, a filter with a list (`Contains`, `ComparisonOperator.In`) and twelve or more values
+  in all could compare a column with the wrong value, without an error: Dapper expands a list by appending a number to
+  its name, so the list in `p1` became `p11`, `p12`, … and its first element took the place of the twelfth filter value,
+  `p11`. With `Delete` or `Update` with a predicate, that changed which rows were affected. On Oracle, `GetByIdRange`
+  with more than 11,000 ids in one command (an explicit `batchSize` above 11,000, so twelve or more blocks of 1000)
+  failed with `ORA-00907` for the same reason. PostgreSQL binds a list as an array and was not affected.
+- An entity without `[Table(Schema = ...)]` used a table its connection's own SQL would not have used. On MySQL and
+  Oracle it was qualified with the database or the user of the first connection that reached it, for the whole process:
+  with a database per tenant on MySQL, every tenant read and wrote the first tenant's table, without an error; on Oracle,
+  a connection with another user failed with `ORA-00942`, or used the first user's table if it could, and the user name
+  was used as written, so `User Id=app` produced `"app"."Products"`, which does not exist. On PostgreSQL and SQL Server
+  it was qualified with `"public"` and `[dbo]`, whatever the connection's `search_path` or the user's default schema. The
+  table is now left unqualified and resolved by each connection's session (see *Changed*).
+- `Sum` and `Avg` (and `SumAsync`, `AvgAsync`, `SumCommand`, `AvgCommand`) refused with an `ArgumentException` ("The
+  provided selector is not valid") a selector on a non-nullable `int`, `long` or `short` property, such as
+  `x => x.Stock`, and on a `double` or `float` property with the cast it needs, such as `x => (decimal?)x.Ratio`. The
+  selector is typed `decimal?`, so the compiler converts such a value twice, to `decimal` and then to `decimal?`, and
+  only one conversion was unwrapped. A nullable or `decimal` property, and the overloads that take the property's name,
+  were not affected. A conversion to any other type, such as `x => (decimal?)(byte)x.Total`, is still refused.
+- PostgreSQL: a `Contains` or an `In` filter whose list mixes types (an `int` and a `long` for an `int` property,
+  accepted since 2.1.0) failed with an `InvalidCastException` ("Writing values of 'System.Object[]' is not supported"):
+  Forget wrote `IN @p`, expecting Dapper to expand the list, but on Npgsql Dapper binds a list as one array. Such a list
+  is now written out, one parameter per element.
 
 ## [2.3.5] - 2026-10-21
 
@@ -331,6 +408,7 @@ Initial release.
   syntax constraints (e.g. Oracle's `UNION ALL`/`DUAL`-based multi-row insert with automatic per-column cast
   discovery, since Oracle has no native `VALUES (...), (...)` syntax).
 
+[2.4.0]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.4.0
 [2.3.5]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.3.5
 [2.3.4]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.3.4
 [2.3.3]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.3.3

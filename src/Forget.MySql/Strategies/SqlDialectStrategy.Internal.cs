@@ -1,17 +1,20 @@
-﻿using Forget.Core.Utilities;
-using System.Data.Common;
+﻿using Forget.Core.Abstractions.Strategies;
+using MySqlConnector;
 
 
 namespace Forget.MySql.Strategies
 {
-    internal sealed partial class SqlDialectStrategy
+    internal sealed partial class SqlDialectStrategy : BaseSqlDialectStrategy
     {
-        protected override void InitializeImpl(DbConnection connection)
+        protected override string BuildIdentifier(string name)
         {
-            DefaultSchemaName = connection.Database;
+            return $"`{name.Replace("`", "``")}`";
+        }
 
-            if (!IdentifierHelper.CharsetRegex().IsMatch(DefaultSchemaName))
-                throw new InvalidOperationException($"The default schema name '{DefaultSchemaName}' contains invalid characters.");
+        protected override string BuildConnectionId(string connectionString)
+        {
+            MySqlConnectionStringBuilder builder = new(connectionString);
+            return $"mysql://{builder.Server}:{builder.Port}/{builder.Database}";
         }
     }
 }

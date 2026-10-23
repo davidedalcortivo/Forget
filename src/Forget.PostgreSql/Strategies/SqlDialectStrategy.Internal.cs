@@ -1,17 +1,15 @@
-﻿using Forget.Core.Utilities;
-using System.Data.Common;
+﻿using Forget.Core.Abstractions.Strategies;
+using Npgsql;
 
 
 namespace Forget.PostgreSql.Strategies
 {
-    internal sealed partial class SqlDialectStrategy
+    internal sealed partial class SqlDialectStrategy : BaseSqlDialectStrategy
     {
-        protected override void InitializeImpl(DbConnection connection)
+        protected override string BuildConnectionId(string connectionString)
         {
-            DefaultSchemaName = "public";
-
-            if (!IdentifierHelper.CharsetRegex().IsMatch(DefaultSchemaName))
-                throw new InvalidOperationException($"The default schema name '{DefaultSchemaName}' contains invalid characters.");
+            NpgsqlConnectionStringBuilder builder = new(connectionString);
+            return $"postgresql://{builder.Host}:{builder.Port}/{builder.Database}/{builder.SearchPath}";
         }
     }
 }

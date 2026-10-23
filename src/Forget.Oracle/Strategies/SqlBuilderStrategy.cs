@@ -137,6 +137,25 @@ namespace Forget.Oracle.Strategies
             sqlBuffer.AppendLine("    v_type VARCHAR2(4000);");
             sqlBuffer.AppendLine("    v_ok BOOLEAN;");
             sqlBuffer.AppendLine("    v_json CLOB;");
+            sqlBuffer.AppendLine();
+            sqlBuffer.AppendLine("    FUNCTION f_json(p_text VARCHAR2) RETURN VARCHAR2 IS");
+            sqlBuffer.AppendLine("        v_char VARCHAR2(1 CHAR);");
+            sqlBuffer.AppendLine("        v_text VARCHAR2(32767);");
+            sqlBuffer.AppendLine("    BEGIN");
+            sqlBuffer.AppendLine("        FOR i IN 1 .. NVL(LENGTH(p_text), 0) LOOP");
+            sqlBuffer.AppendLine("            v_char := SUBSTR(p_text, i, 1);");
+            sqlBuffer.AppendLine();
+            sqlBuffer.AppendLine("            IF v_char IN ('\"', '\\') THEN");
+            sqlBuffer.AppendLine("                v_text := v_text || '\\' || v_char;");
+            sqlBuffer.AppendLine("            ELSIF ASCII(v_char) < 32 THEN");
+            sqlBuffer.AppendLine("                v_text := v_text || '\\u' || TO_CHAR(ASCII(v_char), 'FM0XXX');");
+            sqlBuffer.AppendLine("            ELSE");
+            sqlBuffer.AppendLine("                v_text := v_text || v_char;");
+            sqlBuffer.AppendLine("            END IF;");
+            sqlBuffer.AppendLine("        END LOOP;");
+            sqlBuffer.AppendLine();
+            sqlBuffer.AppendLine("        RETURN v_text;");
+            sqlBuffer.AppendLine("    END;");
             sqlBuffer.AppendLine("BEGIN");
             sqlBuffer.AppendLine("    v_json := '[';");
             sqlBuffer.AppendLine();
@@ -165,7 +184,7 @@ namespace Forget.Oracle.Strategies
             sqlBuffer.AppendLine("        FROM");
             sqlBuffer.Append("            ");
             sqlBuffer.Append(allTabColumnsTable);
-            sqlBuffer.AppendWhereClause($"{ownerColumn} = {SqlDialectStrategy.Placeholder}" + Environment.NewLine + $"            AND {tableNameColumn} = {SqlDialectStrategy.Placeholder}" + Environment.NewLine + $"            AND REGEXP_LIKE({columnNameColumn}, '{IdentifierHelper.CharsetPattern}')", "        ");
+            sqlBuffer.AppendWhereClause($"{ownerColumn} = NVL({SqlDialectStrategy.Placeholder}, SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA'))" + Environment.NewLine + $"            AND {tableNameColumn} = {SqlDialectStrategy.Placeholder}", "        ");
             sqlBuffer.AppendLine();
             sqlBuffer.AppendLine("    )");
             sqlBuffer.AppendLine("    LOOP");
@@ -207,17 +226,17 @@ namespace Forget.Oracle.Strategies
             sqlBuffer.AppendLine("            '{' ||");
             sqlBuffer.Append("                '\"");
             sqlBuffer.Append(nameof(DbColumnInfo.Name));
-            sqlBuffer.Append("\": \"' || c.");
+            sqlBuffer.Append("\": \"' || f_json(c.");
             sqlBuffer.Append(columnNameColumn);
-            sqlBuffer.AppendLine(" || '\",' ||");
+            sqlBuffer.AppendLine(") || '\",' ||");
             sqlBuffer.Append("                '\"");
             sqlBuffer.Append(nameof(DbColumnInfo.DataType));
-            sqlBuffer.Append("\": \"' || c.");
+            sqlBuffer.Append("\": \"' || f_json(c.");
             sqlBuffer.Append(dataTypeNameColumn);
-            sqlBuffer.AppendLine(" || '\",' ||");
+            sqlBuffer.AppendLine(") || '\",' ||");
             sqlBuffer.Append("                '\"");
             sqlBuffer.Append(nameof(DbColumnInfo.CastExpression));
-            sqlBuffer.AppendLine("\": ' || CASE WHEN v_ok THEN '\"' || v_type || '\"' ELSE 'null' END || ',' ||");
+            sqlBuffer.AppendLine("\": ' || CASE WHEN v_ok THEN '\"' || f_json(v_type) || '\"' ELSE 'null' END || ',' ||");
             sqlBuffer.Append("                '\"");
             sqlBuffer.Append(nameof(DbColumnInfo.IsCastable));
             sqlBuffer.AppendLine("\": ' || CASE WHEN v_ok THEN 'true' ELSE 'false' END ||");
@@ -244,15 +263,13 @@ namespace Forget.Oracle.Strategies
         public override SqlTemplate InsertRangeSqlBuilder<TEntity>() where TEntity : class
         {
             string tableName = EntityInfoCache<TEntity>.TableName;
-            string schemaName = EntityInfoCache<TEntity>.SchemaName ?? SqlDialectStrategy.DefaultSchemaName;
+            string? schemaName = EntityInfoCache<TEntity>.SchemaName;
             ImmutableArray<PropertyInfo> insertProperties = EntityInfoCache<TEntity>.InsertProperties;
 
             StringBuilder sqlBuffer = new();
 
             sqlBuffer.Append("INSERT INTO ");
-            sqlBuffer.Append(SqlDialectStrategy.RenderIdentifier(schemaName));
-            sqlBuffer.Append('.');
-            sqlBuffer.Append(SqlDialectStrategy.RenderIdentifier(tableName));
+            sqlBuffer.Append(SqlDialectStrategy.RenderTable(schemaName, tableName));
             sqlBuffer.Append(" (");
             sqlBuffer.AppendColumns<TEntity>(SqlDialectStrategy, insertProperties, null, "    ", false, false);
             sqlBuffer.AppendLine();

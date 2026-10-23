@@ -1,5 +1,7 @@
 ﻿using Dapper;
 using Forget.Core.Abstractions.Strategies;
+using Forget.Core.Utilities;
+using System.Collections;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -41,14 +43,44 @@ namespace Forget.Core.Models
         {
             Parameters ??= new();
 
-            string name = _parameterPrefix + ParameterIndex;
+            string name = $"{_parameterPrefix}_{ParameterIndex}";
+
+            if (value is IEnumerable && value is not string && value is not byte[])
+                name += "_";
+
             Parameters.Add(name, value);
             ParameterIndex++;
 
             return SqlDialectStrategy.RenderParameter(name);
         }
 
-        [GeneratedRegex($"^{_parameterPrefix}\\d+$", RegexOptions.IgnoreCase | RegexOptions.Compiled)]
+        public string AddParameterList(IEnumerable values)
+        {
+            Parameters ??= new();
+
+            string name = $"{_parameterPrefix}_{ParameterIndex}_";
+            ParameterIndex++;
+
+            StringBuilder sqlBuffer = new();
+            int i = 0;
+
+            sqlBuffer.Append('(');
+
+            foreach (object? value in values)
+            {
+                if (i > 0)
+                    sqlBuffer.Append(", ");
+
+                sqlBuffer.AppendAndBindParameter(SqlDialectStrategy, Parameters, $"{name}{i}", value);
+                i++;
+            }
+
+            sqlBuffer.Append(')');
+
+            return sqlBuffer.ToString();
+        }
+
+        [GeneratedRegex($"^{_parameterPrefix}(_\\d+)+_?$", RegexOptions.IgnoreCase | RegexOptions.Compiled)]
         public static partial Regex ParameterRegex();
     }
 }

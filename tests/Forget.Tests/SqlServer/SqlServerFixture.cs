@@ -18,6 +18,9 @@ namespace Forget.Tests.SqlServer
 
         public string ConnectionString { get; private set; } = null!;
 
+        /// <summary>A login whose user has <c>tenant_a</c> as its default schema.</summary>
+        public string TenantConnectionString { get; private set; } = null!;
+
         public async ValueTask InitializeAsync()
         {
             _container = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04")
@@ -92,8 +95,75 @@ namespace Forget.Tests.SqlServer
                     DoubleValue FLOAT NOT NULL,
                     SingleValue REAL NOT NULL
                 );
+
+                CREATE TABLE dbo.ParameterNameRow (
+                    Id INT PRIMARY KEY,
+                    Address NVARCHAR(50) NOT NULL,
+                    Address2 NVARCHAR(50) NOT NULL
+                );
+
+                CREATE TABLE dbo.ByteListRow (Id INT PRIMARY KEY, Code TINYINT NOT NULL, Status TINYINT NOT NULL);
+                INSERT INTO dbo.ByteListRow VALUES (1, 1, 1), (2, 2, 2), (3, 3, 3);
+
+                CREATE TABLE dbo.AggregateRow (Id INT PRIMARY KEY, Quantity INT NOT NULL, Total BIGINT NOT NULL, Ratio FLOAT NOT NULL);
+                INSERT INTO dbo.AggregateRow VALUES (1, 10, 100, 0.5), (2, 20, 200, 1.5), (3, 30, 300, 2.5);
+
+                CREATE TABLE dbo.LargeIntRow (Id INT PRIMARY KEY, Quantity INT NOT NULL, Kind INT NOT NULL);
+                INSERT INTO dbo.LargeIntRow VALUES (1, 2000000000, 1), (2, 2000000000, 1), (3, 5, 2);
+
+                CREATE TABLE dbo.RegionalStock (Id INT IDENTITY(1,1) PRIMARY KEY, Sku NVARCHAR(50) NOT NULL, Region NVARCHAR(50) NOT NULL, Stock INT NOT NULL, UNIQUE (Sku, Region));
                 """;
             await command.ExecuteNonQueryAsync();
+
+            // CREATE SCHEMA has to be the only statement in its batch.
+            await using SqlCommand schemaCommand = Connection.CreateCommand();
+            schemaCommand.CommandText = "CREATE SCHEMA [Odd Schema#1]";
+            await schemaCommand.ExecuteNonQueryAsync();
+
+            await using SqlCommand oddNameCommand = Connection.CreateCommand();
+            oddNameCommand.CommandText = """
+                CREATE TABLE [Odd Schema#1].[Order]] Details] (
+                    [Id] INT PRIMARY KEY,
+                    [Line Name] NVARCHAR(50) NOT NULL,
+                    [Città] NVARCHAR(50) NOT NULL,
+                    [Code#$] INT NOT NULL,
+                    [2nd-Value] INT NOT NULL,
+                    [_Flag] INT NOT NULL,
+                    [Back\slash] NVARCHAR(50) NOT NULL,
+                    [Email@Work:Port?Cost$] NVARCHAR(50) NOT NULL,
+                    [Dot.Name] NVARCHAR(50) NOT NULL,
+                    [Bracket]]Name] NVARCHAR(50) NOT NULL
+                );
+                """;
+            await oddNameCommand.ExecuteNonQueryAsync();
+
+            // The same table in dbo and in tenant_a, with different rows, a table only in dbo and one only in tenant_a: a user
+            // whose default schema is tenant_a reads tenant_a's table, and dbo's when tenant_a has none, as SQL Server
+            // resolves a name.
+            await using SqlCommand tenantSchemaCommand = Connection.CreateCommand();
+            tenantSchemaCommand.CommandText = "CREATE SCHEMA tenant_a";
+            await tenantSchemaCommand.ExecuteNonQueryAsync();
+
+            const string tenantPassword = "Tenant#Passw0rd";
+            await using SqlCommand tenantCommand = Connection.CreateCommand();
+            tenantCommand.CommandText = $"""
+                CREATE TABLE dbo.TenantRow (Id INT PRIMARY KEY, Name NVARCHAR(50) NOT NULL, Amount INT NOT NULL);
+                INSERT INTO dbo.TenantRow VALUES (1, 'dbo', 10);
+                CREATE TABLE tenant_a.TenantRow (Id INT PRIMARY KEY, Name NVARCHAR(50) NOT NULL, Amount INT NOT NULL);
+                INSERT INTO tenant_a.TenantRow VALUES (1, 'tenant_a', 20);
+                CREATE TABLE dbo.DboOnlyRow (Id INT PRIMARY KEY, Name NVARCHAR(50) NOT NULL, Amount INT NOT NULL);
+                INSERT INTO dbo.DboOnlyRow VALUES (1, 'dbo only', 5);
+                CREATE TABLE tenant_a.TenantOnlyRow (Id INT PRIMARY KEY, Name NVARCHAR(50) NOT NULL, Amount INT NOT NULL);
+                INSERT INTO tenant_a.TenantOnlyRow VALUES (1, 'tenant_a only', 7);
+
+                CREATE LOGIN tenant_login WITH PASSWORD = '{tenantPassword}', CHECK_POLICY = OFF;
+                CREATE USER tenant_user FOR LOGIN tenant_login WITH DEFAULT_SCHEMA = tenant_a;
+                GRANT SELECT, INSERT, UPDATE, DELETE ON SCHEMA::tenant_a TO tenant_user;
+                GRANT SELECT ON SCHEMA::dbo TO tenant_user;
+                """;
+            await tenantCommand.ExecuteNonQueryAsync();
+
+            TenantConnectionString = new SqlConnectionStringBuilder(ConnectionString) { UserID = "tenant_login", Password = tenantPassword }.ConnectionString;
         }
 
         public async ValueTask DisposeAsync()

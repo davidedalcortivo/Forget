@@ -150,7 +150,7 @@ What is not translated: arithmetic (`p.Price * 2`, `x + 1`, `-x`), other members
 (`HasFlag`, `&`), `GetValueOrDefault()`, `Equals` on anything but a string, LINQ (`Any`), and `new`, `?:`, `??`, `is`,
 `as`, a method call or an indexer used as a value. Compute the value in a variable first
 (`DateTime since = DateTime.UtcNow.AddDays(-1);`) and compare with that. The negation of a variable in a comparison,
-`p.IsActive == !flag`, is sent as `IsActive = NOT @p0`, which only PostgreSQL accepts: write `bool wanted = !flag;` first.
+`p.IsActive == !flag`, is sent as `IsActive = NOT @p_0`, which only PostgreSQL accepts: write `bool wanted = !flag;` first.
 
 A cast is not applied: `p.Id == (int)value` sends `value` with its own type, because Forget never converts one type
 into another.
@@ -178,8 +178,9 @@ A few smaller, mostly mechanical ones:
   backslash escaping inside string literals — different from the other three engines, and easy to get wrong with
   one shared `ESCAPE` clause.
 - **PostgreSQL** translates `Enumerable.Contains`/`ComparisonOperator.In` to `= ANY(@p)` when the collection is
-  homogeneously typed (Npgsql needs a genuinely typed array for that), falling back to plain `IN` — letting
-  Dapper itself, not the driver, expand the parameter — when it isn't.
+  homogeneously typed (Npgsql needs a genuinely typed array for that). A list of mixed types is written out as
+  `IN (@p_0_0, @p_0_1, ...)`, one parameter per element, as Dapper expands a list on the other three providers; on
+  Npgsql Dapper does not, because it binds a list as one array.
 
 And a few bigger ones:
 
@@ -233,14 +234,19 @@ The exact SQL each provider uses to produce that text is visible via `AvgCommand
 ### Oracle: multi-row writes that work on every release
 
 Multi-row `VALUES (...), (...)` (the table value constructor) only arrived with Oracle 23ai, and many production
-databases still run older releases such as 19c. So Forget uses the backward-compatible form that Oracle has always
-supported:
+databases still run older releases. So Forget uses the backward-compatible form that Oracle has always supported:
 
 ```sql
-INSERT INTO products (id, name, price)
-SELECT :id0, :name0, :price0 FROM DUAL
+INSERT INTO "Products" (
+    "Sku",
+    "Name",
+    "Category",
+    "Price",
+    "IsActive"
+)
+SELECT :Sku_0 AS "Sku", :Name_0 AS "Name", :Category_0 AS "Category", :Price_0 AS "Price", :IsActive_0 AS "IsActive" FROM DUAL
 UNION ALL
-SELECT :id1, :name1, :price1 FROM DUAL
+SELECT :Sku_1 AS "Sku", :Name_1 AS "Name", :Category_1 AS "Category", :Price_1 AS "Price", :IsActive_1 AS "IsActive" FROM DUAL
 ```
 
 Written like this, though, it runs into `ORA-01790` ("expression must have same datatype as corresponding
@@ -256,13 +262,16 @@ one.
 Forget generates this shape automatically, but with every value cast to its column's real type first:
 
 ```sql
--- "app" here is whatever schema the entity resolves to (your Oracle user by default, or [Table(Schema = "...")])
-INSERT INTO "app"."Products" (
-    "Id", "Name", "Price"
+INSERT INTO "Products" (
+    "Sku",
+    "Name",
+    "Category",
+    "Price",
+    "IsActive"
 )
-SELECT CAST(:Id0 AS NUMBER(10)) AS "Id", CAST(:Name0 AS VARCHAR2(100)) AS "Name", CAST(:Price0 AS NUMBER(18,2)) AS "Price" FROM DUAL
+SELECT CAST(:Sku_0 AS VARCHAR2(50)) AS "Sku", CAST(:Name_0 AS VARCHAR2(100)) AS "Name", CAST(:Category_0 AS VARCHAR2(50)) AS "Category", CAST(:Price_0 AS NUMBER(18,2)) AS "Price", CAST(:IsActive_0 AS NUMBER(1,0)) AS "IsActive" FROM DUAL
 UNION ALL
-SELECT CAST(:Id1 AS NUMBER(10)) AS "Id", CAST(:Name1 AS VARCHAR2(100)) AS "Name", CAST(:Price1 AS NUMBER(18,2)) AS "Price" FROM DUAL
+SELECT CAST(:Sku_1 AS VARCHAR2(50)) AS "Sku", CAST(:Name_1 AS VARCHAR2(100)) AS "Name", CAST(:Category_1 AS VARCHAR2(50)) AS "Category", CAST(:Price_1 AS NUMBER(18,2)) AS "Price", CAST(:IsActive_1 AS NUMBER(1,0)) AS "IsActive" FROM DUAL
 ```
 
 The cast expression for each column isn't hard-coded — on the first call for a given entity and connection,
@@ -276,6 +285,34 @@ hard-coding assumptions about either.
 ```csharp
 await connection.InsertRangeAsync(products, batchSize: 500);
 ```
+
+The `Product` above has one more problem on Oracle before 23ai: those releases have no boolean type in SQL, and
+ODP.NET binds a C# `bool` as one, so writing `IsActive` fails with `ORA-00932` ("NUMBER expected, got BOOLEAN").
+Forget passes every value to Dapper as it is, so a Dapper type handler, registered once at startup, fixes it for every
+statement Forget sends:
+
+```csharp
+using System.Data;
+using Dapper;
+
+public sealed class BooleanAsNumberHandler : SqlMapper.TypeHandler<bool>
+{
+    public override void SetValue(IDbDataParameter parameter, bool value)
+    {
+        parameter.DbType = DbType.Int16;
+        parameter.Value = value ? 1 : 0;
+    }
+
+    public override bool Parse(object value) => Convert.ToInt32(value) != 0;
+}
+
+SqlMapper.RemoveTypeMap(typeof(bool)); // Dapper maps bool itself, and only asks a handler about types it doesn't map
+SqlMapper.AddTypeHandler(new BooleanAsNumberHandler());
+```
+
+The column stays a `NUMBER(1)`. Inserts, updates, upserts and filters such as `p.IsActive == flag` now bind 1 or 0, and
+reads turn the number back into a `bool`. The handler applies to every Dapper call in the process, so register it only
+where the application talks to such an Oracle; on 23ai and later it isn't needed.
 
 ### SQL Server: safe aggregation, and one place we didn't intervene
 
@@ -298,7 +335,7 @@ Because it fails silently, with a plausible number and no exception, this behavi
 |------------------------------------------|---------------------------------------------------------------------|
 | `[Key]`                                   | Marks the identifier property. If omitted, a property named `Id` is used. |
 | `[UpsertKey]`                             | Marks one or more properties as the natural key used to match rows on upsert, instead of the identifier. Multiple properties form a composite key. |
-| `[Table(Name = ..., Schema = ...)]`       | Overrides the table name and/or schema (defaults: CLR type name, provider's default schema). |
+| `[Table(Name = ..., Schema = ...)]`       | Overrides the table name and/or schema (defaults: CLR type name, no schema; see below). |
 | `[Column(Name = ...)]`                    | Overrides the SQL column name for a property.                        |
 | `[NotMapped]`                             | Excludes a property entirely.                                        |
 | `[DatabaseGenerated(...)]`                | A property with `Identity` or `Computed` is never written by the library, only read back. |
@@ -308,17 +345,47 @@ Because it fails silently, with a plausible number and no exception, this behavi
 - **The entity maps the columns it declares.** The table can have more columns than the entity (audit or legacy
   columns, say): those are never selected and never written, so a database default applies on insert. A mapped
   property whose column does not exist in the table fails with a message naming the property and the column.
+- **Names are used exactly as written.** Forget quotes every table, schema and column name (`` `...` `` on MySQL,
+  `"..."` on Oracle and PostgreSQL, `[...]` on SQL Server) and doubles the closing quote character inside a name. So any
+  name the database accepts works, spaces, accented letters, `#`, `$` and hyphens included, and on Oracle and PostgreSQL
+  the case has to match the table's (a table created as `products` is not `"Products"`). Two kinds of name are refused
+  the first time the entity is used, because they would be rewritten before the database reads the SQL: one with a
+  curly brace, which Forget's SQL templates and Dapper use as markers, and one containing what Dapper takes for a
+  parameter, such as `@p_1_` or `?Name?`. A table created without quotes, such as `CREATE TABLE products (name ...)`, is
+  stored in uppercase on Oracle and in lowercase on PostgreSQL, so map it with the names as stored:
+  ```csharp
+  [Table("PRODUCTS")]
+  public class Product
+  {
+      ...
+
+      [Column("NAME")]
+      public string Name { get; set; } = string.Empty;
+
+      ...
+  }
+  ```
+- **Without a schema, the database finds the table.** An entity with `[Table(Schema = ...)]` is always qualified with
+  that schema. Without one, the table is left unqualified, so each connection gets the table its own session resolves,
+  as with hand-written SQL: the connection's database on MySQL, the current schema on Oracle (the user's, or the one
+  set with `ALTER SESSION SET CURRENT_SCHEMA`), the `search_path` on PostgreSQL, the user's default schema (then `dbo`)
+  on SQL Server. One entity works with a database or a schema per tenant.
 - **Types are Dapper's.** Forget does not map or convert types. Any type Dapper can bind, or that you register a
-  `SqlMapper.TypeHandler` for, works the same way through Forget.
+  `SqlMapper.TypeHandler` for, works the same way through Forget (the Oracle section above registers one that binds
+  `bool` as a number).
 - **Values are checked, not converted.** An id or a filter value (a comparison), and a value you set with
   `Update`/`UpdateAsync` and an object such as `new { Price = 10 }` (a write), reach Dapper as you passed them. Forget
   rejects one with an `ArgumentException` when its type could lose precision or change meaning for the property, or
-  when the drivers cannot bind it. The table below says what is accepted.
+  when the drivers cannot bind it. The table below says what is accepted. The one exception to "not converted" is a list
+  of bytes, or of enum values whose underlying type is byte (as ids, in an `In` filter or in `Contains`): it is bound as
+  a list of `short`, because every driver binds a `byte[]` as one binary value. A `short` holds every byte, so the
+  values compared are the same.
 - **Column metadata is read once.** A few operations need the table's column types — the multi-row writes on Oracle,
   `UpdateRange`/`UpdateRangeAsync` on PostgreSQL, and `Sum`/`SumAsync` and `Avg`/`AvgAsync` on SQL Server.
-  Forget reads them the first time it needs them (or when you call `LoadDbCache`/`LoadDbCacheAsync` yourself) and
-  keeps them, per entity and database, for the life of the process. Nothing invalidates them: after altering a
-  column, restart the process.
+  Forget reads them the first time it needs them, or when you call `LoadDbCache`/`LoadDbCacheAsync` yourself, and
+  keeps them until the process ends, per entity and per database. A name without a schema can mean another table for
+  another user on Oracle, another `search_path` on PostgreSQL or another user on SQL Server, so each of those gets its
+  own copy too. Nothing refreshes them: after altering a column, restart the process.
 
 | Value type | Comparison (id, filter) | Write (`Update`) |
 |---|---|---|
@@ -329,7 +396,8 @@ Because it fails silently, with a plausible number and no exception, this behavi
 | An enum for its underlying type, and the other way round | accepted | accepted |
 | `string` for a number, `int` or `long` for a `float`, `long` for a `double`, `decimal` or `double` for an integer, a `float` for a `double` (`1.1f` is not `1.1`) | rejected | rejected |
 | `sbyte`, `ushort`, `uint`, `ulong` for a property of another type | rejected (Oracle, PostgreSQL and SQL Server cannot bind them) | rejected |
-| A list of bytes (a `byte[]` as ids or as the values of an `In` filter) | rejected (every driver binds a `byte[]` as one binary value) | not applicable |
+| A list of bytes, or of enum values whose underlying type is byte (as ids, in an `In` filter or in `Contains`) | accepted, bound as a list of `short` (every driver binds a `byte[]` as one binary value) | not applicable |
+| A single `byte[]` as the value of an `In` filter on a `byte[]` property | rejected: it is one value, use `Equal` or a list of byte arrays | not applicable |
 
 The *Write* column is for `Update`/`UpdateAsync` with a values object such as `new { Price = 10 }`; `Update` with an
 entity is typed by the entity, so there is nothing to check.

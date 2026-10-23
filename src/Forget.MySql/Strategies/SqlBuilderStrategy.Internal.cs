@@ -14,7 +14,7 @@ namespace Forget.MySql.Strategies
         private SqlTemplate BuildUpsertSql<TEntity>(bool isRange) where TEntity : class
         {
             string tableName = EntityInfoCache<TEntity>.TableName;
-            string schemaName = EntityInfoCache<TEntity>.SchemaName ?? SqlDialectStrategy.DefaultSchemaName;
+            string? schemaName = EntityInfoCache<TEntity>.SchemaName;
             ImmutableArray<PropertyInfo> insertProperties = EntityInfoCache<TEntity>.InsertProperties;
             ImmutableArray<PropertyInfo> upsertProperties = EntityInfoCache<TEntity>.UpsertProperties;
 
@@ -22,9 +22,7 @@ namespace Forget.MySql.Strategies
             string newTable = SqlDialectStrategy.RenderIdentifier("new");
 
             sqlBuffer.Append("INSERT INTO ");
-            sqlBuffer.Append(SqlDialectStrategy.RenderIdentifier(schemaName));
-            sqlBuffer.Append('.');
-            sqlBuffer.Append(SqlDialectStrategy.RenderIdentifier(tableName));
+            sqlBuffer.Append(SqlDialectStrategy.RenderTable(schemaName, tableName));
             sqlBuffer.Append(" (");
             sqlBuffer.AppendColumns<TEntity>(SqlDialectStrategy, insertProperties, null, "    ", false, false);
             sqlBuffer.AppendLine();

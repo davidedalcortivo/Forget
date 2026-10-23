@@ -1,5 +1,4 @@
-﻿using Dapper;
-using Forget.Core.Abstractions.Strategies;
+﻿using Forget.Core.Abstractions.Strategies;
 using Forget.Core.Caching;
 using Forget.Core.Models;
 using Forget.Core.Utilities;
@@ -28,19 +27,11 @@ namespace Forget.Oracle.Strategies
             string connectionId = SqlDialectStrategy.GetConnectionId(connection);
             IDictionary<string, DbColumnInfo> columns = DbColumnInfoCache<TEntity>.GetDictValue(connectionId);
 
-            if (batchSize <= 0)
-                batchSize = entityArray.Length;
-
-            List<DbCommandInfo> commands = new((entityArray.Length + batchSize - 1) / batchSize);
-
-            for (int i = 0; i < entityArray.Length; i += batchSize)
+            return BuildRangeCommands(entityArray.Length, batchSize, 0, (start, end, parameters) =>
             {
-                int end = Math.Min(i + batchSize, entityArray.Length);
-
                 StringBuilder sqlBuffer = new();
-                DynamicParameters parameters = new();
 
-                for (int j = i; j < end; j++)
+                for (int j = start; j < end; j++)
                 {
                     sqlBuffer.Append(indentation);
                     sqlBuffer.Append("SELECT ");
@@ -49,7 +40,7 @@ namespace Forget.Oracle.Strategies
                     {
                         PropertyInfo property = properties[k];
                         string propertyName = property.Name;
-                        string parameterName = propertyName + j;
+                        string parameterName = $"{propertyName}_{j}";
                         object? parameterValue = propertyGettersByPropertyName[propertyName](entityArray[j]);
                         DbColumnInfo column = columns[columnNamesByPropertyName[propertyName]];
 
@@ -75,11 +66,8 @@ namespace Forget.Oracle.Strategies
                     }
                 }
 
-                string sql = sqlTemplate.Render(sqlBuffer);
-                commands.Add(new(sql, parameters));
-            }
-
-            return commands;
+                return sqlTemplate.Render(sqlBuffer);
+            }, string.Empty, string.Empty);
         }
     }
 }

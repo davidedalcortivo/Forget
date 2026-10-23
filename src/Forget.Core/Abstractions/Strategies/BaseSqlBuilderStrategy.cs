@@ -74,14 +74,12 @@ namespace Forget.Core.Abstractions.Strategies
         public virtual SqlTemplate UpdateSqlBuilder<TEntity>() where TEntity : class
         {
             string tableName = EntityInfoCache<TEntity>.TableName;
-            string schemaName = EntityInfoCache<TEntity>.SchemaName ?? SqlDialectStrategy.DefaultSchemaName;
+            string? schemaName = EntityInfoCache<TEntity>.SchemaName;
 
             StringBuilder sqlBuffer = new();
 
             sqlBuffer.Append("UPDATE ");
-            sqlBuffer.Append(SqlDialectStrategy.RenderIdentifier(schemaName));
-            sqlBuffer.Append('.');
-            sqlBuffer.AppendLine(SqlDialectStrategy.RenderIdentifier(tableName));
+            sqlBuffer.AppendLine(SqlDialectStrategy.RenderTable(schemaName, tableName));
             sqlBuffer.AppendLine("SET");
             sqlBuffer.Append(SqlDialectStrategy.Placeholder);
             sqlBuffer.Append(SqlDialectStrategy.Terminator);
@@ -92,15 +90,13 @@ namespace Forget.Core.Abstractions.Strategies
         public virtual SqlTemplate InsertSqlBuilder<TEntity>() where TEntity : class
         {
             string tableName = EntityInfoCache<TEntity>.TableName;
-            string schemaName = EntityInfoCache<TEntity>.SchemaName ?? SqlDialectStrategy.DefaultSchemaName;
+            string? schemaName = EntityInfoCache<TEntity>.SchemaName;
             ImmutableArray<PropertyInfo> insertProperties = EntityInfoCache<TEntity>.InsertProperties;
 
             StringBuilder sqlBuffer = new();
 
             sqlBuffer.Append("INSERT INTO ");
-            sqlBuffer.Append(SqlDialectStrategy.RenderIdentifier(schemaName));
-            sqlBuffer.Append('.');
-            sqlBuffer.Append(SqlDialectStrategy.RenderIdentifier(tableName));
+            sqlBuffer.Append(SqlDialectStrategy.RenderTable(schemaName, tableName));
             sqlBuffer.Append(" (");
             sqlBuffer.AppendColumns<TEntity>(SqlDialectStrategy, insertProperties, null, "    ", false, false);
             sqlBuffer.AppendLine();
@@ -116,14 +112,12 @@ namespace Forget.Core.Abstractions.Strategies
         public virtual SqlTemplate DeleteSqlBuilder<TEntity>() where TEntity : class
         {
             string tableName = EntityInfoCache<TEntity>.TableName;
-            string schemaName = EntityInfoCache<TEntity>.SchemaName ?? SqlDialectStrategy.DefaultSchemaName;
+            string? schemaName = EntityInfoCache<TEntity>.SchemaName;
 
             StringBuilder sqlBuffer = new();
 
             sqlBuffer.Append("DELETE FROM ");
-            sqlBuffer.Append(SqlDialectStrategy.RenderIdentifier(schemaName));
-            sqlBuffer.Append('.');
-            sqlBuffer.Append(SqlDialectStrategy.RenderIdentifier(tableName));
+            sqlBuffer.Append(SqlDialectStrategy.RenderTable(schemaName, tableName));
             sqlBuffer.Append(SqlDialectStrategy.Placeholder);
             sqlBuffer.Append(SqlDialectStrategy.Terminator);
 
@@ -156,15 +150,13 @@ namespace Forget.Core.Abstractions.Strategies
         public virtual SqlTemplate InsertRangeSqlBuilder<TEntity>() where TEntity : class
         {
             string tableName = EntityInfoCache<TEntity>.TableName;
-            string schemaName = EntityInfoCache<TEntity>.SchemaName ?? SqlDialectStrategy.DefaultSchemaName;
+            string? schemaName = EntityInfoCache<TEntity>.SchemaName;
             ImmutableArray<PropertyInfo> insertProperties = EntityInfoCache<TEntity>.InsertProperties;
 
             StringBuilder sqlBuffer = new();
 
             sqlBuffer.Append("INSERT INTO ");
-            sqlBuffer.Append(SqlDialectStrategy.RenderIdentifier(schemaName));
-            sqlBuffer.Append('.');
-            sqlBuffer.Append(SqlDialectStrategy.RenderIdentifier(tableName));
+            sqlBuffer.Append(SqlDialectStrategy.RenderTable(schemaName, tableName));
             sqlBuffer.Append(" (");
             sqlBuffer.AppendColumns<TEntity>(SqlDialectStrategy, insertProperties, null, "    ", false, false);
             sqlBuffer.AppendLine();
@@ -179,7 +171,7 @@ namespace Forget.Core.Abstractions.Strategies
         public virtual SqlTemplate DeleteRangeSqlBuilder<TEntity>() where TEntity : class
         {
             string tableName = EntityInfoCache<TEntity>.TableName;
-            string schemaName = EntityInfoCache<TEntity>.SchemaName ?? SqlDialectStrategy.DefaultSchemaName;
+            string? schemaName = EntityInfoCache<TEntity>.SchemaName;
             PropertyInfo idProperty = EntityInfoCache<TEntity>.IdProperty;
             ImmutableDictionary<string, string> columnNamesByPropertyName = EntityInfoCache<TEntity>.ColumnNamesByPropertyName;
 
@@ -188,9 +180,7 @@ namespace Forget.Core.Abstractions.Strategies
             string clause = inPrefix + SqlDialectStrategy.Placeholder + inSuffix;
 
             sqlBuffer.Append("DELETE FROM ");
-            sqlBuffer.Append(SqlDialectStrategy.RenderIdentifier(schemaName));
-            sqlBuffer.Append('.');
-            sqlBuffer.Append(SqlDialectStrategy.RenderIdentifier(tableName));
+            sqlBuffer.Append(SqlDialectStrategy.RenderTable(schemaName, tableName));
             sqlBuffer.AppendWhereClause(clause, string.Empty);
             sqlBuffer.Append(SqlDialectStrategy.Terminator);
 

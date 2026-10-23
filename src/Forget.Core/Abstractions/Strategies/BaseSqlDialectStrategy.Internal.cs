@@ -1,13 +1,12 @@
-﻿using System.Data.Common;
-
-
-namespace Forget.Core.Abstractions.Strategies
+﻿namespace Forget.Core.Abstractions.Strategies
 {
     internal abstract partial class BaseSqlDialectStrategy : ISqlDialectStrategy
     {
-        protected virtual void InitializeImpl(DbConnection connection)
+        protected virtual string BuildIdentifier(string name)
         {
-
+            return $"\"{name.Replace("\"", "\"\"")}\"";
         }
+
+        protected abstract string BuildConnectionId(string connectionString);
     }
 }

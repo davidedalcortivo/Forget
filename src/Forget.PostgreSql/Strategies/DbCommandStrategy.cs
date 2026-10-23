@@ -52,13 +52,12 @@ namespace Forget.PostgreSql.Strategies
                 return [];
 
             string tableName = EntityInfoCache<TEntity>.TableName;
-            string schemaName = EntityInfoCache<TEntity>.SchemaName ?? SqlDialectStrategy.DefaultSchemaName;
+            string? schemaName = EntityInfoCache<TEntity>.SchemaName;
             ImmutableDictionary<string, PropertyInfo> propertiesByColumnName = EntityInfoCache<TEntity>.PropertiesByColumnName;
             ImmutableDictionary<string, Func<TEntity, object?>> propertyGettersByPropertyName = EntityInfoCache<TEntity>.PropertyGettersByPropertyName;
             SqlTemplate updateRangeSql = SqlBuilderCache<TEntity, SqlBuilderStrategy>.UpdateRangeSql;
 
-            string table = SqlDialectStrategy.RenderIdentifier(tableName);
-            string schema = SqlDialectStrategy.RenderIdentifier(schemaName);
+            string table = SqlDialectStrategy.RenderTable(schemaName, tableName);
             string connectionId = SqlDialectStrategy.GetConnectionId(connection);
             IReadOnlyList<DbColumnInfo> columns = DbColumnInfoCache<TEntity>.GetListValue(connectionId);
 
@@ -67,19 +66,11 @@ namespace Forget.PostgreSql.Strategies
             for (int i = 0; i < sortProperties.Length; i++)
                 sortProperties[i] = propertiesByColumnName.GetValueOrDefault(columns[i].Name);
 
-            if (batchSize <= 0)
-                batchSize = entityArray.Length;
-
-            List<DbCommandInfo> commands = new((entityArray.Length + batchSize - 1) / batchSize);
-
-            for (int i = 0; i < entityArray.Length; i += batchSize)
+            return BuildRangeCommands(entityArray.Length, batchSize, 0, (start, end, parameters) =>
             {
-                int end = Math.Min(i + batchSize, entityArray.Length);
-
                 StringBuilder sqlBuffer = new();
-                DynamicParameters parameters = new();
 
-                for (int j = i; j < end; j++)
+                for (int j = start; j < end; j++)
                 {
                     sqlBuffer.Append("            (ROW(");
 
@@ -96,25 +87,20 @@ namespace Forget.PostgreSql.Strategies
                             string parameterName = property.Name;
                             object? parameterValue = propertyGettersByPropertyName[parameterName](entityArray[j]);
 
-                            sqlBuffer.AppendAndBindParameter(SqlDialectStrategy, parameters, parameterName + j, parameterValue);
+                            sqlBuffer.AppendAndBindParameter(SqlDialectStrategy, parameters, $"{parameterName}_{j}", parameterValue);
                         }
 
                         sqlBuffer.AppendSeparator(k, sortProperties.Length, true);
                     }
 
                     sqlBuffer.Append(")::");
-                    sqlBuffer.Append(schema);
-                    sqlBuffer.Append('.');
                     sqlBuffer.Append(table);
                     sqlBuffer.Append(')');
                     sqlBuffer.AppendSeparator(j, end, false);
                 }
 
-                string sql = updateRangeSql.Render(sqlBuffer);
-                commands.Add(new(sql, parameters));
-            }
-
-            return commands;
+                return updateRangeSql.Render(sqlBuffer);
+            }, string.Empty, string.Empty);
         }
 
         public override IReadOnlyList<DbCommandInfo> UpsertRangeCommands<TEntity>(DbConnection connection, IEnumerable<TEntity> entities, int batchSize, int chunkSize) where TEntity : class
@@ -127,43 +113,22 @@ namespace Forget.PostgreSql.Strategies
                 return [];
 
             ImmutableArray<PropertyInfo> insertProperties = EntityInfoCache<TEntity>.InsertProperties;
-            ImmutableDictionary<string, Func<TEntity, object?>> propertyGettersByPropertyName = EntityInfoCache<TEntity>.PropertyGettersByPropertyName;
             SqlTemplate upsertRangeSql = SqlBuilderCache<TEntity, SqlBuilderStrategy>.UpsertRangeSql;
 
-            if (batchSize <= 0)
-                batchSize = entityArray.Length;
-
-            List<DbCommandInfo> commands = new((entityArray.Length + batchSize - 1) / batchSize);
-
-            for (int i = 0; i < entityArray.Length; i += batchSize)
+            return BuildRangeCommands(entityArray.Length, batchSize, 0, (start, end, parameters) =>
             {
-                int end = Math.Min(i + batchSize, entityArray.Length);
-
                 StringBuilder sqlBuffer = new();
-                DynamicParameters parameters = new();
 
-                for (int j = i; j < end; j++)
+                for (int j = start; j < end; j++)
                 {
                     sqlBuffer.Append("    (");
-
-                    for (int k = 0; k < insertProperties.Length; k++)
-                    {
-                        string parameterName = insertProperties[k].Name;
-                        object? parameterValue = propertyGettersByPropertyName[parameterName](entityArray[j]);
-
-                        sqlBuffer.AppendAndBindParameter(SqlDialectStrategy, parameters, parameterName + j, parameterValue);
-                        sqlBuffer.AppendSeparator(k, insertProperties.Length, true);
-                    }
-
+                    sqlBuffer.AppendRowParameters(SqlDialectStrategy, parameters, insertProperties, entityArray[j], j);
                     sqlBuffer.Append(')');
                     sqlBuffer.AppendSeparator(j, end, false);
                 }
 
-                string sql = upsertRangeSql.Render(sqlBuffer);
-                commands.Add(new(sql, parameters));
-            }
-
-            return commands;
+                return upsertRangeSql.Render(sqlBuffer);
+            }, string.Empty, string.Empty);
         }
     }
 }

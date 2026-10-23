@@ -1,18 +1,12 @@
 ﻿using Forget.Core.Abstractions.Strategies;
-using System.Data.Common;
 
 
 namespace Forget.MySql.Strategies
 {
-    internal sealed class DbExecutionStrategy : BaseDbExecutionStrategy<DbCommandStrategy>
+    internal sealed partial class DbExecutionStrategy : BaseDbExecutionStrategy<DbCommandStrategy>
     {
         public static DbExecutionStrategy Instance { get; } = new(DbCommandStrategy.Instance);
 
         private DbExecutionStrategy(DbCommandStrategy strategy) : base(strategy) { }
-
-        public override Task GetColumnsImplAsync<TEntity>(DbConnection connection, bool sync, int? commandTimeout, CancellationToken cancellationToken) where TEntity : class
-        {
-            return Task.CompletedTask;
-        }
     }
 }

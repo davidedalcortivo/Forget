@@ -296,16 +296,14 @@ namespace Forget.Tests.MySql
         }
 
         [Fact]
-        public async Task DeleteRangeAsync_WithATypeThatDoesNotFitTheId_AListOfBytes_OrANullId_IsRejected()
+        public async Task DeleteRangeAsync_WithATypeThatDoesNotFitTheId_OrANullId_IsRejected()
         {
             ArgumentException text = await Assert.ThrowsAsync<ArgumentException>(() => _fixture.Connection.DeleteRangeAsync<Widget, string>(["820"], cancellationToken: Ct));
             ArgumentException unsigned = await Assert.ThrowsAsync<ArgumentException>(() => _fixture.Connection.DeleteRangeAsync<Widget, ushort>([820], cancellationToken: Ct));
-            ArgumentException bytes = await Assert.ThrowsAsync<ArgumentException>(() => _fixture.Connection.DeleteRangeAsync<Widget, byte>("N"u8.ToArray(), cancellationToken: Ct));
             await Assert.ThrowsAsync<ArgumentNullException>(() => _fixture.Connection.DeleteRangeAsync<StringIdRow, string>(["typed-2", null!], cancellationToken: Ct));
             await Assert.ThrowsAsync<ArgumentNullException>(() => _fixture.Connection.DeleteRangeAsync<Widget, int>(null!, cancellationToken: Ct));
 
             Assert.All([text, unsigned], ex => Assert.Contains("The type of the provided value", ex.Message));
-            Assert.Contains("list of bytes", bytes.Message);
         }
 
         [Fact]
@@ -342,7 +340,7 @@ namespace Forget.Tests.MySql
             IReadOnlyList<DbCommandInfo> commands = _fixture.Connection.DeleteRangeCommands<Widget, int>(ids);
             ids[0] = -1;
 
-            Assert.Equal(new[] { 820_081, 820_082 }, commands[0].Parameters!.Get<int[]>("IdArray0"));
+            Assert.Equal(new[] { 820_081, 820_082 }, commands[0].Parameters!.Get<int[]>("IdArray_0_"));
         }
 
         [Fact]

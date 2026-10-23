@@ -46,7 +46,7 @@ namespace Forget.MySql.Strategies
         public override SqlTemplate UpdateRangeSqlBuilder<TEntity>() where TEntity : class
         {
             string tableName = EntityInfoCache<TEntity>.TableName;
-            string schemaName = EntityInfoCache<TEntity>.SchemaName ?? SqlDialectStrategy.DefaultSchemaName;
+            string? schemaName = EntityInfoCache<TEntity>.SchemaName;
             PropertyInfo idProperty = EntityInfoCache<TEntity>.IdProperty;
             ImmutableArray<PropertyInfo> properties = EntityInfoCache<TEntity>.Properties;
             ImmutableArray<PropertyInfo> updateProperties = EntityInfoCache<TEntity>.UpdateProperties;
@@ -60,9 +60,7 @@ namespace Forget.MySql.Strategies
             StringBuilder sqlBuffer = new();
 
             sqlBuffer.Append("UPDATE ");
-            sqlBuffer.Append(SqlDialectStrategy.RenderIdentifier(schemaName));
-            sqlBuffer.Append('.');
-            sqlBuffer.Append(SqlDialectStrategy.RenderIdentifier(tableName));
+            sqlBuffer.Append(SqlDialectStrategy.RenderTable(schemaName, tableName));
             sqlBuffer.Append(" AS ");
             sqlBuffer.AppendLine(targetTable);
             sqlBuffer.AppendLine("INNER JOIN (");

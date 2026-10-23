@@ -1,12 +1,10 @@
 ﻿using Dapper;
-using Forget.Core.Abstractions.Models;
 using Forget.Core.Abstractions.Strategies;
 using Forget.Core.Caching;
 using Forget.Core.Models;
 using Forget.Core.Utilities;
 using System.Collections.Immutable;
 using System.Data.Common;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 
@@ -65,24 +63,7 @@ namespace Forget.SqlServer.Strategies
                 string column = SqlDialectStrategy.RenderIdentifier(columnNamesByPropertyName[parameterName]);
                 string parameter = SqlDialectStrategy.RenderParameter(parameterName);
 
-                if (i > 0)
-                {
-                    upsertKeyBuffer.AppendLine();
-                    upsertKeyBuffer.AppendLine("    AND");
-                }
-
-                upsertKeyBuffer.AppendLine("    (");
-                upsertKeyBuffer.Append("        ");
-                upsertKeyBuffer.Append(column);
-                upsertKeyBuffer.Append(" = ");
-                upsertKeyBuffer.AppendLine(parameter);
-                upsertKeyBuffer.Append("        OR (");
-                upsertKeyBuffer.Append(column);
-                upsertKeyBuffer.Append(" IS NULL AND ");
-                upsertKeyBuffer.Append(parameter);
-                upsertKeyBuffer.AppendLine(" IS NULL)");
-                upsertKeyBuffer.Append("    )");
-
+                upsertKeyBuffer.AppendNullSafeEquals(column, parameter, i, "    ");
                 parameters.Add(parameterName, parameterValue);
             }
 
@@ -98,62 +79,6 @@ namespace Forget.SqlServer.Strategies
         public override IReadOnlyList<DbCommandInfo> UpsertRangeCommands<TEntity>(DbConnection connection, IEnumerable<TEntity> entities, int batchSize, int chunkSize) where TEntity : class
         {
             return BuildUpsertRangeCommands(entities, batchSize, chunkSize, SqlBuilderCache<TEntity, SqlBuilderStrategy>.UpsertRangeSql, false);
-        }
-
-        public override DbCommandInfo AvgCommand<TEntity>(DbConnection connection, Expression<Func<TEntity, decimal?>> selector, Expression<Func<TEntity, bool>>? predicate) where TEntity : class
-        {
-            PropertyInfo property = PropertyHelper.GetProperty(selector);
-            (string? clause, DynamicParameters? parameters) = Translate(SqlDialectStrategy, predicate, null);
-            return BuildSafeAggregateCommand<TEntity>(connection, SqlBuilderCache<TEntity, SqlBuilderStrategy>.AvgSql, property, clause, parameters);
-        }
-
-        public override DbCommandInfo AvgCommand<TEntity>(DbConnection connection, Expression<Func<TEntity, decimal?>> selector, IFilterNode<TEntity>? filterNode) where TEntity : class
-        {
-            PropertyInfo property = PropertyHelper.GetProperty(selector);
-            (string? clause, DynamicParameters? parameters) = Translate(SqlDialectStrategy, filterNode, null);
-            return BuildSafeAggregateCommand<TEntity>(connection, SqlBuilderCache<TEntity, SqlBuilderStrategy>.AvgSql, property, clause, parameters);
-        }
-
-        public override DbCommandInfo AvgCommand<TEntity>(DbConnection connection, string propertyName, Expression<Func<TEntity, bool>>? predicate) where TEntity : class
-        {
-            PropertyInfo property = PropertyHelper.GetProperty<TEntity>(propertyName);
-            (string? clause, DynamicParameters? parameters) = Translate(SqlDialectStrategy, predicate, null);
-            return BuildSafeAggregateCommand<TEntity>(connection, SqlBuilderCache<TEntity, SqlBuilderStrategy>.AvgSql, property, clause, parameters);
-        }
-
-        public override DbCommandInfo AvgCommand<TEntity>(DbConnection connection, string propertyName, IFilterNode<TEntity>? filterNode) where TEntity : class
-        {
-            PropertyInfo property = PropertyHelper.GetProperty<TEntity>(propertyName);
-            (string? clause, DynamicParameters? parameters) = Translate(SqlDialectStrategy, filterNode, null);
-            return BuildSafeAggregateCommand<TEntity>(connection, SqlBuilderCache<TEntity, SqlBuilderStrategy>.AvgSql, property, clause, parameters);
-        }
-
-        public override DbCommandInfo SumCommand<TEntity>(DbConnection connection, Expression<Func<TEntity, decimal?>> selector, Expression<Func<TEntity, bool>>? predicate) where TEntity : class
-        {
-            PropertyInfo property = PropertyHelper.GetProperty(selector);
-            (string? clause, DynamicParameters? parameters) = Translate(SqlDialectStrategy, predicate, null);
-            return BuildSafeAggregateCommand<TEntity>(connection, SqlBuilderCache<TEntity, SqlBuilderStrategy>.SumSql, property, clause, parameters);
-        }
-
-        public override DbCommandInfo SumCommand<TEntity>(DbConnection connection, Expression<Func<TEntity, decimal?>> selector, IFilterNode<TEntity>? filterNode) where TEntity : class
-        {
-            PropertyInfo property = PropertyHelper.GetProperty(selector);
-            (string? clause, DynamicParameters? parameters) = Translate(SqlDialectStrategy, filterNode, null);
-            return BuildSafeAggregateCommand<TEntity>(connection, SqlBuilderCache<TEntity, SqlBuilderStrategy>.SumSql, property, clause, parameters);
-        }
-
-        public override DbCommandInfo SumCommand<TEntity>(DbConnection connection, string propertyName, Expression<Func<TEntity, bool>>? predicate) where TEntity : class
-        {
-            PropertyInfo property = PropertyHelper.GetProperty<TEntity>(propertyName);
-            (string? clause, DynamicParameters? parameters) = Translate(SqlDialectStrategy, predicate, null);
-            return BuildSafeAggregateCommand<TEntity>(connection, SqlBuilderCache<TEntity, SqlBuilderStrategy>.SumSql, property, clause, parameters);
-        }
-
-        public override DbCommandInfo SumCommand<TEntity>(DbConnection connection, string propertyName, IFilterNode<TEntity>? filterNode) where TEntity : class
-        {
-            PropertyInfo property = PropertyHelper.GetProperty<TEntity>(propertyName);
-            (string? clause, DynamicParameters? parameters) = Translate(SqlDialectStrategy, filterNode, null);
-            return BuildSafeAggregateCommand<TEntity>(connection, SqlBuilderCache<TEntity, SqlBuilderStrategy>.SumSql, property, clause, parameters);
         }
     }
 }

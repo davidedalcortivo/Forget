@@ -5,12 +5,13 @@ namespace Forget.Core.Abstractions.Strategies
 {
     internal interface ISqlDialectStrategy
     {
-        string DefaultSchemaName { get; }
         string NullValue { get; }
         string Terminator { get; }
         string Placeholder { get; }
+        bool BindsListsAsArrays { get; }
 
         string RenderIdentifier(string name);
+        string RenderTable(string? schemaName, string tableName);
         string RenderParameter(string name);
         string Concat(params string[] parts);
         string ToLower(string sql);
@@ -25,6 +26,5 @@ namespace Forget.Core.Abstractions.Strategies
         string Pagination(string skipParameter, string takeParameter);
         string CastAsString(string sql);
         string GetConnectionId(DbConnection connection);
-        void Initialize(DbConnection connection);
     }
 }

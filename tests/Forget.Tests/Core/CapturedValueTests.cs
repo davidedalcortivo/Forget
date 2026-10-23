@@ -153,18 +153,18 @@ namespace Forget.Tests.Core
             double narrow = 12.5;
             (string Column, Expression<Func<Widget, bool>> Predicate, string Parameter)[] cases =
             [
-                ("Price", w => w.Price == id, "p0=7 (Int32)"),
-                ("Id", w => w.Id == (int)wide, "p0=7 (Int64)"),
-                ("Id", w => w.Id == checked((int)wide), "p0=7 (Int64)"),
-                ("Id", w => w.Id == checked((int)tooWide), $"p0={long.MaxValue} (Int64)"),
-                ("Price", w => w.Price == (decimal)narrow, "p0=12.5 (Double)")
+                ("Price", w => w.Price == id, "p_0=7 (Int32)"),
+                ("Id", w => w.Id == (int)wide, "p_0=7 (Int64)"),
+                ("Id", w => w.Id == checked((int)wide), "p_0=7 (Int64)"),
+                ("Id", w => w.Id == checked((int)tooWide), $"p_0={long.MaxValue} (Int64)"),
+                ("Price", w => w.Price == (decimal)narrow, "p_0=12.5 (Double)")
             ];
 
             foreach ((string column, Expression<Func<Widget, bool>> predicate, string parameter) in cases)
             {
                 (string sql, DynamicParameters? parameters) = ExpressionTranslator<Widget>.Translate(dialect, predicate);
 
-                Assert.True($"({dialect.RenderIdentifier(column)} = {dialect.RenderParameter("p0")})" == sql, $"{predicate}: got '{sql}'");
+                Assert.True($"({dialect.RenderIdentifier(column)} = {dialect.RenderParameter("p_0")})" == sql, $"{predicate}: got '{sql}'");
                 Assert.True(parameter == Describe(parameters), $"{predicate}: expected '{parameter}' but got '{Describe(parameters)}'");
             }
         }

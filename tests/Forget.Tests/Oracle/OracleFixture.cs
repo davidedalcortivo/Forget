@@ -134,6 +134,50 @@ namespace Forget.Tests.Oracle
                 )
                 """);
 
+            await ExecuteAsync(Connection, """
+                CREATE TABLE "ParameterNameRow" (
+                    "Id" NUMBER(10) PRIMARY KEY,
+                    "Address" VARCHAR2(50) NOT NULL,
+                    "Address2" VARCHAR2(50) NOT NULL
+                )
+                """);
+
+            await ExecuteAsync(Connection, """CREATE TABLE "ByteListRow" ("Id" NUMBER(10) PRIMARY KEY, "Code" NUMBER(3) NOT NULL, "Status" NUMBER(3) NOT NULL)""");
+            await ExecuteAsync(Connection, """INSERT INTO "ByteListRow" SELECT 1, 1, 1 FROM DUAL UNION ALL SELECT 2, 2, 2 FROM DUAL UNION ALL SELECT 3, 3, 3 FROM DUAL""");
+
+            await ExecuteAsync(Connection, """CREATE TABLE "AggregateRow" ("Id" NUMBER(10) PRIMARY KEY, "Quantity" NUMBER(10) NOT NULL, "Total" NUMBER(19) NOT NULL, "Ratio" BINARY_DOUBLE NOT NULL)""");
+            await ExecuteAsync(Connection, """INSERT INTO "AggregateRow" SELECT 1, 10, 100, 0.5 FROM DUAL UNION ALL SELECT 2, 20, 200, 1.5 FROM DUAL UNION ALL SELECT 3, 30, 300, 2.5 FROM DUAL""");
+
+            await ExecuteAsync(Connection, """CREATE TABLE "RegionalStock" ("Id" NUMBER(10) GENERATED ALWAYS AS IDENTITY PRIMARY KEY, "Sku" VARCHAR2(50) NOT NULL, "Region" VARCHAR2(50) NOT NULL, "Stock" NUMBER(10) NOT NULL, UNIQUE ("Sku", "Region"))""");
+
+            // In Oracle a schema is a user. The unmapped column's name holds a tab.
+            await ExecuteAsync(Connection, $"CREATE USER \"Odd Schema#1\" IDENTIFIED BY \"{Password}\"");
+            await ExecuteAsync(Connection, "GRANT UNLIMITED TABLESPACE TO \"Odd Schema#1\"");
+            await ExecuteAsync(Connection, $"""
+                CREATE TABLE "Odd Schema#1"."Order Details" (
+                    "Id" NUMBER(10) PRIMARY KEY,
+                    "Line Name" VARCHAR2(50) NOT NULL,
+                    "Città" VARCHAR2(50) NOT NULL,
+                    "Code#$" NUMBER(10) NOT NULL,
+                    "2nd-Value" NUMBER(10) NOT NULL,
+                    "_Flag" NUMBER(10) NOT NULL,
+                    "Back\slash" VARCHAR2(50) NOT NULL,
+                    "Email@Work:Port?Cost$" VARCHAR2(50) NOT NULL,
+                    "Dot.Name" VARCHAR2(50) NOT NULL,
+                    "Tab{"\t"}Note" VARCHAR2(50) NULL
+                )
+                """);
+
+            // The same table in "dbo" (this connection's current schema) and in "tenant_b", with different rows: a session
+            // whose current schema is "tenant_b" reads and writes tenant_b's table.
+            await ExecuteAsync(Connection, $"CREATE USER \"tenant_b\" IDENTIFIED BY \"{Password}\"");
+            await ExecuteAsync(Connection, "GRANT UNLIMITED TABLESPACE TO \"tenant_b\"");
+            await ExecuteAsync(Connection, """CREATE TABLE "dbo"."TenantRow" ("Id" NUMBER(10) PRIMARY KEY, "Name" VARCHAR2(50) NOT NULL, "Amount" NUMBER(10) NOT NULL)""");
+            await ExecuteAsync(Connection, """INSERT INTO "dbo"."TenantRow" VALUES (1, 'dbo', 10)""");
+            await ExecuteAsync(Connection, """CREATE TABLE "tenant_b"."TenantRow" ("Id" NUMBER(10) PRIMARY KEY, "Name" VARCHAR2(50) NOT NULL, "Amount" NUMBER(10) NOT NULL)""");
+            await ExecuteAsync(Connection, """INSERT INTO "tenant_b"."TenantRow" VALUES (1, 'tenant_b', 20)""");
+            await ExecuteAsync(Connection, """CREATE TABLE "tenant_b"."TenantOnlyRow" ("Id" NUMBER(10) PRIMARY KEY, "Name" VARCHAR2(50) NOT NULL, "Amount" NUMBER(10) NOT NULL)""");
+
             await Connection.LoadDbCacheAsync<Widget>();
             await Connection.LoadDbCacheAsync<HandlerRow>();
             await Connection.LoadDbCacheAsync<CastRow>();

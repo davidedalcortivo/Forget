@@ -70,6 +70,40 @@ namespace Forget.Tests.Oracle
         }
 
         [Fact]
+        public async Task UpsertAsync_OnATwoColumnKey_UpdatesOnlyTheRowThatMatchesBothColumns()
+        {
+            await _fixture.Connection.UpsertAsync(new RegionalStock { Sku = "PAIR-A", Region = "North", Stock = 1 }, cancellationToken: Ct);
+            await _fixture.Connection.UpsertAsync(new RegionalStock { Sku = "PAIR-A", Region = "South", Stock = 2 }, cancellationToken: Ct);
+            await _fixture.Connection.UpsertAsync(new RegionalStock { Sku = "PAIR-B", Region = "North", Stock = 3 }, cancellationToken: Ct);
+            await _fixture.Connection.UpsertAsync(new RegionalStock { Sku = "PAIR-A", Region = "North", Stock = 10 }, cancellationToken: Ct);
+
+            IReadOnlyList<RegionalStock> rows = await _fixture.Connection.GetAllAsync<RegionalStock>(x => x.Sku.StartsWith("PAIR-"), sortDescriptors: [new(x => x.Sku), new(x => x.Region)], cancellationToken: Ct);
+
+            Assert.Equal(["PAIR-A North 10", "PAIR-A South 2", "PAIR-B North 3"], rows.Select(x => $"{x.Sku} {x.Region} {x.Stock}"));
+        }
+
+        [Fact]
+        public async Task UpsertRangeAsync_OnATwoColumnKey_UpdatesOnlyTheRowsThatMatchBothColumns()
+        {
+            await _fixture.Connection.UpsertRangeAsync(
+            [
+                new RegionalStock { Sku = "PAIRS-A", Region = "North", Stock = 1 },
+                new RegionalStock { Sku = "PAIRS-A", Region = "South", Stock = 2 },
+                new RegionalStock { Sku = "PAIRS-B", Region = "North", Stock = 3 }
+            ], cancellationToken: Ct);
+
+            await _fixture.Connection.UpsertRangeAsync(
+            [
+                new RegionalStock { Sku = "PAIRS-A", Region = "North", Stock = 10 },
+                new RegionalStock { Sku = "PAIRS-B", Region = "South", Stock = 4 }
+            ], cancellationToken: Ct);
+
+            IReadOnlyList<RegionalStock> rows = await _fixture.Connection.GetAllAsync<RegionalStock>(x => x.Sku.StartsWith("PAIRS-"), sortDescriptors: [new(x => x.Sku), new(x => x.Region)], cancellationToken: Ct);
+
+            Assert.Equal(["PAIRS-A North 10", "PAIRS-A South 2", "PAIRS-B North 3", "PAIRS-B South 4"], rows.Select(x => $"{x.Sku} {x.Region} {x.Stock}"));
+        }
+
+        [Fact]
         public async Task UpsertAsync_FromManyConnectionsAtOnceOnTheSameNewKey_LeavesExactlyOneRowAndTheOnlyFailureIsAUniqueViolation()
         {
             ConcurrentBag<Exception> failures = [];

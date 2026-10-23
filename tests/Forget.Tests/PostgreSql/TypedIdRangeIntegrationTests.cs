@@ -180,13 +180,6 @@ namespace Forget.Tests.PostgreSql
             Assert.All([text, unsigned], ex => Assert.Contains("The type of the provided value", ex.Message));
         }
 
-        [Fact]
-        public async Task GetByIdRangeAsync_WithAListOfBytes_IsRejected()
-        {
-            ArgumentException range = await Assert.ThrowsAsync<ArgumentException>(() => _fixture.Connection.GetByIdRangeAsync<Widget, byte>("N"u8.ToArray(), cancellationToken: Ct));
-
-            Assert.Contains("list of bytes", range.Message);
-        }
 
         [Fact]
         public async Task GetByIdRangeAsync_WithANullId_IsRejected()
@@ -239,7 +232,7 @@ namespace Forget.Tests.PostgreSql
             IReadOnlyList<DbCommandInfo> commands = _fixture.Connection.GetByIdRangeCommands<Widget, int>(ids);
             ids[0] = -1;
 
-            Assert.Equal(new[] { 800_061, 800_062 }, commands[0].Parameters!.Get<int[]>("IdArray0"));
+            Assert.Equal(new[] { 800_061, 800_062 }, commands[0].Parameters!.Get<int[]>("IdArray_0_"));
         }
 
         [Fact]

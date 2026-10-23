@@ -78,6 +78,17 @@ namespace Forget.Tests.Core
             public int Id { get; set; }
 
 #pragma warning disable IDE1006
+            public string p_0 { get; set; } = string.Empty;
+#pragma warning restore IDE1006
+        }
+
+        // p0 was the name of the first filter value until filter values took an underscore (p_0); it is an ordinary
+        // property name now.
+        private sealed class EntityWithAPropertyNamedLikeAnOldParameter
+        {
+            public int Id { get; set; }
+
+#pragma warning disable IDE1006
             public string p0 { get; set; } = string.Empty;
 #pragma warning restore IDE1006
         }
@@ -89,6 +100,31 @@ namespace Forget.Tests.Core
                 () => _ = EntityInfoCache<EntityWithReservedPropertyName>.IdProperty);
 
             Assert.IsType<InvalidOperationException>(ex.InnerException);
+        }
+
+        [Theory]
+        [InlineData("p_0", true)]
+        [InlineData("P_12", true)]
+        [InlineData("p_1_", true)]
+        [InlineData("p_1_1", true)]
+        [InlineData("p_1_1_", true)]
+        [InlineData("p_1_1_1", true)]
+        [InlineData("p0", false)]
+        [InlineData("P1", false)]
+        [InlineData("p_", false)]
+        [InlineData("p", false)]
+        [InlineData("p_a", false)]
+        [InlineData("p1_1", false)]
+        [InlineData("Address_1", false)]
+        public void TheReservedParameterNames_AreEveryNameShapedLikeAFilterParameter(string name, bool reserved)
+        {
+            Assert.Equal(reserved, SqlTranslationContext.ParameterRegex().IsMatch(name));
+        }
+
+        [Fact]
+        public void EntityWithAPropertyNamedLikeAnOldParameter_IsAccepted()
+        {
+            Assert.Contains(EntityInfoCache<EntityWithAPropertyNamedLikeAnOldParameter>.Properties, x => x.Name == "p0");
         }
 
         [Table("Widgets", Schema = "inventory")]
@@ -104,21 +140,58 @@ namespace Forget.Tests.Core
             Assert.Equal("inventory", EntityInfoCache<EntityWithTableAttribute>.SchemaName);
         }
 
-        private sealed class EntityWithInvalidColumnName
+        // Every name is quoted, with the closing quote character doubled, so any name the database accepts can be mapped.
+        [Table("Order Details", Schema = "Odd Schema#1")]
+        private sealed class EntityWithNamesOutsideLettersAndDigits
         {
             public int Id { get; set; }
 
-            [Column("bad name")]
+            [Column("Line Name")]
             public string Name { get; set; } = string.Empty;
+
+            [Column("Quote\"Bracket]Tick`")]
+            public string Quoted { get; set; } = string.Empty;
         }
 
         [Fact]
-        public void InvalidColumnName_ThrowsOnFirstAccess()
+        public void NamesWithSpacesOrQuoteCharacters_AreAccepted()
         {
-            TypeInitializationException ex = Assert.Throws<TypeInitializationException>(
-                () => _ = EntityInfoCache<EntityWithInvalidColumnName>.IdProperty);
+            Assert.Equal("Order Details", EntityInfoCache<EntityWithNamesOutsideLettersAndDigits>.TableName);
+            Assert.Equal("Odd Schema#1", EntityInfoCache<EntityWithNamesOutsideLettersAndDigits>.SchemaName);
+            Assert.Equal("Line Name", EntityInfoCache<EntityWithNamesOutsideLettersAndDigits>.ColumnNamesByPropertyName["Name"]);
+            Assert.Equal("Quote\"Bracket]Tick`", EntityInfoCache<EntityWithNamesOutsideLettersAndDigits>.ColumnNamesByPropertyName["Quoted"]);
+        }
 
-            Assert.IsType<InvalidOperationException>(ex.InnerException);
+        [Table("Totals{}")]
+        private sealed class EntityWithABraceInTheTableName
+        {
+            public int Id { get; set; }
+        }
+
+        [Table("Totals", Schema = "Odd{Schema")]
+        private sealed class EntityWithABraceInTheSchemaName
+        {
+            public int Id { get; set; }
+        }
+
+        private sealed class EntityWithWhatDapperTakesForAParameterInAColumnName
+        {
+            public int Id { get; set; }
+
+            [Column("Total@p_1_")]
+            public int Total { get; set; }
+        }
+
+        [Fact]
+        public void ANameForgetOrDapperWouldRewrite_ThrowsOnFirstAccess()
+        {
+            TypeInitializationException table = Assert.Throws<TypeInitializationException>(() => _ = EntityInfoCache<EntityWithABraceInTheTableName>.IdProperty);
+            TypeInitializationException schema = Assert.Throws<TypeInitializationException>(() => _ = EntityInfoCache<EntityWithABraceInTheSchemaName>.IdProperty);
+            TypeInitializationException column = Assert.Throws<TypeInitializationException>(() => _ = EntityInfoCache<EntityWithWhatDapperTakesForAParameterInAColumnName>.IdProperty);
+
+            Assert.StartsWith("The table name 'Totals{}'", Assert.IsType<InvalidOperationException>(table.InnerException).Message);
+            Assert.StartsWith("The schema name 'Odd{Schema'", Assert.IsType<InvalidOperationException>(schema.InnerException).Message);
+            Assert.StartsWith("The column name 'Total@p_1_'", Assert.IsType<InvalidOperationException>(column.InnerException).Message);
         }
 
         private sealed class EntityWithNotMappedProperty

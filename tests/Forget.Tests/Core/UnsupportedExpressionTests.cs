@@ -57,15 +57,14 @@ namespace Forget.Tests.Core
         [MemberData(nameof(DialectStrategies.All), MemberType = typeof(DialectStrategies))]
         public void AnExpressionThatIsEvaluatedAsAValue_StillWorks(string dialectName, object dialectObject)
         {
-            _ = dialectName;
             ISqlDialectStrategy dialect = (ISqlDialectStrategy)dialectObject;
             Expression<Func<Widget, bool>> predicate = w => w.Name.Contains(new string('a', 2)) && new[] { 1, 2 }.Contains(w.Id);
 
             (string sql, DynamicParameters? parameters) = ExpressionTranslator<Widget>.Translate(dialect, predicate);
 
-            Assert.Equal("aa", parameters!.Get<string>("p0"));
-            Assert.Equal([1, 2], parameters.Get<int[]>("p1"));
-            Assert.DoesNotContain("@p0@", sql);
+            Assert.Equal("aa", parameters!.Get<string>("p_0"));
+            Assert.Equal<object?>([1, 2], DialectStrategies.ListValues(dialectName, parameters, "p_1_", 2, false));
+            Assert.DoesNotContain("@p_0@", sql);
         }
     }
 }

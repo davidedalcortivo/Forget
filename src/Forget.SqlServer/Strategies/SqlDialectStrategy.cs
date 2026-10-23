@@ -1,5 +1,4 @@
 ﻿using Forget.Core.Abstractions.Strategies;
-using Microsoft.Data.SqlClient;
 
 
 namespace Forget.SqlServer.Strategies
@@ -19,11 +18,6 @@ namespace Forget.SqlServer.Strategies
             IntDataTypes = new(StringComparer.OrdinalIgnoreCase) { "int", "smallint", "tinyint" };
         }
 
-        public override string RenderIdentifier(string name)
-        {
-            return $"[{name}]";
-        }
-
         public override string Concat(params string[] parts)
         {
             return string.Join(" + ", parts);
@@ -32,12 +26,6 @@ namespace Forget.SqlServer.Strategies
         public override string CastAsString(string sql)
         {
             return $"CAST({sql} AS NVARCHAR(MAX))";
-        }
-
-        protected override string BuildConnectionId(string connectionString)
-        {
-            SqlConnectionStringBuilder builder = new(connectionString);
-            return $"sqlserver://{builder.DataSource}/{builder.InitialCatalog}";
         }
     }
 }

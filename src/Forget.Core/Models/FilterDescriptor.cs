@@ -17,7 +17,9 @@ namespace Forget.Core.Models
     /// <para>
     /// Construction only validates that the type of the provided value is compatible with the selected property's
     /// type (the same type, a <c>short</c>, <c>int</c> or <c>long</c> for an integer property, or one of them for a
-    /// decimal, for instance), and never converts the value. Whether
+    /// decimal, for instance), and never converts the value. With <see cref="ComparisonOperator.In"/> it also refuses a
+    /// single value of the property's own type, and accepts a list of bytes (bound as a list of <c>short</c> when the filter
+    /// is translated, since the drivers bind a <c>byte[]</c> as one binary value), which any other operator refuses. Whether
     /// the combination of <see cref="Models.ComparisonOperator"/> and <see cref="Value"/> is
     /// actually supported — for example, <see cref="ComparisonOperator.In"/> requires a non-string collection, while
     /// <see cref="ComparisonOperator.Contains"/>, <see cref="ComparisonOperator.StartsWith"/> and
@@ -74,11 +76,13 @@ namespace Forget.Core.Models
         /// <paramref name="selector"/> does not select a simple property, or the type of <paramref name="value"/> is not
         /// compatible with the selected property's type. A non-string collection is checked element by element, unless its
         /// own type is compatible with the property's (a <c>byte[]</c> for a <c>byte[]</c> property, for instance).
+        /// Also thrown for <see cref="ComparisonOperator.In"/> with a single value of the property's own type (a <c>byte[]</c> for a
+        /// <c>byte[]</c> property is one value, not a list), and for a list of bytes with any other operator.
         /// </exception>
         public FilterDescriptor(Expression<Func<TEntity, object?>> selector, object? value, ComparisonOperator comparisonOperator = ComparisonOperator.Equal, bool not = false, bool ignoreCase = false)
         {
             PropertyInfo property = PropertyHelper.GetProperty(selector);
-            PropertyHelper.EnsureValue<TEntity>(property, value);
+            PropertyHelper.EnsureValue<TEntity>(property, value, comparisonOperator);
 
             PropertyName = property.Name;
             Value = value;
@@ -101,11 +105,13 @@ namespace Forget.Core.Models
         /// <paramref name="value"/> is not compatible with the property's type. A non-string collection is checked element
         /// by element, unless its own type is compatible with the property's (a <c>byte[]</c> for a <c>byte[]</c> property,
         /// for instance).
+        /// Also thrown for <see cref="ComparisonOperator.In"/> with a single value of the property's own type (a <c>byte[]</c> for a
+        /// <c>byte[]</c> property is one value, not a list), and for a list of bytes with any other operator.
         /// </exception>
         public FilterDescriptor(string propertyName, object? value, ComparisonOperator comparisonOperator = ComparisonOperator.Equal, bool not = false, bool ignoreCase = false)
         {
             PropertyInfo property = PropertyHelper.GetProperty<TEntity>(propertyName);
-            PropertyHelper.EnsureValue<TEntity>(property, value);
+            PropertyHelper.EnsureValue<TEntity>(property, value, comparisonOperator);
 
             PropertyName = property.Name;
             Value = value;

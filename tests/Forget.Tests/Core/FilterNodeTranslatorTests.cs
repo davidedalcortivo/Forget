@@ -24,8 +24,8 @@ namespace Forget.Tests.Core
 
             (string sql, DynamicParameters? parameters) = FilterNodeTranslator<Widget>.Translate(dialect, filter);
 
-            Assert.Equal($"({dialect.RenderIdentifier("Name")} = {dialect.RenderParameter("p0")})", sql);
-            Assert.Equal("Widget", parameters!.Get<string>("p0"));
+            Assert.Equal($"({dialect.RenderIdentifier("Name")} = {dialect.RenderParameter("p_0")})", sql);
+            Assert.Equal("Widget", parameters!.Get<string>("p_0"));
         }
 
         [Theory]
@@ -66,8 +66,8 @@ namespace Forget.Tests.Core
 
             (string sql, DynamicParameters? parameters) = FilterNodeTranslator<Widget>.Translate(dialect, filter);
 
-            Assert.Equal($"({dialect.RenderIdentifier("Quantity")} > {dialect.RenderParameter("p0")})", sql);
-            Assert.Equal(1, parameters!.Get<int>("p0"));
+            Assert.Equal($"({dialect.RenderIdentifier("Quantity")} > {dialect.RenderParameter("p_0")})", sql);
+            Assert.Equal(1, parameters!.Get<int>("p_0"));
         }
 
         [Theory]
@@ -80,38 +80,36 @@ namespace Forget.Tests.Core
 
             (string sql, DynamicParameters? parameters) = FilterNodeTranslator<Widget>.Translate(dialect, filter);
 
-            Assert.Equal($"NOT ({dialect.RenderIdentifier("IsActive")} = {dialect.RenderParameter("p0")})", sql);
-            Assert.True(parameters!.Get<bool>("p0"));
+            Assert.Equal($"NOT ({dialect.RenderIdentifier("IsActive")} = {dialect.RenderParameter("p_0")})", sql);
+            Assert.True(parameters!.Get<bool>("p_0"));
         }
 
         [Theory]
         [MemberData(nameof(DialectStrategies.All), MemberType = typeof(DialectStrategies))]
         public void In_WithValuesOnly_TranslatesToIn(string dialectName, object dialectObject)
         {
-            _ = dialectName;
             ISqlDialectStrategy dialect = (ISqlDialectStrategy)dialectObject;
             FilterDescriptor<Widget> filter = new(w => w.Id, new[] { 1, 2, 3 }, ComparisonOperator.In);
 
             (string sql, DynamicParameters? parameters) = FilterNodeTranslator<Widget>.Translate(dialect, filter);
 
-            Assert.Equal($"({dialect.In(dialect.RenderIdentifier("Id"), dialect.RenderParameter("p0"), false)})", sql);
-            Assert.Equal([1, 2, 3], parameters!.Get<int[]>("p0"));
+            Assert.Equal($"({DialectStrategies.In(dialect, dialectName, dialect.RenderIdentifier("Id"), "p_0_", 3, false)})", sql);
+            Assert.Equal<object?>([1, 2, 3], DialectStrategies.ListValues(dialectName, parameters!, "p_0_", 3, false));
         }
 
         [Theory]
         [MemberData(nameof(DialectStrategies.All), MemberType = typeof(DialectStrategies))]
         public void In_WithNullAndValues_CombinesIsNullAndIn(string dialectName, object dialectObject)
         {
-            _ = dialectName;
             ISqlDialectStrategy dialect = (ISqlDialectStrategy)dialectObject;
             FilterDescriptor<Widget> filter = new(w => w.Nickname, new[] { "a", null, "b" }, ComparisonOperator.In);
 
             (string sql, DynamicParameters? parameters) = FilterNodeTranslator<Widget>.Translate(dialect, filter);
 
             string col = dialect.RenderIdentifier("Nickname");
-            string expected = $"(({dialect.IsNull(col)}) OR ({dialect.In(col, dialect.RenderParameter("p0"), false)}))";
+            string expected = $"(({dialect.IsNull(col)}) OR ({DialectStrategies.In(dialect, dialectName, col, "p_0_", 2, false)}))";
             Assert.Equal(expected, sql);
-            Assert.Equal(["a", "b"], parameters!.Get<object[]>("p0"));
+            Assert.Equal<object?>(["a", "b"], DialectStrategies.ListValues(dialectName, parameters!, "p_0_", 2, false));
         }
 
         private sealed class MixedTypeEntity
@@ -127,17 +125,17 @@ namespace Forget.Tests.Core
             // Tag's declared type is `object`, so EnsureValue only requires each element to be assignable to
             // `object` - it does not require them to share one concrete runtime type. Building a strongly-typed
             // array from the first element (an int) would throw InvalidCastException on the string that follows;
-            // the translator must recognize the mix, keep a plain object[] parameter, and tell the dialect via
-            // the `mixed` flag so PostgreSql falls back to `IN` (relying on Dapper's own list expansion into
-            // independently-typed parameters) instead of `= ANY(...)`, which cannot represent a mixed-type array.
-            _ = dialectName;
+            // the translator must recognize the mix, keep a plain object[] parameter, which Dapper expands into
+            // independently-typed parameters (on PostgreSql, where Dapper does not, the translator writes them out
+            // itself), and tell the dialect via the `mixed` flag so PostgreSql renders `IN` instead of `= ANY(...)`,
+            // which cannot represent a mixed-type array.
             ISqlDialectStrategy dialect = (ISqlDialectStrategy)dialectObject;
             FilterDescriptor<MixedTypeEntity> filter = new(w => w.Tag, new object[] { 1, "two" }, ComparisonOperator.In);
 
             (string sql, DynamicParameters? parameters) = FilterNodeTranslator<MixedTypeEntity>.Translate(dialect, filter);
 
-            Assert.Equal($"({dialect.In(dialect.RenderIdentifier("Tag"), dialect.RenderParameter("p0"), true)})", sql);
-            Assert.Equal([1, "two"], parameters!.Get<object[]>("p0"));
+            Assert.Equal($"({DialectStrategies.In(dialect, dialectName, dialect.RenderIdentifier("Tag"), "p_0_", 2, true)})", sql);
+            Assert.Equal<object?>([1, "two"], DialectStrategies.ListValues(dialectName, parameters!, "p_0_", 2, true));
         }
 
         [Theory]
@@ -164,9 +162,9 @@ namespace Forget.Tests.Core
 
             (string sql, DynamicParameters? parameters) = FilterNodeTranslator<Widget>.Translate(dialect, filter);
 
-            string pattern = dialect.Concat("'%'", dialect.RenderParameter("p0"), "'%'");
+            string pattern = dialect.Concat("'%'", dialect.RenderParameter("p_0"), "'%'");
             Assert.Equal($"({dialect.Like(dialect.RenderIdentifier("Name"), pattern)})", sql);
-            Assert.Equal("wid", parameters!.Get<string>("p0"));
+            Assert.Equal("wid", parameters!.Get<string>("p_0"));
         }
 
         [Theory]
@@ -180,7 +178,7 @@ namespace Forget.Tests.Core
             (string sql, DynamicParameters? parameters) = FilterNodeTranslator<Widget>.Translate(dialect, filter);
 
             string col = dialect.ToLower(dialect.RenderIdentifier("Name"));
-            string pattern = dialect.Concat("'%'", dialect.ToLower(dialect.RenderParameter("p0")), "'%'");
+            string pattern = dialect.Concat("'%'", dialect.ToLower(dialect.RenderParameter("p_0")), "'%'");
             Assert.Equal($"({dialect.Like(col, pattern)})", sql);
         }
 
@@ -194,7 +192,7 @@ namespace Forget.Tests.Core
 
             (string sql, DynamicParameters? parameters) = FilterNodeTranslator<Widget>.Translate(dialect, filter);
 
-            string pattern = dialect.Concat(dialect.RenderParameter("p0"), "'%'");
+            string pattern = dialect.Concat(dialect.RenderParameter("p_0"), "'%'");
             Assert.Equal($"({dialect.Like(dialect.RenderIdentifier("Name"), pattern)})", sql);
         }
 
@@ -208,7 +206,7 @@ namespace Forget.Tests.Core
 
             (string sql, DynamicParameters? parameters) = FilterNodeTranslator<Widget>.Translate(dialect, filter);
 
-            string pattern = dialect.Concat("'%'", dialect.RenderParameter("p0"));
+            string pattern = dialect.Concat("'%'", dialect.RenderParameter("p_0"));
             Assert.Equal($"({dialect.Like(dialect.RenderIdentifier("Name"), pattern)})", sql);
         }
 
@@ -240,8 +238,8 @@ namespace Forget.Tests.Core
 
             (string sql, DynamicParameters? parameters) = FilterNodeTranslator<Widget>.Translate(dialect, group);
 
-            string expected = $"(({dialect.RenderIdentifier("Name")} = {dialect.RenderParameter("p0")}) AND " +
-                               $"({dialect.RenderIdentifier("Quantity")} > {dialect.RenderParameter("p1")}))";
+            string expected = $"(({dialect.RenderIdentifier("Name")} = {dialect.RenderParameter("p_0")}) AND " +
+                               $"({dialect.RenderIdentifier("Quantity")} > {dialect.RenderParameter("p_1")}))";
             Assert.Equal(expected, sql);
         }
 
@@ -259,8 +257,8 @@ namespace Forget.Tests.Core
 
             (string sql, DynamicParameters? parameters) = FilterNodeTranslator<Widget>.Translate(dialect, group);
 
-            string expected = $"(({dialect.RenderIdentifier("Name")} = {dialect.RenderParameter("p0")}) OR " +
-                               $"({dialect.RenderIdentifier("Name")} = {dialect.RenderParameter("p1")}))";
+            string expected = $"(({dialect.RenderIdentifier("Name")} = {dialect.RenderParameter("p_0")}) OR " +
+                               $"({dialect.RenderIdentifier("Name")} = {dialect.RenderParameter("p_1")}))";
             Assert.Equal(expected, sql);
         }
 
@@ -274,7 +272,7 @@ namespace Forget.Tests.Core
 
             (string sql, DynamicParameters? parameters) = FilterNodeTranslator<Widget>.Translate(dialect, group);
 
-            Assert.Equal($"NOT (({dialect.RenderIdentifier("Name")} = {dialect.RenderParameter("p0")}))", sql);
+            Assert.Equal($"NOT (({dialect.RenderIdentifier("Name")} = {dialect.RenderParameter("p_0")}))", sql);
         }
 
         [Theory]
@@ -297,9 +295,9 @@ namespace Forget.Tests.Core
 
             (string sql, DynamicParameters? parameters) = FilterNodeTranslator<Widget>.Translate(dialect, outer);
 
-            string innerExpected = $"(({dialect.RenderIdentifier("Name")} = {dialect.RenderParameter("p1")}) OR " +
-                                    $"({dialect.RenderIdentifier("Name")} = {dialect.RenderParameter("p2")}))";
-            string expected = $"(({dialect.RenderIdentifier("IsActive")} = {dialect.RenderParameter("p0")}) AND {innerExpected})";
+            string innerExpected = $"(({dialect.RenderIdentifier("Name")} = {dialect.RenderParameter("p_1")}) OR " +
+                                    $"({dialect.RenderIdentifier("Name")} = {dialect.RenderParameter("p_2")}))";
+            string expected = $"(({dialect.RenderIdentifier("IsActive")} = {dialect.RenderParameter("p_0")}) AND {innerExpected})";
             Assert.Equal(expected, sql);
         }
     }

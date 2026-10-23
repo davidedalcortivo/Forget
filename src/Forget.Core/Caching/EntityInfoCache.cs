@@ -73,11 +73,10 @@ namespace Forget.Core.Caching
             TableName = tableAttribute?.Name ?? entityType.Name;
             SchemaName = tableAttribute?.Schema;
 
-            if (!IdentifierHelper.CharsetRegex().IsMatch(TableName))
-                throw new InvalidOperationException($"The table name '{TableName}' contains invalid characters.");
+            IdentifierHelper.EnsureValid("table name", TableName);
 
-            if (SchemaName is not null && !IdentifierHelper.CharsetRegex().IsMatch(SchemaName))
-                throw new InvalidOperationException($"The schema name '{SchemaName}' contains invalid characters.");
+            if (SchemaName is not null)
+                IdentifierHelper.EnsureValid("schema name", SchemaName);
 
             Properties = [.. stack];
             UpdateProperties = [.. Properties.Where(x => !(x == IdProperty || x.GetCustomAttribute<DatabaseGeneratedAttribute>()?.DatabaseGeneratedOption > DatabaseGeneratedOption.None))];
@@ -97,8 +96,7 @@ namespace Forget.Core.Caching
             {
                 string columnName = property.GetCustomAttribute<ColumnAttribute>()?.Name ?? property.Name;
 
-                if (!IdentifierHelper.CharsetRegex().IsMatch(columnName))
-                    throw new InvalidOperationException($"The column name '{columnName}' contains invalid characters.");
+                IdentifierHelper.EnsureValid("column name", columnName);
 
                 columnNamesByPropertyNameBuilder[property.Name] = columnName;
                 propertiesByPropertyNameBuilder[property.Name] = property;

@@ -1,5 +1,4 @@
 ﻿using Forget.Core.Abstractions.Strategies;
-using Oracle.ManagedDataAccess.Client;
 
 
 namespace Forget.Oracle.Strategies
@@ -25,12 +24,6 @@ namespace Forget.Oracle.Strategies
         public override string CastAsString(string sql)
         {
             return $"TO_CHAR({sql})";
-        }
-
-        protected override string BuildConnectionId(string connectionString)
-        {
-            OracleConnectionStringBuilder builder = new(connectionString);
-            return $"oracle://{builder.DataSource}/{builder.UserID}";
         }
     }
 }

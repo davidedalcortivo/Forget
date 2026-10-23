@@ -85,8 +85,8 @@ namespace Forget.Tests.Core
 
             (string sql, DynamicParameters? parameters) = ExpressionTranslator<Widget>.Translate(dialect, predicate);
 
-            Assert.Equal($"({dialect.RenderIdentifier("Quantity")} > {dialect.RenderParameter("p0")})", sql);
-            Assert.Equal(5, parameters!.Get<int>("p0"));
+            Assert.Equal($"({dialect.RenderIdentifier("Quantity")} > {dialect.RenderParameter("p_0")})", sql);
+            Assert.Equal(5, parameters!.Get<int>("p_0"));
         }
 
         [Theory]
@@ -96,7 +96,7 @@ namespace Forget.Tests.Core
             _ = dialectName;
             ISqlDialectStrategy dialect = (ISqlDialectStrategy)dialectObject;
             string column = dialect.RenderIdentifier("Quantity");
-            string parameter = dialect.RenderParameter("p0");
+            string parameter = dialect.RenderParameter("p_0");
             (Expression<Func<Widget, bool>> Predicate, string Expected)[] cases =
             [
                 (w => w.Quantity.HasValue && w.Quantity.Value > 5, $"(({dialect.IsNotNull(column)}) AND ({column} > {parameter}))"),
@@ -124,8 +124,8 @@ namespace Forget.Tests.Core
             (string sql, DynamicParameters? parameters) = ExpressionTranslator<Entry>.Translate(dialect, predicate);
 
             string column = dialect.RenderIdentifier("Deleted");
-            Assert.Equal($"(({dialect.IsNotNull(column)}) AND ({column} > {dialect.RenderParameter("p0")}))", sql);
-            Assert.Equal(since, parameters!.Get<DateTime>("p0"));
+            Assert.Equal($"(({dialect.IsNotNull(column)}) AND ({column} > {dialect.RenderParameter("p_0")}))", sql);
+            Assert.Equal(since, parameters!.Get<DateTime>("p_0"));
         }
 
         [Theory]
@@ -139,9 +139,9 @@ namespace Forget.Tests.Core
 
             (string sql, DynamicParameters? parameters) = ExpressionTranslator<Widget>.Translate(dialect, predicate);
 
-            Assert.Equal($"(({dialect.RenderIdentifier("IsActive")} = {dialect.RenderParameter("p0")}) AND ({dialect.RenderIdentifier("Id")} = {dialect.RenderParameter("p1")}))", sql);
-            Assert.Equal(true, parameters!.Get<object>("p0"));
-            Assert.Equal(5, parameters.Get<int>("p1"));
+            Assert.Equal($"(({dialect.RenderIdentifier("IsActive")} = {dialect.RenderParameter("p_0")}) AND ({dialect.RenderIdentifier("Id")} = {dialect.RenderParameter("p_1")}))", sql);
+            Assert.Equal(true, parameters!.Get<object>("p_0"));
+            Assert.Equal(5, parameters.Get<int>("p_1"));
         }
 
         [Theory]

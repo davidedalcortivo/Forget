@@ -16,10 +16,11 @@ namespace Forget.Tests.Core
             Forget.SqlServer.Strategies.SqlDialectStrategy dialect = Forget.SqlServer.Strategies.SqlDialectStrategy.Instance;
 
             Assert.Equal("[Name]", dialect.RenderIdentifier("Name"));
-            Assert.Equal("@p0", dialect.RenderParameter("p0"));
+            Assert.Equal("[a]]b]", dialect.RenderIdentifier("a]b"));
+            Assert.Equal("@p_0", dialect.RenderParameter("p_0"));
             Assert.Equal("a + b", dialect.Concat("a", "b"));
-            Assert.Equal("[Id] IN @p0", dialect.In("[Id]", "@p0", false));
-            Assert.Equal("[Id] IN @p0", dialect.In("[Id]", "@p0", true));
+            Assert.Equal("[Id] IN @p_0", dialect.In("[Id]", "@p_0", false));
+            Assert.Equal("[Id] IN @p_0", dialect.In("[Id]", "@p_0", true));
             Assert.Equal("[Active] = 1", dialect.IsTrue("[Active]"));
             Assert.Equal("CAST(x AS NVARCHAR(MAX))", dialect.CastAsString("x"));
         }
@@ -30,10 +31,11 @@ namespace Forget.Tests.Core
             Forget.MySql.Strategies.SqlDialectStrategy dialect = Forget.MySql.Strategies.SqlDialectStrategy.Instance;
 
             Assert.Equal("`Name`", dialect.RenderIdentifier("Name"));
-            Assert.Equal("@p0", dialect.RenderParameter("p0"));
+            Assert.Equal("`a``b`", dialect.RenderIdentifier("a`b"));
+            Assert.Equal("@p_0", dialect.RenderParameter("p_0"));
             Assert.Equal("CONCAT(a, b)", dialect.Concat("a", "b"));
-            Assert.Equal("`Id` IN @p0", dialect.In("`Id`", "@p0", false));
-            Assert.Equal("`Id` IN @p0", dialect.In("`Id`", "@p0", true));
+            Assert.Equal("`Id` IN @p_0", dialect.In("`Id`", "@p_0", false));
+            Assert.Equal("`Id` IN @p_0", dialect.In("`Id`", "@p_0", true));
             Assert.Equal("`Active` = 1", dialect.IsTrue("`Active`"));
             Assert.Equal("CAST(x AS CHAR)", dialect.CastAsString("x"));
         }
@@ -44,10 +46,11 @@ namespace Forget.Tests.Core
             Forget.PostgreSql.Strategies.SqlDialectStrategy dialect = Forget.PostgreSql.Strategies.SqlDialectStrategy.Instance;
 
             Assert.Equal("\"Name\"", dialect.RenderIdentifier("Name"));
-            Assert.Equal("@p0", dialect.RenderParameter("p0"));
+            Assert.Equal("\"a\"\"b\"", dialect.RenderIdentifier("a\"b"));
+            Assert.Equal("@p_0", dialect.RenderParameter("p_0"));
             Assert.Equal("a || b", dialect.Concat("a", "b"));
-            Assert.Equal("\"Id\" = ANY(@p0)", dialect.In("\"Id\"", "@p0", false));
-            Assert.Equal("\"Id\" IN @p0", dialect.In("\"Id\"", "@p0", true));
+            Assert.Equal("\"Id\" = ANY(@p_0)", dialect.In("\"Id\"", "@p_0", false));
+            Assert.Equal("\"Id\" IN @p_0", dialect.In("\"Id\"", "@p_0", true));
             Assert.Equal("\"Active\" = TRUE", dialect.IsTrue("\"Active\""));
             Assert.Equal("x::text", dialect.CastAsString("x"));
         }
@@ -58,10 +61,11 @@ namespace Forget.Tests.Core
             Forget.Oracle.Strategies.SqlDialectStrategy dialect = Forget.Oracle.Strategies.SqlDialectStrategy.Instance;
 
             Assert.Equal("\"Name\"", dialect.RenderIdentifier("Name"));
-            Assert.Equal(":p0", dialect.RenderParameter("p0"));
+            Assert.Equal("\"a\"\"b\"", dialect.RenderIdentifier("a\"b"));
+            Assert.Equal(":p_0", dialect.RenderParameter("p_0"));
             Assert.Equal("a || b", dialect.Concat("a", "b"));
-            Assert.Equal("\"Id\" IN :p0", dialect.In("\"Id\"", ":p0", false));
-            Assert.Equal("\"Id\" IN :p0", dialect.In("\"Id\"", ":p0", true));
+            Assert.Equal("\"Id\" IN :p_0", dialect.In("\"Id\"", ":p_0", false));
+            Assert.Equal("\"Id\" IN :p_0", dialect.In("\"Id\"", ":p_0", true));
             Assert.Equal("\"Active\" = 1", dialect.IsTrue("\"Active\""));
             Assert.Equal("TO_CHAR(x)", dialect.CastAsString("x"));
         }
@@ -105,25 +109,6 @@ namespace Forget.Tests.Core
         }
 
         [Theory]
-        [InlineData("SqlServer")]
-        [InlineData("Oracle")]
-        public void Pagination_SqlServerAndOracle_UseOffsetFetchNext(string dialectName)
-        {
-            ISqlDialectStrategy dialect = dialectName == "SqlServer"
-                ? Forget.SqlServer.Strategies.SqlDialectStrategy.Instance
-                : Forget.Oracle.Strategies.SqlDialectStrategy.Instance;
-
-            string expected = string.Join(Environment.NewLine,
-                "",
-                "OFFSET",
-                "    <<SKIP>> ROWS",
-                "FETCH NEXT",
-                "    <<TAKE>> ROWS ONLY");
-
-            Assert.Equal(expected, dialect.Pagination("<<SKIP>>", "<<TAKE>>"));
-        }
-
-        [Theory]
         [InlineData("MySql")]
         [InlineData("PostgreSql")]
         public void Pagination_MySqlAndPostgreSql_UseLimitOffset(string dialectName)
@@ -138,6 +123,25 @@ namespace Forget.Tests.Core
                 "    <<TAKE>>",
                 "OFFSET",
                 "    <<SKIP>>");
+
+            Assert.Equal(expected, dialect.Pagination("<<SKIP>>", "<<TAKE>>"));
+        }
+
+        [Theory]
+        [InlineData("Oracle")]
+        [InlineData("SqlServer")]
+        public void Pagination_OracleAndSqlServer_UseOffsetFetchNext(string dialectName)
+        {
+            ISqlDialectStrategy dialect = dialectName == "Oracle"
+                ? Forget.Oracle.Strategies.SqlDialectStrategy.Instance
+                : Forget.SqlServer.Strategies.SqlDialectStrategy.Instance;
+
+            string expected = string.Join(Environment.NewLine,
+                "",
+                "OFFSET",
+                "    <<SKIP>> ROWS",
+                "FETCH NEXT",
+                "    <<TAKE>> ROWS ONLY");
 
             Assert.Equal(expected, dialect.Pagination("<<SKIP>>", "<<TAKE>>"));
         }

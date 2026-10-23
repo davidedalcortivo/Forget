@@ -1,4 +1,5 @@
 ﻿using Forget.Core.Caching;
+using Forget.Core.Models;
 using System.Collections;
 using System.Collections.Immutable;
 using System.Linq.Expressions;
@@ -27,8 +28,9 @@ namespace Forget.Core.Utilities
         {
             ArgumentNullException.ThrowIfNull(selector);
             Expression body = selector.Body;
+            Type? underlyingType = Nullable.GetUnderlyingType(typeof(TSelector));
 
-            if (body is UnaryExpression unaryExpression && body.NodeType == ExpressionType.Convert)
+            while (body is UnaryExpression unaryExpression && body.NodeType == ExpressionType.Convert && (body.Type == typeof(TSelector) || body.Type == underlyingType))
                 body = unaryExpression.Operand;
 
             if (body is not MemberExpression memberExpression)
@@ -48,7 +50,7 @@ namespace Forget.Core.Utilities
             return property;
         }
 
-        public static void EnsureValue<TEntity>(PropertyInfo property, object? value)
+        public static void EnsureValue<TEntity>(PropertyInfo property, object? value, ComparisonOperator comparisonOperator)
         {
             if (value is not null)
             {
@@ -58,7 +60,7 @@ namespace Forget.Core.Utilities
                 {
                     foreach (object? _value in enumerable)
                     {
-                        if (_value is byte)
+                        if (_value is byte && comparisonOperator is not ComparisonOperator.In)
                             throw new ArgumentException($"A list of bytes cannot be used as the value of the property '{property.Name}' for the entity '{typeof(TEntity).Name}': the drivers bind a byte array as one binary value.");
 
                         if (_value is not null)
@@ -67,6 +69,10 @@ namespace Forget.Core.Utilities
                 }
                 else
                 {
+                    if (comparisonOperator is ComparisonOperator.In && value is IEnumerable && value is not string &&
+                        property.PropertyType != typeof(string) && typeof(IEnumerable).IsAssignableFrom(property.PropertyType))
+                        throw new ArgumentException($"The value of an In filter on the property '{property.Name}' for the entity '{typeof(TEntity).Name}' must be a list of values, and a '{valueType}' is one value of the property's type: use Equal, or pass a list of them.");
+
                     EnsureValueType<TEntity>(property, valueType);
                 }
             }

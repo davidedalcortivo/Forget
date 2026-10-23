@@ -11,7 +11,6 @@ namespace Forget.Core.Abstractions.Strategies
     {
         ISqlDialectStrategy SqlDialectStrategy { get; }
         Task LoadDbCacheImplAsync<TEntity>(DbConnection connection, bool sync, int? commandTimeout, CancellationToken cancellationToken) where TEntity : class;
-        Task GetColumnsImplAsync<TEntity>(DbConnection connection, bool sync, int? commandTimeout, CancellationToken cancellationToken) where TEntity : class;
         Task<IReadOnlyList<TEntity>> GetAllImplAsync<TEntity>(DbConnection connection, bool sync, Expression<Func<TEntity, bool>>? predicate, IEnumerable<SortDescriptor<TEntity>>? sortDescriptors, DbTransaction? transaction, int? commandTimeout, CancellationToken cancellationToken) where TEntity : class;
         Task<IReadOnlyList<TEntity>> GetAllImplAsync<TEntity>(DbConnection connection, bool sync, IFilterNode<TEntity>? filterNode, IEnumerable<SortDescriptor<TEntity>>? sortDescriptors, DbTransaction? transaction, int? commandTimeout, CancellationToken cancellationToken) where TEntity : class;
         Task<TEntity> GetFirstImplAsync<TEntity>(DbConnection connection, bool sync, Expression<Func<TEntity, bool>>? predicate, IEnumerable<SortDescriptor<TEntity>>? sortDescriptors, DbTransaction? transaction, int? commandTimeout, CancellationToken cancellationToken) where TEntity : class;

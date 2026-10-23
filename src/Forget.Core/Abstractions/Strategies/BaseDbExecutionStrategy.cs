@@ -25,8 +25,6 @@ namespace Forget.Core.Abstractions.Strategies
             await GetColumnsImplAsync<TEntity>(connection, sync, commandTimeout, cancellationToken);
         }
 
-        public abstract Task GetColumnsImplAsync<TEntity>(DbConnection connection, bool sync, int? commandTimeout, CancellationToken cancellationToken) where TEntity : class;
-
         public virtual async Task<IReadOnlyList<TEntity>> GetAllImplAsync<TEntity>(DbConnection connection, bool sync, Expression<Func<TEntity, bool>>? predicate, IEnumerable<SortDescriptor<TEntity>>? sortDescriptors, DbTransaction? transaction, int? commandTimeout, CancellationToken cancellationToken) where TEntity : class
         {
             DbCommandInfo command = dbCommandStrategy.GetAllCommand(connection, predicate, sortDescriptors);

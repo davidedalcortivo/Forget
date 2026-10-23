@@ -138,14 +138,6 @@ namespace Forget.Tests.SqlServer
         }
 
         [Fact]
-        public async Task AListOfBytes_IsRejectedByForget_BecauseTheDriversBindItAsOneBinaryValue()
-        {
-            ArgumentException range = await Assert.ThrowsAsync<ArgumentException>(() => _fixture.Connection.GetByIdRangeAsync<Widget>("N"u8.ToArray(), cancellationToken: Ct));
-            ArgumentException filter = Assert.Throws<ArgumentException>(() => new FilterDescriptor<Widget>("Id", "N"u8.ToArray(), ComparisonOperator.In));
-
-            Assert.All([range, filter], ex => Assert.Contains("list of bytes", ex.Message));
-        }
-        [Fact]
         public void TheSynchronousMethods_ApplyTheSameRule()
         {
             _fixture.Connection.Insert(NewWidget(79));

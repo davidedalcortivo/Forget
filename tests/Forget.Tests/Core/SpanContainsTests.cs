@@ -43,7 +43,6 @@ namespace Forget.Tests.Core
         [MemberData(nameof(DialectStrategies.All), MemberType = typeof(DialectStrategies))]
         public void AnArrayContainsConvertedToASpan_TranslatesToIn(string dialectName, object dialectObject)
         {
-            _ = dialectName;
             ISqlDialectStrategy dialect = (ISqlDialectStrategy)dialectObject;
             Holder holder = new();
             Expression<Func<Widget, bool>>[] predicates =
@@ -57,8 +56,8 @@ namespace Forget.Tests.Core
             {
                 (string sql, DynamicParameters? parameters) = ExpressionTranslator<Widget>.Translate(dialect, predicate);
 
-                Assert.Equal($"({dialect.In(dialect.RenderIdentifier("Id"), dialect.RenderParameter("p0"), false)})", sql);
-                Assert.Equal([1, 2, 3], parameters!.Get<int[]>("p0"));
+                Assert.Equal($"({DialectStrategies.In(dialect, dialectName, dialect.RenderIdentifier("Id"), "p_0_", 3, false)})", sql);
+                Assert.Equal<object?>([1, 2, 3], DialectStrategies.ListValues(dialectName, parameters!, "p_0_", 3, false));
             }
         }
 
@@ -66,7 +65,6 @@ namespace Forget.Tests.Core
         [MemberData(nameof(DialectStrategies.All), MemberType = typeof(DialectStrategies))]
         public void AnArrayOfAReferenceTypeConvertedToASpan_TranslatesToIn(string dialectName, object dialectObject)
         {
-            _ = dialectName;
             ISqlDialectStrategy dialect = (ISqlDialectStrategy)dialectObject;
             Holder holder = new();
             Expression<Func<Widget, bool>>[] predicates =
@@ -79,8 +77,8 @@ namespace Forget.Tests.Core
             {
                 (string sql, DynamicParameters? parameters) = ExpressionTranslator<Widget>.Translate(dialect, predicate);
 
-                Assert.Equal($"({dialect.In(dialect.RenderIdentifier("Name"), dialect.RenderParameter("p0"), false)})", sql);
-                Assert.Equal(["a", "b"], parameters!.Get<string[]>("p0"));
+                Assert.Equal($"({DialectStrategies.In(dialect, dialectName, dialect.RenderIdentifier("Name"), "p_0_", 2, false)})", sql);
+                Assert.Equal<object?>(["a", "b"], DialectStrategies.ListValues(dialectName, parameters!, "p_0_", 2, false));
             }
         }
 

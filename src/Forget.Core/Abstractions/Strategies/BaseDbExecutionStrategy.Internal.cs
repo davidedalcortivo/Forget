@@ -17,6 +17,8 @@ namespace Forget.Core.Abstractions.Strategies
                 throw new ArgumentException("The provided transaction does not belong to the current connection.");
         }
 
+        protected abstract Task GetColumnsImplAsync<TEntity>(DbConnection connection, bool sync, int? commandTimeout, CancellationToken cancellationToken) where TEntity : class;
+
         protected virtual async Task<IReadOnlyList<TEntity>> QueryImplAsync<TEntity>(DbConnection connection, bool sync, DbCommandInfo command, int? take, DbTransaction? transaction, int? commandTimeout, CancellationToken cancellationToken) where TEntity : class
         {
             EnsureTransaction(connection, transaction);

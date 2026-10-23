@@ -1,5 +1,4 @@
 ﻿using Forget.Core.Abstractions.Strategies;
-using Npgsql;
 using System.Text;
 
 
@@ -8,6 +7,7 @@ namespace Forget.PostgreSql.Strategies
     internal sealed partial class SqlDialectStrategy : BaseSqlDialectStrategy
     {
         public static SqlDialectStrategy Instance { get; } = new();
+        public override bool BindsListsAsArrays { get; } = true;
 
         public override string In(string identifier, string parameter, bool mixed)
         {
@@ -48,12 +48,6 @@ namespace Forget.PostgreSql.Strategies
         public override string CastAsString(string sql)
         {
             return $"{sql}::text";
-        }
-
-        protected override string BuildConnectionId(string connectionString)
-        {
-            NpgsqlConnectionStringBuilder builder = new(connectionString);
-            return $"postgresql://{builder.Host}:{builder.Port}/{builder.Database}";
         }
     }
 }

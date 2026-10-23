@@ -100,16 +100,14 @@ namespace Forget.Core.Utilities
         public static StringBuilder AppendFromTable<TEntity>(this StringBuilder sqlBuffer, ISqlDialectStrategy sqlDialectStrategy, string indentation, string? alias) where TEntity : class
         {
             string tableName = EntityInfoCache<TEntity>.TableName;
-            string schemaName = EntityInfoCache<TEntity>.SchemaName ?? sqlDialectStrategy.DefaultSchemaName;
+            string? schemaName = EntityInfoCache<TEntity>.SchemaName;
 
             sqlBuffer.AppendLine();
             sqlBuffer.Append(indentation);
             sqlBuffer.AppendLine("FROM");
             sqlBuffer.Append(indentation);
             sqlBuffer.Append("    ");
-            sqlBuffer.Append(sqlDialectStrategy.RenderIdentifier(schemaName));
-            sqlBuffer.Append('.');
-            sqlBuffer.Append(sqlDialectStrategy.RenderIdentifier(tableName));
+            sqlBuffer.Append(sqlDialectStrategy.RenderTable(schemaName, tableName));
 
             if (alias is not null)
             {
@@ -150,6 +148,34 @@ namespace Forget.Core.Utilities
             return sqlBuffer;
         }
 
+        public static StringBuilder AppendNullSafeEquals(this StringBuilder sqlBuffer, string left, string right, int index, string indentation)
+        {
+            if (index > 0)
+            {
+                sqlBuffer.AppendLine();
+                sqlBuffer.Append(indentation);
+                sqlBuffer.AppendLine("AND");
+            }
+
+            sqlBuffer.Append(indentation);
+            sqlBuffer.AppendLine("(");
+            sqlBuffer.Append(indentation);
+            sqlBuffer.Append("    ");
+            sqlBuffer.Append(left);
+            sqlBuffer.Append(" = ");
+            sqlBuffer.AppendLine(right);
+            sqlBuffer.Append(indentation);
+            sqlBuffer.Append("    OR (");
+            sqlBuffer.Append(left);
+            sqlBuffer.Append(" IS NULL AND ");
+            sqlBuffer.Append(right);
+            sqlBuffer.AppendLine(" IS NULL)");
+            sqlBuffer.Append(indentation);
+            sqlBuffer.Append(')');
+
+            return sqlBuffer;
+        }
+
         public static StringBuilder AppendSort<TEntity>(this StringBuilder sqlBuffer, ISqlDialectStrategy sqlDialectStrategy, IEnumerable<SortDescriptor<TEntity>>? sortDescriptors, bool forceSorting) where TEntity : class
         {
             List<SortDescriptor<TEntity>> sortDescriptorList = sortDescriptors is null ? [] : sortDescriptors.AsList();
@@ -186,6 +212,22 @@ namespace Forget.Core.Utilities
         {
             sqlBuffer.Append(sqlDialectStrategy.RenderParameter(name));
             parameters.Add(name, value);
+
+            return sqlBuffer;
+        }
+
+        public static StringBuilder AppendRowParameters<TEntity>(this StringBuilder sqlBuffer, ISqlDialectStrategy sqlDialectStrategy, DynamicParameters parameters, ImmutableArray<PropertyInfo> properties, TEntity entity, int row) where TEntity : class
+        {
+            ImmutableDictionary<string, Func<TEntity, object?>> propertyGettersByPropertyName = EntityInfoCache<TEntity>.PropertyGettersByPropertyName;
+
+            for (int i = 0; i < properties.Length; i++)
+            {
+                string propertyName = properties[i].Name;
+                object? parameterValue = propertyGettersByPropertyName[propertyName](entity);
+
+                sqlBuffer.AppendAndBindParameter(sqlDialectStrategy, parameters, $"{propertyName}_{row}", parameterValue);
+                sqlBuffer.AppendSeparator(i, properties.Length, true);
+            }
 
             return sqlBuffer;
         }

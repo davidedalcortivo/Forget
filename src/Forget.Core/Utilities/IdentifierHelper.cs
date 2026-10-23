@@ -5,9 +5,18 @@ namespace Forget.Core.Utilities
 {
     internal static partial class IdentifierHelper
     {
-        public const string CharsetPattern = "^[A-Za-z][A-Za-z0-9_]*$";
+        public static void EnsureValid(string description, string name)
+        {
+            if (name.Contains('{') || name.Contains('}'))
+                throw new InvalidOperationException($"The {description} '{name}' contains a curly brace, which Forget's SQL templates and Dapper use as markers.");
 
-        [GeneratedRegex(CharsetPattern, RegexOptions.Compiled)]
-        public static partial Regex CharsetRegex();
+            Match match = NotIdentifierRegex().Match(name);
+
+            if (match.Success)
+                throw new InvalidOperationException($"The {description} '{name}' contains '{match.Value}', which Dapper would take for a parameter and rewrite.");
+        }
+
+        [GeneratedRegex(@"[@:?$]\w*_\d+_(?!\w)|\?[\p{L}_][\p{L}\p{N}_]*\?", RegexOptions.IgnoreCase | RegexOptions.Compiled)]
+        public static partial Regex NotIdentifierRegex();
     }
 }

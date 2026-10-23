@@ -1,5 +1,4 @@
 ﻿using Forget.Core.Abstractions.Strategies;
-using MySqlConnector;
 using System.Text;
 
 
@@ -8,11 +7,6 @@ namespace Forget.MySql.Strategies
     internal sealed partial class SqlDialectStrategy : BaseSqlDialectStrategy
     {
         public static SqlDialectStrategy Instance { get; } = new();
-
-        public override string RenderIdentifier(string name)
-        {
-            return $"`{name}`";
-        }
 
         public override string Concat(params string[] parts)
         {
@@ -42,12 +36,6 @@ namespace Forget.MySql.Strategies
         public override string CastAsString(string sql)
         {
             return $"CAST({sql} AS CHAR)";
-        }
-
-        protected override string BuildConnectionId(string connectionString)
-        {
-            MySqlConnectionStringBuilder builder = new(connectionString);
-            return $"mysql://{builder.Server}:{builder.Port}/{builder.Database}";
         }
     }
 }

@@ -7,18 +7,21 @@ namespace Forget.Core.Abstractions.Strategies
 {
     internal abstract partial class BaseSqlDialectStrategy : ISqlDialectStrategy
     {
-        private bool _isInitialized = false;
-        private readonly object _lock = new();
         private readonly ConcurrentDictionary<string, string> _connectionIds = new();
 
-        public string DefaultSchemaName { get; protected set; } = null!;
         public virtual string NullValue { get; } = "NULL";
         public virtual string Terminator { get; } = $";{Environment.NewLine}";
         public virtual string Placeholder { get; } = "{}";
+        public virtual bool BindsListsAsArrays { get; } = false;
 
         public virtual string RenderIdentifier(string name)
         {
-            return $"\"{name}\"";
+            return BuildIdentifier(name);
+        }
+
+        public virtual string RenderTable(string? schemaName, string tableName)
+        {
+            return schemaName is null ? BuildIdentifier(tableName) : $"{BuildIdentifier(schemaName)}.{BuildIdentifier(tableName)}";
         }
 
         public virtual string RenderParameter(string name)
@@ -122,26 +125,9 @@ namespace Forget.Core.Abstractions.Strategies
 
         public abstract string CastAsString(string sql);
 
-        protected abstract string BuildConnectionId(string connectionString);
-
         public string GetConnectionId(DbConnection connection)
         {
             return _connectionIds.GetOrAdd(connection.ConnectionString, static (connectionString, dialect) => dialect.BuildConnectionId(connectionString), this);
-        }
-
-        public void Initialize(DbConnection connection)
-        {
-            if (!_isInitialized)
-            {
-                lock (_lock)
-                {
-                    if (!_isInitialized)
-                    {
-                        InitializeImpl(connection);
-                        _isInitialized = true;
-                    }
-                }
-            }
         }
     }
 }

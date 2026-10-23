@@ -21,16 +21,13 @@ namespace Forget.SqlServer.Strategies
             string columnsTable = $"{sysTable}.{SqlDialectStrategy.RenderIdentifier("columns")}";
             string typesTable = $"{sysTable}.{SqlDialectStrategy.RenderIdentifier("types")}";
             string tablesTable = $"{sysTable}.{SqlDialectStrategy.RenderIdentifier("tables")}";
-            string schemasTable = $"{sysTable}.{SqlDialectStrategy.RenderIdentifier("schemas")}";
             string coTable = SqlDialectStrategy.RenderIdentifier("co");
             string tyTable = SqlDialectStrategy.RenderIdentifier("ty");
             string taTable = SqlDialectStrategy.RenderIdentifier("ta");
-            string scTable = SqlDialectStrategy.RenderIdentifier("sc");
             string nameColumn = SqlDialectStrategy.RenderIdentifier("name");
             string systemTypeIdColumn = SqlDialectStrategy.RenderIdentifier("system_type_id");
             string userTypeIdColumn = SqlDialectStrategy.RenderIdentifier("user_type_id");
             string objectIdColumn = SqlDialectStrategy.RenderIdentifier("object_id");
-            string schemaIdColumn = SqlDialectStrategy.RenderIdentifier("schema_id");
             string newLine = Environment.NewLine;
 
             StringBuilder sqlBuffer = new();
@@ -67,14 +64,7 @@ namespace Forget.SqlServer.Strategies
             sqlBuffer.Append(" AS ");
             sqlBuffer.Append(taTable);
             sqlBuffer.AppendOnClause($"{coTable}.{objectIdColumn} = {taTable}.{objectIdColumn}", string.Empty);
-            sqlBuffer.AppendLine();
-            sqlBuffer.AppendLine("INNER JOIN");
-            sqlBuffer.Append("    ");
-            sqlBuffer.Append(schemasTable);
-            sqlBuffer.Append(" AS ");
-            sqlBuffer.Append(scTable);
-            sqlBuffer.AppendOnClause($"{taTable}.{schemaIdColumn} = {scTable}.{schemaIdColumn}", string.Empty);
-            sqlBuffer.AppendWhereClause($"{scTable}.{nameColumn} = {SqlDialectStrategy.Placeholder}" + newLine + $"    AND {taTable}.{nameColumn} = {SqlDialectStrategy.Placeholder}", string.Empty);
+            sqlBuffer.AppendWhereClause($"{taTable}.{objectIdColumn} = OBJECT_ID(ISNULL(QUOTENAME({SqlDialectStrategy.Placeholder}) + '.', '') + QUOTENAME({SqlDialectStrategy.Placeholder}))", string.Empty);
             sqlBuffer.Append(SqlDialectStrategy.Terminator);
 
             return new(sqlBuffer.ToString(), SqlDialectStrategy.Terminator, SqlDialectStrategy.Placeholder);
@@ -100,17 +90,14 @@ namespace Forget.SqlServer.Strategies
         public override SqlTemplate UpsertSqlBuilder<TEntity>() where TEntity : class
         {
             string tableName = EntityInfoCache<TEntity>.TableName;
-            string schemaName = EntityInfoCache<TEntity>.SchemaName ?? SqlDialectStrategy.DefaultSchemaName;
+            string? schemaName = EntityInfoCache<TEntity>.SchemaName;
             ImmutableArray<PropertyInfo> insertProperties = EntityInfoCache<TEntity>.InsertProperties;
 
-            string table = SqlDialectStrategy.RenderIdentifier(tableName);
-            string schema = SqlDialectStrategy.RenderIdentifier(schemaName);
+            string table = SqlDialectStrategy.RenderTable(schemaName, tableName);
 
             StringBuilder sqlBuffer = new();
 
             sqlBuffer.Append("UPDATE ");
-            sqlBuffer.Append(schema);
-            sqlBuffer.Append('.');
             sqlBuffer.AppendLine(table);
             sqlBuffer.AppendLine("WITH (UPDLOCK, HOLDLOCK)");
             sqlBuffer.AppendLine("SET");
@@ -122,8 +109,6 @@ namespace Forget.SqlServer.Strategies
             sqlBuffer.AppendLine("IF @@ROWCOUNT = 0");
             sqlBuffer.AppendLine("BEGIN");
             sqlBuffer.Append("    INSERT INTO ");
-            sqlBuffer.Append(schema);
-            sqlBuffer.Append('.');
             sqlBuffer.Append(table);
             sqlBuffer.Append(" (");
             sqlBuffer.AppendColumns<TEntity>(SqlDialectStrategy, insertProperties, null, "        ", false, false);
@@ -159,7 +144,7 @@ namespace Forget.SqlServer.Strategies
         public override SqlTemplate UpsertRangeSqlBuilder<TEntity>() where TEntity : class
         {
             string tableName = EntityInfoCache<TEntity>.TableName;
-            string schemaName = EntityInfoCache<TEntity>.SchemaName ?? SqlDialectStrategy.DefaultSchemaName;
+            string? schemaName = EntityInfoCache<TEntity>.SchemaName;
             ImmutableArray<PropertyInfo> properties = EntityInfoCache<TEntity>.Properties;
             ImmutableArray<PropertyInfo> insertProperties = EntityInfoCache<TEntity>.InsertProperties;
             ImmutableArray<PropertyInfo> upsertKeyProperties = EntityInfoCache<TEntity>.UpsertKeyProperties;
@@ -178,39 +163,13 @@ namespace Forget.SqlServer.Strategies
             {
                 string propertyColumn = SqlDialectStrategy.RenderIdentifier(columnNamesByPropertyName[upsertKeyProperties[i].Name]);
 
-                if (i > 0)
-                {
-                    sqlBuffer.AppendLine();
-                    sqlBuffer.AppendLine("    AND");
-                }
-
-                sqlBuffer.AppendLine("    (");
-                sqlBuffer.Append("        ");
-                sqlBuffer.Append(targetTable);
-                sqlBuffer.Append('.');
-                sqlBuffer.Append(propertyColumn);
-                sqlBuffer.Append(" = ");
-                sqlBuffer.Append(sourceTable);
-                sqlBuffer.Append('.');
-                sqlBuffer.AppendLine(propertyColumn);
-                sqlBuffer.Append("        OR (");
-                sqlBuffer.Append(targetTable);
-                sqlBuffer.Append('.');
-                sqlBuffer.Append(propertyColumn);
-                sqlBuffer.Append(" IS NULL AND ");
-                sqlBuffer.Append(sourceTable);
-                sqlBuffer.Append('.');
-                sqlBuffer.Append(propertyColumn);
-                sqlBuffer.AppendLine(" IS NULL)");
-                sqlBuffer.Append("    )");
+                sqlBuffer.AppendNullSafeEquals($"{targetTable}.{propertyColumn}", $"{sourceTable}.{propertyColumn}", i, "    ");
             }
 
             sqlBuffer.Append(SqlDialectStrategy.Terminator);
             sqlBuffer.AppendLine();
             sqlBuffer.Append("INSERT INTO ");
-            sqlBuffer.Append(SqlDialectStrategy.RenderIdentifier(schemaName));
-            sqlBuffer.Append('.');
-            sqlBuffer.Append(SqlDialectStrategy.RenderIdentifier(tableName));
+            sqlBuffer.Append(SqlDialectStrategy.RenderTable(schemaName, tableName));
             sqlBuffer.Append(" (");
             sqlBuffer.AppendColumns<TEntity>(SqlDialectStrategy, insertProperties, null, "    ", false, false);
             sqlBuffer.AppendLine();
@@ -239,31 +198,7 @@ namespace Forget.SqlServer.Strategies
             {
                 string propertyColumn = SqlDialectStrategy.RenderIdentifier(columnNamesByPropertyName[upsertKeyProperties[i].Name]);
 
-                if (i > 0)
-                {
-                    sqlBuffer.AppendLine();
-                    sqlBuffer.AppendLine("        AND");
-                }
-
-                sqlBuffer.AppendLine("        (");
-                sqlBuffer.Append("            ");
-                sqlBuffer.Append(targetTable);
-                sqlBuffer.Append('.');
-                sqlBuffer.Append(propertyColumn);
-                sqlBuffer.Append(" = ");
-                sqlBuffer.Append(sourceTable);
-                sqlBuffer.Append('.');
-                sqlBuffer.AppendLine(propertyColumn);
-                sqlBuffer.Append("            OR (");
-                sqlBuffer.Append(targetTable);
-                sqlBuffer.Append('.');
-                sqlBuffer.Append(propertyColumn);
-                sqlBuffer.Append(" IS NULL AND ");
-                sqlBuffer.Append(sourceTable);
-                sqlBuffer.Append('.');
-                sqlBuffer.Append(propertyColumn);
-                sqlBuffer.AppendLine(" IS NULL)");
-                sqlBuffer.Append("        )");
+                sqlBuffer.AppendNullSafeEquals($"{targetTable}.{propertyColumn}", $"{sourceTable}.{propertyColumn}", i, "        ");
             }
 
             sqlBuffer.AppendLine();

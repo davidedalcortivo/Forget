@@ -14,7 +14,7 @@ namespace Forget.Oracle.Strategies
         private SqlTemplate BuildUpsertSql<TEntity>(bool isRange, bool updateOnly) where TEntity : class
         {
             string tableName = EntityInfoCache<TEntity>.TableName;
-            string schemaName = EntityInfoCache<TEntity>.SchemaName ?? SqlDialectStrategy.DefaultSchemaName;
+            string? schemaName = EntityInfoCache<TEntity>.SchemaName;
             ImmutableArray<PropertyInfo> properties = updateOnly ? EntityInfoCache<TEntity>.UpdateProperties : EntityInfoCache<TEntity>.UpsertProperties;
             ImmutableArray<PropertyInfo> upsertKeyProperties = EntityInfoCache<TEntity>.UpsertKeyProperties;
             ImmutableDictionary<string, string> columnNamesByPropertyName = EntityInfoCache<TEntity>.ColumnNamesByPropertyName;
@@ -25,9 +25,7 @@ namespace Forget.Oracle.Strategies
             StringBuilder sqlBuffer = new();
 
             sqlBuffer.Append("MERGE INTO ");
-            sqlBuffer.Append(SqlDialectStrategy.RenderIdentifier(schemaName));
-            sqlBuffer.Append('.');
-            sqlBuffer.Append(SqlDialectStrategy.RenderIdentifier(tableName));
+            sqlBuffer.Append(SqlDialectStrategy.RenderTable(schemaName, tableName));
             sqlBuffer.Append(' ');
             sqlBuffer.AppendLine(targetTable);
             sqlBuffer.AppendLine("USING (");
@@ -68,31 +66,7 @@ namespace Forget.Oracle.Strategies
                 {
                     string propertyColumn = SqlDialectStrategy.RenderIdentifier(columnNamesByPropertyName[upsertKeyProperties[i].Name]);
 
-                    if (i > 0)
-                    {
-                        sqlBuffer.AppendLine();
-                        sqlBuffer.AppendLine("    AND");
-                    }
-
-                    sqlBuffer.AppendLine("    (");
-                    sqlBuffer.Append("        ");
-                    sqlBuffer.Append(targetTable);
-                    sqlBuffer.Append('.');
-                    sqlBuffer.Append(propertyColumn);
-                    sqlBuffer.Append(" = ");
-                    sqlBuffer.Append(sourceTable);
-                    sqlBuffer.Append('.');
-                    sqlBuffer.AppendLine(propertyColumn);
-                    sqlBuffer.Append("        OR (");
-                    sqlBuffer.Append(targetTable);
-                    sqlBuffer.Append('.');
-                    sqlBuffer.Append(propertyColumn);
-                    sqlBuffer.Append(" IS NULL AND ");
-                    sqlBuffer.Append(sourceTable);
-                    sqlBuffer.Append('.');
-                    sqlBuffer.Append(propertyColumn);
-                    sqlBuffer.AppendLine(" IS NULL)");
-                    sqlBuffer.Append("    )");
+                    sqlBuffer.AppendNullSafeEquals($"{targetTable}.{propertyColumn}", $"{sourceTable}.{propertyColumn}", i, "    ");
                 }
             }
 

@@ -18,19 +18,11 @@ namespace Forget.PostgreSql.Strategies
         public override SqlTemplate GetColumnsSqlBuilder<TEntity>()
         {
             string pgAttributeTable = SqlDialectStrategy.RenderIdentifier("pg_attribute");
-            string pgClassTable = SqlDialectStrategy.RenderIdentifier("pg_class");
-            string pgNamespaceTable = SqlDialectStrategy.RenderIdentifier("pg_namespace");
             string aTable = SqlDialectStrategy.RenderIdentifier("a");
-            string cTable = SqlDialectStrategy.RenderIdentifier("c");
-            string nTable = SqlDialectStrategy.RenderIdentifier("n");
             string attnameColumn = $"{aTable}.{SqlDialectStrategy.RenderIdentifier("attname")}";
             string attnumColumn = $"{aTable}.{SqlDialectStrategy.RenderIdentifier("attnum")}";
             string attrelidColumn = $"{aTable}.{SqlDialectStrategy.RenderIdentifier("attrelid")}";
             string attisdroppedColumn = $"{aTable}.{SqlDialectStrategy.RenderIdentifier("attisdropped")}";
-            string relnamespaceColumn = $"{cTable}.{SqlDialectStrategy.RenderIdentifier("relnamespace")}";
-            string relnameColumn = $"{cTable}.{SqlDialectStrategy.RenderIdentifier("relname")}";
-            string nspnameColumn = $"{nTable}.{SqlDialectStrategy.RenderIdentifier("nspname")}";
-            string oidColumn = SqlDialectStrategy.RenderIdentifier("oid");
             string newLine = Environment.NewLine;
 
             StringBuilder sqlBuffer = new();
@@ -49,21 +41,8 @@ namespace Forget.PostgreSql.Strategies
             sqlBuffer.Append("    ");
             sqlBuffer.Append(pgAttributeTable);
             sqlBuffer.Append(" AS ");
-            sqlBuffer.AppendLine(aTable);
-            sqlBuffer.AppendLine("INNER JOIN");
-            sqlBuffer.Append("    ");
-            sqlBuffer.Append(pgClassTable);
-            sqlBuffer.Append(" AS ");
-            sqlBuffer.Append(cTable);
-            sqlBuffer.AppendOnClause($"{attrelidColumn} = {cTable}.{oidColumn}", string.Empty);
-            sqlBuffer.AppendLine();
-            sqlBuffer.AppendLine("INNER JOIN");
-            sqlBuffer.Append("    ");
-            sqlBuffer.Append(pgNamespaceTable);
-            sqlBuffer.Append(" AS ");
-            sqlBuffer.Append(nTable);
-            sqlBuffer.AppendOnClause($"{relnamespaceColumn} = {nTable}.{oidColumn}", string.Empty);
-            sqlBuffer.AppendWhereClause($"{nspnameColumn} = {SqlDialectStrategy.Placeholder}" + newLine + $"    AND {relnameColumn} = {SqlDialectStrategy.Placeholder}" + newLine + $"    AND {attnumColumn} > 0" + newLine + $"    AND NOT {attisdroppedColumn}", string.Empty);
+            sqlBuffer.Append(aTable);
+            sqlBuffer.AppendWhereClause($"{attrelidColumn} = to_regclass(COALESCE(quote_ident({SqlDialectStrategy.Placeholder}) || '.', '') || quote_ident({SqlDialectStrategy.Placeholder}))" + newLine + $"    AND {attnumColumn} > 0" + newLine + $"    AND NOT {attisdroppedColumn}", string.Empty);
             sqlBuffer.AppendLine();
             sqlBuffer.AppendLine("ORDER BY");
             sqlBuffer.Append("    ");
@@ -99,7 +78,7 @@ namespace Forget.PostgreSql.Strategies
         public override SqlTemplate UpdateRangeSqlBuilder<TEntity>() where TEntity : class
         {
             string tableName = EntityInfoCache<TEntity>.TableName;
-            string schemaName = EntityInfoCache<TEntity>.SchemaName ?? SqlDialectStrategy.DefaultSchemaName;
+            string? schemaName = EntityInfoCache<TEntity>.SchemaName;
             PropertyInfo idProperty = EntityInfoCache<TEntity>.IdProperty;
             ImmutableArray<PropertyInfo> properties = EntityInfoCache<TEntity>.Properties;
             ImmutableArray<PropertyInfo> updateProperties = EntityInfoCache<TEntity>.UpdateProperties;
@@ -115,9 +94,7 @@ namespace Forget.PostgreSql.Strategies
             StringBuilder sqlBuffer = new();
 
             sqlBuffer.Append("UPDATE ");
-            sqlBuffer.Append(SqlDialectStrategy.RenderIdentifier(schemaName));
-            sqlBuffer.Append('.');
-            sqlBuffer.Append(SqlDialectStrategy.RenderIdentifier(tableName));
+            sqlBuffer.Append(SqlDialectStrategy.RenderTable(schemaName, tableName));
             sqlBuffer.Append(" AS ");
             sqlBuffer.AppendLine(targetTable);
             sqlBuffer.Append("SET");

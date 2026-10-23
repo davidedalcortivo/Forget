@@ -39,9 +39,9 @@ namespace Forget.Tests.Oracle
 
         private static string Row(int index)
         {
-            return $"SELECT CAST(:Id{index} AS NUMBER(10)) AS \"Id\", :Name{index} AS \"Name\", :Nickname{index} AS \"Nickname\", " +
-                   $"CAST(:Quantity{index} AS NUMBER(10)) AS \"Quantity\", CAST(:IsActive{index} AS NUMBER(1)) AS \"IsActive\", " +
-                   $"CAST(:Price{index} AS NUMBER(18,2)) AS \"Price\" FROM DUAL";
+            return $"SELECT CAST(:Id_{index} AS NUMBER(10)) AS \"Id\", :Name_{index} AS \"Name\", :Nickname_{index} AS \"Nickname\", " +
+                   $"CAST(:Quantity_{index} AS NUMBER(10)) AS \"Quantity\", CAST(:IsActive_{index} AS NUMBER(1)) AS \"IsActive\", " +
+                   $"CAST(:Price_{index} AS NUMBER(18,2)) AS \"Price\" FROM DUAL";
         }
 
         private static string Golden(params string[] lines)
@@ -85,18 +85,18 @@ namespace Forget.Tests.Oracle
                 Row(1)), commands[0].Sql);
 
             DynamicParameters batch0 = commands[0].Parameters!;
-            Assert.Equal(1, batch0.Get<int>("Id0"));
-            Assert.Equal("A", batch0.Get<string>("Name0"));
-            Assert.Null(batch0.Get<string?>("Nickname0"));
-            Assert.Equal(5, batch0.Get<int>("Quantity0"));
-            Assert.Equal(1, batch0.Get<int>("IsActive0"));
-            Assert.Equal(9.99m, batch0.Get<decimal>("Price0"));
-            Assert.Equal(2, batch0.Get<int>("Id1"));
-            Assert.Equal("B", batch0.Get<string>("Name1"));
-            Assert.Equal("b-nick", batch0.Get<string>("Nickname1"));
-            Assert.Null(batch0.Get<int?>("Quantity1"));
-            Assert.Equal(0, batch0.Get<int>("IsActive1"));
-            Assert.Equal(19.99m, batch0.Get<decimal>("Price1"));
+            Assert.Equal(1, batch0.Get<int>("Id_0"));
+            Assert.Equal("A", batch0.Get<string>("Name_0"));
+            Assert.Null(batch0.Get<string?>("Nickname_0"));
+            Assert.Equal(5, batch0.Get<int>("Quantity_0"));
+            Assert.Equal(1, batch0.Get<int>("IsActive_0"));
+            Assert.Equal(9.99m, batch0.Get<decimal>("Price_0"));
+            Assert.Equal(2, batch0.Get<int>("Id_1"));
+            Assert.Equal("B", batch0.Get<string>("Name_1"));
+            Assert.Equal("b-nick", batch0.Get<string>("Nickname_1"));
+            Assert.Null(batch0.Get<int?>("Quantity_1"));
+            Assert.Equal(0, batch0.Get<int>("IsActive_1"));
+            Assert.Equal(19.99m, batch0.Get<decimal>("Price_1"));
 
             Assert.Equal(Golden(
                 "INSERT INTO \"dbo\".\"Widget\" (",
@@ -110,12 +110,12 @@ namespace Forget.Tests.Oracle
                 Row(2)), commands[1].Sql);
 
             DynamicParameters batch1 = commands[1].Parameters!;
-            Assert.Equal(3, batch1.Get<int>("Id2"));
-            Assert.Equal("C", batch1.Get<string>("Name2"));
-            Assert.Equal("c-nick", batch1.Get<string>("Nickname2"));
-            Assert.Equal(7, batch1.Get<int>("Quantity2"));
-            Assert.Equal(1, batch1.Get<int>("IsActive2"));
-            Assert.Equal(29.99m, batch1.Get<decimal>("Price2"));
+            Assert.Equal(3, batch1.Get<int>("Id_2"));
+            Assert.Equal("C", batch1.Get<string>("Name_2"));
+            Assert.Equal("c-nick", batch1.Get<string>("Nickname_2"));
+            Assert.Equal(7, batch1.Get<int>("Quantity_2"));
+            Assert.Equal(1, batch1.Get<int>("IsActive_2"));
+            Assert.Equal(29.99m, batch1.Get<decimal>("Price_2"));
         }
 
         [Fact]
