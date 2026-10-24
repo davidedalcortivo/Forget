@@ -51,7 +51,9 @@ Map an entity with plain data-annotation attributes:
 ```csharp
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Forget.Core.Models; // UpsertKeyAttribute, and later FilterDescriptor/FilterGroup/ComparisonOperator/SortDescriptor
+
+// UpsertKeyAttribute, and later FilterDescriptor/FilterGroup/ComparisonOperator/SortDescriptor
+using Forget.Core.Models;
 
 [Table("Products")]
 public class Product
@@ -306,7 +308,8 @@ public sealed class BooleanAsNumberHandler : SqlMapper.TypeHandler<bool>
     public override bool Parse(object value) => Convert.ToInt32(value) != 0;
 }
 
-SqlMapper.RemoveTypeMap(typeof(bool)); // Dapper maps bool itself, and only asks a handler about types it doesn't map
+// Dapper maps bool itself, and only asks a handler about types it doesn't map
+SqlMapper.RemoveTypeMap(typeof(bool));
 SqlMapper.AddTypeHandler(new BooleanAsNumberHandler());
 ```
 
@@ -333,8 +336,8 @@ Because it fails silently, with a plausible number and no exception, this behavi
 
 | Attribute                              | Effect                                                                 |
 |------------------------------------------|---------------------------------------------------------------------|
-| `[Key]`                                   | Marks the identifier property. If omitted, a property named `Id` is used. |
-| `[UpsertKey]`                             | Marks one or more properties as the natural key used to match rows on upsert, instead of the identifier. Multiple properties form a composite key. |
+| `[Key]`                                   | Marks the identifier property. Only one property can have it. If omitted, a property named `Id` is used. |
+| `[UpsertKey]`                             | Marks one or more properties as the natural key used to match rows on upsert. Multiple properties form a composite key. Without it, upsert matches on the `[Key]`/`Id` property. |
 | `[Table("...", Schema = "...")]`          | Sets the table name and, optionally, its schema (without the attribute: the class name, no schema; see below). |
 | `[Column("...")]`                         | Overrides the SQL column name for a property.                        |
 | `[NotMapped]`                             | Excludes a property entirely.                                        |

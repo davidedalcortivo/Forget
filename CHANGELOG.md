@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.4.3] - 2026-10-24
+
+No code changes: the documentation.
+
+### Changed
+
+- README: the table of mapping attributes says that only one property can have `[Key]`, and that without `[UpsertKey]`
+  an upsert matches on the `[Key]`/`Id` property.
+- README: the comments in the code examples are on their own line, above the code they describe, so that the lines no
+  longer run past the width of the page.
+
 ## [2.4.2] - 2026-10-23
 
 No code changes: dependency updates.
@@ -442,6 +453,7 @@ Initial release.
   syntax constraints (e.g. Oracle's `UNION ALL`/`DUAL`-based multi-row insert with automatic per-column cast
   discovery, since Oracle has no native `VALUES (...), (...)` syntax).
 
+[2.4.3]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.4.3
 [2.4.2]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.4.2
 [2.4.1]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.4.1
 [2.4.0]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.4.0
