@@ -5,7 +5,7 @@ using Forget.PostgreSql.Extensions;
 namespace Forget.Tests.PostgreSql
 {
     /// <summary>
-    /// Covers the rest of the public API surface that <see cref="CrudIntegrationTests"/> doesn't touch —
+    /// Covers the rest of the public API surface that <see cref="CrudIntegrationTests"/> doesn't touch:
     /// single/first/page retrieval, range operations, existence checks, aggregates, and the bulk
     /// update-by-predicate/delete-by-predicate overloads. Split into its own class (and its own container) purely
     /// to keep <see cref="CrudIntegrationTests"/> focused on the core round-trip story.

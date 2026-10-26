@@ -9,8 +9,8 @@ namespace Forget.Tests.Core
     /// <see cref="EntityInfoCache{TEntity}"/>, <see cref="DbColumnInfoCache{TEntity}"/> and
     /// <see cref="SqlBuilderCache{TEntity, TStrategy}"/> are process-wide statics that every caller touches
     /// concurrently in a real application. Each test here hammers a cache's *first* access (or first write, for
-    /// <see cref="DbColumnInfoCache{TEntity}"/>'s <c>Add</c>) from many threads at once — using a
-    /// <see cref="Barrier"/> to line them up so they actually race rather than run one after another — and
+    /// <see cref="DbColumnInfoCache{TEntity}"/>'s <c>Add</c>) from many threads at once (using a
+    /// <see cref="Barrier"/> to line them up so they actually race rather than run one after another) and
     /// requires every participant to succeed with a consistent result. A dedicated entity type per test keeps
     /// "first access" genuinely first: these caches are keyed per closed generic type, so reusing a type already
     /// touched elsewhere in the suite would just exercise the (uninteresting) already-initialized fast path.

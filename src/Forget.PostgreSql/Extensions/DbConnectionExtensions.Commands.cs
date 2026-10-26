@@ -562,8 +562,8 @@ namespace Forget.PostgreSql.Extensions
         /// <param name="connection">The connection used to build the command.</param>
         /// <param name="values">
         /// An object whose public properties specify the columns to update and their new values. A property that is
-        /// the identifier — either one named "Id" (case-insensitive), or the property marked with
-        /// <see cref="KeyAttribute"/> — or is marked as database-generated or <see cref="NotMappedAttribute"/>,
+        /// the identifier (either one named "Id", case-insensitive, or the property marked with
+        /// <see cref="KeyAttribute"/>), or is marked as database-generated or <see cref="NotMappedAttribute"/>,
         /// is silently ignored rather than treated as a column to update.
         /// Every other property must correspond to an updatable property of <typeparamref name="TEntity"/>,
         /// and its type must fit that property's type: the same type, or a narrower numeric one (an <c>int</c> for a
@@ -601,8 +601,8 @@ namespace Forget.PostgreSql.Extensions
         /// <param name="connection">The connection used to build the command.</param>
         /// <param name="values">
         /// An object whose public properties specify the columns to update and their new values. A property that is
-        /// the identifier — either one named "Id" (case-insensitive), or the property marked with
-        /// <see cref="KeyAttribute"/> — or is marked as database-generated or <see cref="NotMappedAttribute"/>,
+        /// the identifier (either one named "Id", case-insensitive, or the property marked with
+        /// <see cref="KeyAttribute"/>), or is marked as database-generated or <see cref="NotMappedAttribute"/>,
         /// is silently ignored rather than treated as a column to update.
         /// Every other property must correspond to an updatable property of <typeparamref name="TEntity"/>,
         /// and its type must fit that property's type: the same type, or a narrower numeric one (an <c>int</c> for a
@@ -642,8 +642,8 @@ namespace Forget.PostgreSql.Extensions
         /// <param name="connection">The connection used to build the command.</param>
         /// <param name="values">
         /// An object whose public properties specify the columns to update and their new values. A property that is
-        /// the identifier — either one named "Id" (case-insensitive), or the property marked with
-        /// <see cref="KeyAttribute"/> — or is marked as database-generated or <see cref="NotMappedAttribute"/>,
+        /// the identifier (either one named "Id", case-insensitive, or the property marked with
+        /// <see cref="KeyAttribute"/>), or is marked as database-generated or <see cref="NotMappedAttribute"/>,
         /// is silently ignored rather than treated as a column to update.
         /// Every other property must correspond to an updatable property of <typeparamref name="TEntity"/>,
         /// and its type must fit that property's type: the same type, or a narrower numeric one (an <c>int</c> for a
@@ -837,8 +837,8 @@ namespace Forget.PostgreSql.Extensions
         /// any property marked <see cref="UpsertKeyAttribute"/>.
         /// <para>
         /// The generated command is an <c>INSERT ... ON CONFLICT (...) DO UPDATE</c> statement, where the conflict
-        /// target is the properties marked with <see cref="UpsertKeyAttribute"/> — or the
-        /// entity's identifier, if none are marked. PostgreSQL requires those columns to already be covered by a
+        /// target is the properties marked with <see cref="UpsertKeyAttribute"/> (or the
+        /// entity's identifier, if none are marked). PostgreSQL requires those columns to already be covered by a
         /// matching <c>UNIQUE</c> or exclusion constraint in the database; if none exists, executing the command
         /// fails with a database error rather than silently inserting a duplicate. On a match, every property is
         /// updated except the identifier, any database-generated property, and the key properties themselves;
@@ -1117,8 +1117,8 @@ namespace Forget.PostgreSql.Extensions
         /// any property marked <see cref="UpsertKeyAttribute"/>.
         /// <para>
         /// Each generated command is an <c>INSERT ... ON CONFLICT (...) DO UPDATE</c> statement, where the conflict
-        /// target is the properties marked with <see cref="UpsertKeyAttribute"/> — or the
-        /// entity's identifier, if none are marked. PostgreSQL requires those columns to already be covered by a
+        /// target is the properties marked with <see cref="UpsertKeyAttribute"/> (or the
+        /// entity's identifier, if none are marked). PostgreSQL requires those columns to already be covered by a
         /// matching <c>UNIQUE</c> or exclusion constraint in the database; if none exists, executing the command
         /// fails with a database error rather than silently inserting a duplicate. On a match, every property is
         /// updated except the identifier, any database-generated property, and the key properties themselves;

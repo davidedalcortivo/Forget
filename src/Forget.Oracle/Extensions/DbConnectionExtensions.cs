@@ -576,8 +576,8 @@ namespace Forget.Oracle.Extensions
         /// <param name="connection">The connection to execute the update on.</param>
         /// <param name="values">
         /// An object whose public properties specify the columns to update and their new values. A property that is
-        /// the identifier — either one named "Id" (case-insensitive), or the property marked with
-        /// <see cref="KeyAttribute"/> — or is marked as database-generated or <see cref="NotMappedAttribute"/>,
+        /// the identifier (either one named "Id", case-insensitive, or the property marked with
+        /// <see cref="KeyAttribute"/>), or is marked as database-generated or <see cref="NotMappedAttribute"/>,
         /// is silently ignored rather than treated as a column to update.
         /// Every other property must correspond to an updatable property of <typeparamref name="TEntity"/>,
         /// and its type must fit that property's type: the same type, or a narrower numeric one (an <c>int</c> for a
@@ -618,8 +618,8 @@ namespace Forget.Oracle.Extensions
         /// <param name="connection">The connection to execute the update on.</param>
         /// <param name="values">
         /// An object whose public properties specify the columns to update and their new values. A property that is
-        /// the identifier — either one named "Id" (case-insensitive), or the property marked with
-        /// <see cref="KeyAttribute"/> — or is marked as database-generated or <see cref="NotMappedAttribute"/>,
+        /// the identifier (either one named "Id", case-insensitive, or the property marked with
+        /// <see cref="KeyAttribute"/>), or is marked as database-generated or <see cref="NotMappedAttribute"/>,
         /// is silently ignored rather than treated as a column to update.
         /// Every other property must correspond to an updatable property of <typeparamref name="TEntity"/>,
         /// and its type must fit that property's type: the same type, or a narrower numeric one (an <c>int</c> for a
@@ -662,8 +662,8 @@ namespace Forget.Oracle.Extensions
         /// <param name="connection">The connection to execute the update on.</param>
         /// <param name="values">
         /// An object whose public properties specify the columns to update and their new values. A property that is
-        /// the identifier — either one named "Id" (case-insensitive), or the property marked with
-        /// <see cref="KeyAttribute"/> — or is marked as database-generated or <see cref="NotMappedAttribute"/>,
+        /// the identifier (either one named "Id", case-insensitive, or the property marked with
+        /// <see cref="KeyAttribute"/>), or is marked as database-generated or <see cref="NotMappedAttribute"/>,
         /// is silently ignored rather than treated as a column to update.
         /// Every other property must correspond to an updatable property of <typeparamref name="TEntity"/>,
         /// and its type must fit that property's type: the same type, or a narrower numeric one (an <c>int</c> for a
@@ -881,8 +881,8 @@ namespace Forget.Oracle.Extensions
         /// any property marked <see cref="UpsertKeyAttribute"/>.
         /// <para>
         /// This executes a <c>MERGE</c> statement. An existing row is matched using the properties marked with
-        /// <see cref="UpsertKeyAttribute"/> — or the entity's identifier, if none are
-        /// marked — treating two <see langword="null"/> values in a key property as equal. On a match, every
+        /// <see cref="UpsertKeyAttribute"/> (or the entity's identifier, if none are
+        /// marked), treating two <see langword="null"/> values in a key property as equal. On a match, every
         /// property is updated except the identifier, any database-generated property, and the key properties
         /// themselves; otherwise, a new row is inserted using every property that is not database-generated.
         /// </para>
@@ -1023,13 +1023,13 @@ namespace Forget.Oracle.Extensions
         /// them; rows with no match in the table are left untouched, and no new rows are inserted.
         /// <para>
         /// This automatically ensures the database's metadata for <typeparamref name="TEntity"/> is loaded
-        /// on <paramref name="connection"/> before building any commands, so — unlike
-        /// <see cref="UpdateRangeCommands{TEntity}(OracleConnection, IEnumerable{TEntity}, int)"/> — calling
+        /// on <paramref name="connection"/> before building any commands, so, unlike
+        /// <see cref="UpdateRangeCommands{TEntity}(OracleConnection, IEnumerable{TEntity}, int)"/>, calling
         /// <c>LoadDbCache</c> or <c>LoadDbCacheAsync</c> first is not required.
         /// </para>
         /// <para>
         /// When no <paramref name="transaction"/> is provided, this method begins one, commits it on success, and
-        /// rolls it back if execution fails — ensuring that the entire operation remains atomic regardless of
+        /// rolls it back if execution fails. This keeps the entire operation atomic regardless of
         /// how many statements or round trips are required. Passing an explicit <paramref name="transaction"/>
         /// opts out of this; committing or rolling back is then the caller's responsibility.
         /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,
@@ -1066,13 +1066,13 @@ namespace Forget.Oracle.Extensions
         /// unless it is itself database-generated.
         /// <para>
         /// This automatically ensures the database's metadata for <typeparamref name="TEntity"/> is loaded
-        /// on <paramref name="connection"/> before building any commands, so — unlike
-        /// <see cref="InsertRangeCommands{TEntity}(OracleConnection, IEnumerable{TEntity}, int)"/> — calling
+        /// on <paramref name="connection"/> before building any commands, so, unlike
+        /// <see cref="InsertRangeCommands{TEntity}(OracleConnection, IEnumerable{TEntity}, int)"/>, calling
         /// <c>LoadDbCache</c> or <c>LoadDbCacheAsync</c> first is not required.
         /// </para>
         /// <para>
         /// When no <paramref name="transaction"/> is provided, this method begins one, commits it on success, and
-        /// rolls it back if execution fails — ensuring that the entire operation remains atomic regardless of
+        /// rolls it back if execution fails. This keeps the entire operation atomic regardless of
         /// how many statements or round trips are required. Passing an explicit <paramref name="transaction"/>
         /// opts out of this; committing or rolling back is then the caller's responsibility.
         /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,
@@ -1097,15 +1097,15 @@ namespace Forget.Oracle.Extensions
         /// <param name="connection">The connection to execute the delete on.</param>
         /// <param name="entities">The entities whose rows are deleted, matched by their identifiers.</param>
         /// <param name="batchSize">
-        /// The maximum number of identifiers included in a single round trip, capped at 1,000 — Oracle's limit for
-        /// a single <c>IN</c> clause. When less than or equal to zero, the cap of 1,000 is used.
+        /// The maximum number of identifiers included in a single round trip, capped at 1,000 (Oracle's limit for
+        /// a single <c>IN</c> clause). When less than or equal to zero, the cap of 1,000 is used.
         /// </param>
         /// <param name="transaction">The transaction to execute the delete within, or <see langword="null"/> to execute it outside of an explicit transaction.</param>
         /// <param name="commandTimeout">The number of seconds to wait before timing out, or <see langword="null"/> to use the default timeout.</param>
         /// <returns>The total number of rows affected across all round trips.</returns>
         /// <remarks>
         /// When no <paramref name="transaction"/> is provided, this method begins one, commits it on success, and
-        /// rolls it back if execution fails — ensuring that the entire operation remains atomic regardless of
+        /// rolls it back if execution fails. This keeps the entire operation atomic regardless of
         /// how many statements or round trips are required. Passing an explicit <paramref name="transaction"/>
         /// opts out of this; committing or rolling back is then the caller's responsibility.
         /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,
@@ -1134,15 +1134,15 @@ namespace Forget.Oracle.Extensions
         /// or a <c>short</c>, <c>int</c> or <c>long</c> for an integer key).
         /// </param>
         /// <param name="batchSize">
-        /// The maximum number of identifiers included in a single round trip, capped at 1,000 — Oracle's limit for
-        /// a single <c>IN</c> clause. When less than or equal to zero, the cap of 1,000 is used.
+        /// The maximum number of identifiers included in a single round trip, capped at 1,000 (Oracle's limit for
+        /// a single <c>IN</c> clause). When less than or equal to zero, the cap of 1,000 is used.
         /// </param>
         /// <param name="transaction">The transaction to execute the delete within, or <see langword="null"/> to execute it outside of an explicit transaction.</param>
         /// <param name="commandTimeout">The number of seconds to wait before timing out, or <see langword="null"/> to use the default timeout.</param>
         /// <returns>The total number of rows affected across all round trips.</returns>
         /// <remarks>
         /// When no <paramref name="transaction"/> is provided, this method begins one, commits it on success, and
-        /// rolls it back if execution fails — ensuring that the entire operation remains atomic regardless of
+        /// rolls it back if execution fails. This keeps the entire operation atomic regardless of
         /// how many statements or round trips are required. Passing an explicit <paramref name="transaction"/>
         /// opts out of this; committing or rolling back is then the caller's responsibility.
         /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,
@@ -1179,8 +1179,8 @@ namespace Forget.Oracle.Extensions
         /// <see langword="null"/>.
         /// </param>
         /// <param name="batchSize">
-        /// The maximum number of identifiers included in a single round trip, capped at 1,000 — Oracle's limit for
-        /// a single <c>IN</c> clause. When less than or equal to zero, the cap of 1,000 is used.
+        /// The maximum number of identifiers included in a single round trip, capped at 1,000 (Oracle's limit for
+        /// a single <c>IN</c> clause). When less than or equal to zero, the cap of 1,000 is used.
         /// </param>
         /// <param name="transaction">The transaction to execute the delete within, or <see langword="null"/> to execute it outside of an explicit transaction.</param>
         /// <param name="commandTimeout">The number of seconds to wait before timing out, or <see langword="null"/> to use the default timeout.</param>
@@ -1193,7 +1193,7 @@ namespace Forget.Oracle.Extensions
         /// </para>
         /// <para>
         /// When no <paramref name="transaction"/> is provided, this method begins one, commits it on success, and
-        /// rolls it back if execution fails — ensuring that the entire operation remains atomic regardless of
+        /// rolls it back if execution fails. This keeps the entire operation atomic regardless of
         /// how many statements or round trips are required. Passing an explicit <paramref name="transaction"/>
         /// opts out of this; committing or rolling back is then the caller's responsibility.
         /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,
@@ -1235,21 +1235,21 @@ namespace Forget.Oracle.Extensions
         /// any property marked <see cref="UpsertKeyAttribute"/>.
         /// <para>
         /// Each round trip executes a <c>MERGE</c> statement. An existing row is matched using the properties
-        /// marked with <see cref="UpsertKeyAttribute"/> — or the entity's identifier, if
-        /// none are marked — treating two <see langword="null"/> values in a key property as equal. On a match,
+        /// marked with <see cref="UpsertKeyAttribute"/> (or the entity's identifier, if
+        /// none are marked), treating two <see langword="null"/> values in a key property as equal. On a match,
         /// every property is updated except the identifier, any database-generated property, and the key
         /// properties themselves; otherwise, a new row is inserted using every property that is not
         /// database-generated.
         /// </para>
         /// <para>
         /// This automatically ensures the database's metadata for <typeparamref name="TEntity"/> is loaded
-        /// on <paramref name="connection"/> before building any commands, so — unlike
-        /// <see cref="UpsertRangeCommands{TEntity}(OracleConnection, IEnumerable{TEntity}, int)"/> — calling
+        /// on <paramref name="connection"/> before building any commands, so, unlike
+        /// <see cref="UpsertRangeCommands{TEntity}(OracleConnection, IEnumerable{TEntity}, int)"/>, calling
         /// <c>LoadDbCache</c> or <c>LoadDbCacheAsync</c> first is not required.
         /// </para>
         /// <para>
         /// When no <paramref name="transaction"/> is provided, this method begins one, commits it on success, and
-        /// rolls it back if execution fails — ensuring that the entire operation remains atomic regardless of
+        /// rolls it back if execution fails. This keeps the entire operation atomic regardless of
         /// how many statements or round trips are required. Passing an explicit <paramref name="transaction"/>
         /// opts out of this; committing or rolling back is then the caller's responsibility.
         /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,

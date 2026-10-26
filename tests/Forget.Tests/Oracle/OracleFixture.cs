@@ -8,7 +8,7 @@ namespace Forget.Tests.Oracle
     /// <summary>
     /// Starts one real Oracle container (via the official <c>Testcontainers.Oracle</c> module) for the lifetime
     /// of a test class. Creates a <c>"dbo"</c> user/schema (quoted and lowercase, matching <see cref="Widget"/>'s
-    /// <c>Schema = "dbo"</c> exactly — Oracle folds unquoted identifiers to uppercase, which would not
+    /// <c>Schema = "dbo"</c> exactly, since Oracle folds unquoted identifiers to uppercase, which would not
     /// match) owning the <c>"Widget"</c> table, then calls the real <c>LoadDbCacheAsync</c> so the column-cast
     /// PL/SQL block
     /// (<see cref="SqlBuilderStrategyTests.GetColumns_EmitsPlSqlBlockThatDiscoversColumnCastExpressions"/>) runs
@@ -32,7 +32,7 @@ namespace Forget.Tests.Oracle
 
             await _container.StartAsync();
 
-            // The container's own connection string logs in as "oracle" - an application user with no DBA
+            // The container's own connection string logs in as "oracle", an application user with no DBA
             // privileges, so it can't CREATE USER. Swap in "system" (whose password is the same ORACLE_PASSWORD),
             // and stay connected as it throughout rather than authenticating as "dbo" directly: Oracle's login
             // negotiation folds an unquoted User Id to uppercase, which would not match the case-sensitive
@@ -48,7 +48,7 @@ namespace Forget.Tests.Oracle
             await ExecuteAsync(Connection, "GRANT CONNECT, RESOURCE, UNLIMITED TABLESPACE TO \"dbo\"");
             await ExecuteAsync(Connection, "ALTER SESSION SET CURRENT_SCHEMA = \"dbo\"");
 
-            // IsActive is NUMBER(1), populated from Widget.IsActive (int, not bool - see Widget for why): on the
+            // IsActive is NUMBER(1), populated from Widget.IsActive (int, not bool; see Widget for why): on the
             // Oracle XE 21.3 image this module defaults to, binding a C# bool against a NUMBER column throws
             // ORA-00932 ("NUMBER expected, got BOOLEAN"), a limitation absent on Oracle 23c.
             await ExecuteAsync(Connection, """

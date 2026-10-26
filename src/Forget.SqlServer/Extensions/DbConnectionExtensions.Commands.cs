@@ -566,8 +566,8 @@ namespace Forget.SqlServer.Extensions
         /// <param name="connection">The connection used to build the command.</param>
         /// <param name="values">
         /// An object whose public properties specify the columns to update and their new values. A property that is
-        /// the identifier — either one named "Id" (case-insensitive), or the property marked with
-        /// <see cref="KeyAttribute"/> — or is marked as database-generated or <see cref="NotMappedAttribute"/>,
+        /// the identifier (either one named "Id", case-insensitive, or the property marked with
+        /// <see cref="KeyAttribute"/>), or is marked as database-generated or <see cref="NotMappedAttribute"/>,
         /// is silently ignored rather than treated as a column to update.
         /// Every other property must correspond to an updatable property of <typeparamref name="TEntity"/>,
         /// and its type must fit that property's type: the same type, or a narrower numeric one (an <c>int</c> for a
@@ -605,8 +605,8 @@ namespace Forget.SqlServer.Extensions
         /// <param name="connection">The connection used to build the command.</param>
         /// <param name="values">
         /// An object whose public properties specify the columns to update and their new values. A property that is
-        /// the identifier — either one named "Id" (case-insensitive), or the property marked with
-        /// <see cref="KeyAttribute"/> — or is marked as database-generated or <see cref="NotMappedAttribute"/>,
+        /// the identifier (either one named "Id", case-insensitive, or the property marked with
+        /// <see cref="KeyAttribute"/>), or is marked as database-generated or <see cref="NotMappedAttribute"/>,
         /// is silently ignored rather than treated as a column to update.
         /// Every other property must correspond to an updatable property of <typeparamref name="TEntity"/>,
         /// and its type must fit that property's type: the same type, or a narrower numeric one (an <c>int</c> for a
@@ -646,8 +646,8 @@ namespace Forget.SqlServer.Extensions
         /// <param name="connection">The connection used to build the command.</param>
         /// <param name="values">
         /// An object whose public properties specify the columns to update and their new values. A property that is
-        /// the identifier — either one named "Id" (case-insensitive), or the property marked with
-        /// <see cref="KeyAttribute"/> — or is marked as database-generated or <see cref="NotMappedAttribute"/>,
+        /// the identifier (either one named "Id", case-insensitive, or the property marked with
+        /// <see cref="KeyAttribute"/>), or is marked as database-generated or <see cref="NotMappedAttribute"/>,
         /// is silently ignored rather than treated as a column to update.
         /// Every other property must correspond to an updatable property of <typeparamref name="TEntity"/>,
         /// and its type must fit that property's type: the same type, or a narrower numeric one (an <c>int</c> for a
@@ -842,8 +842,8 @@ namespace Forget.SqlServer.Extensions
         /// <para>
         /// The generated command is not a single statement: it is an <c>UPDATE</c> (using a
         /// <c>WITH (UPDLOCK, HOLDLOCK)</c> table hint) that matches an existing row using the properties marked
-        /// with <see cref="UpsertKeyAttribute"/> — or the entity's identifier, if none are
-        /// marked — treating two <see langword="null"/> values in a key property as equal and setting every
+        /// with <see cref="UpsertKeyAttribute"/> (or the entity's identifier, if none are
+        /// marked), treating two <see langword="null"/> values in a key property as equal and setting every
         /// property except the identifier, any database-generated property, and the key properties themselves,
         /// followed by an <c>INSERT</c> that runs only if the <c>UPDATE</c> affected no rows. This library avoids a
         /// single <c>MERGE</c> statement here, a construct with several documented correctness issues in SQL
@@ -851,7 +851,7 @@ namespace Forget.SqlServer.Extensions
         /// </para>
         /// <para>
         /// Because the command is two statements relying on <c>@@ROWCOUNT</c> between them, executing it safely
-        /// under concurrent access requires both statements to run in the same transaction — the table hint alone
+        /// under concurrent access requires both statements to run in the same transaction: the table hint alone
         /// does not provide this if the two statements are sent independently or auto-committed separately. The
         /// corresponding <see cref="Upsert{TEntity}(SqlConnection, TEntity, SqlTransaction?, int?)"/> execution
         /// method provides this by wrapping the command in a transaction it manages; code that executes this
@@ -1117,8 +1117,8 @@ namespace Forget.SqlServer.Extensions
         /// <para>
         /// Each generated command is two statements: an <c>UPDATE ... FROM</c> that joins the target table to a
         /// <c>VALUES</c>-derived source table, matching rows using the properties marked with
-        /// <see cref="UpsertKeyAttribute"/> — or the entity's identifier, if none are
-        /// marked — treating two <see langword="null"/> values in a key property as equal, followed by an
+        /// <see cref="UpsertKeyAttribute"/> (or the entity's identifier, if none are
+        /// marked), treating two <see langword="null"/> values in a key property as equal, followed by an
         /// <c>INSERT ... WHERE NOT EXISTS</c> (using a <c>WITH (UPDLOCK, HOLDLOCK)</c> table hint) that inserts only
         /// the entities with no matching row. On a match, every property is updated except the identifier, any
         /// database-generated property, and the key properties themselves.
@@ -1409,7 +1409,7 @@ namespace Forget.SqlServer.Extensions
         /// <para>
         /// When the averaged column is <c>int</c>/<c>smallint</c>/<c>tinyint</c>/<c>bigint</c>-typed: SQL Server's
         /// own <c>AVG</c> returns the same exact numeric type as its input, so this still returns a truncated,
-        /// whole-number result — identical to what a hand-written <c>AVG(column)</c> query returns. This library
+        /// whole-number result, identical to what a hand-written <c>AVG(column)</c> query returns. This library
         /// does not alter that native behavior.
         /// </para>
         /// </remarks>
@@ -1450,7 +1450,7 @@ namespace Forget.SqlServer.Extensions
         /// <para>
         /// When the averaged column is <c>int</c>/<c>smallint</c>/<c>tinyint</c>/<c>bigint</c>-typed: SQL Server's
         /// own <c>AVG</c> returns the same exact numeric type as its input, so this still returns a truncated,
-        /// whole-number result — identical to what a hand-written <c>AVG(column)</c> query returns. This library
+        /// whole-number result, identical to what a hand-written <c>AVG(column)</c> query returns. This library
         /// does not alter that native behavior.
         /// </para>
         /// </remarks>
@@ -1494,7 +1494,7 @@ namespace Forget.SqlServer.Extensions
         /// <para>
         /// When the averaged column is <c>int</c>/<c>smallint</c>/<c>tinyint</c>/<c>bigint</c>-typed: SQL Server's
         /// own <c>AVG</c> returns the same exact numeric type as its input, so this still returns a truncated,
-        /// whole-number result — identical to what a hand-written <c>AVG(column)</c> query returns. This library
+        /// whole-number result, identical to what a hand-written <c>AVG(column)</c> query returns. This library
         /// does not alter that native behavior.
         /// </para>
         /// </remarks>
@@ -1536,7 +1536,7 @@ namespace Forget.SqlServer.Extensions
         /// <para>
         /// When the averaged column is <c>int</c>/<c>smallint</c>/<c>tinyint</c>/<c>bigint</c>-typed: SQL Server's
         /// own <c>AVG</c> returns the same exact numeric type as its input, so this still returns a truncated,
-        /// whole-number result — identical to what a hand-written <c>AVG(column)</c> query returns. This library
+        /// whole-number result, identical to what a hand-written <c>AVG(column)</c> query returns. This library
         /// does not alter that native behavior.
         /// </para>
         /// </remarks>
@@ -1579,7 +1579,7 @@ namespace Forget.SqlServer.Extensions
         /// <para>
         /// When the averaged column is <c>int</c>/<c>smallint</c>/<c>tinyint</c>/<c>bigint</c>-typed: SQL Server's
         /// own <c>AVG</c> returns the same exact numeric type as its input, so this still returns a truncated,
-        /// whole-number result — identical to what a hand-written <c>AVG(column)</c> query returns. This library
+        /// whole-number result, identical to what a hand-written <c>AVG(column)</c> query returns. This library
         /// does not alter that native behavior.
         /// </para>
         /// </remarks>
@@ -1625,7 +1625,7 @@ namespace Forget.SqlServer.Extensions
         /// <para>
         /// When the averaged column is <c>int</c>/<c>smallint</c>/<c>tinyint</c>/<c>bigint</c>-typed: SQL Server's
         /// own <c>AVG</c> returns the same exact numeric type as its input, so this still returns a truncated,
-        /// whole-number result — identical to what a hand-written <c>AVG(column)</c> query returns. This library
+        /// whole-number result, identical to what a hand-written <c>AVG(column)</c> query returns. This library
         /// does not alter that native behavior.
         /// </para>
         /// </remarks>

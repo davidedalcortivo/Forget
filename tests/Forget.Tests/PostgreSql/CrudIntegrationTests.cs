@@ -6,7 +6,7 @@ namespace Forget.Tests.PostgreSql
     /// <summary>
     /// Runs the public CRUD/filter/upsert API against a real, disposable PostgreSql container. Unlike
     /// <see cref="SqlBuilderStrategyTests"/> (which locks the SQL text Forge generates), these tests prove that
-    /// text actually executes correctly against a live engine — real NULL semantics, real <c>LIKE</c> escaping,
+    /// text actually executes correctly against a live engine: real NULL semantics, real <c>LIKE</c> escaping,
     /// real <c>ON CONFLICT</c> behavior, real array binding for <c>= ANY(...)</c>.
     /// <para>
     /// All tests share one container and table (started once by <see cref="PostgreSqlFixture"/>) and stay isolated

@@ -14,7 +14,7 @@ namespace Forget.Tests.Oracle
     /// <c>SELECT ... FROM DUAL UNION ALL SELECT ... FROM DUAL ...</c> block per batch, casting each bound parameter
     /// to the column's real type using the <c>CastExpression</c> discovered by
     /// <see cref="SqlBuilderStrategyTests.GetColumns_EmitsPlSqlBlockThatDiscoversColumnCastExpressions"/>'s PL/SQL
-    /// block — this is what avoids <c>ORA-01790</c> (datatype mismatch) on the <c>UNION ALL</c>.
+    /// block. This is what avoids <c>ORA-01790</c> (datatype mismatch) on the <c>UNION ALL</c>.
     /// <para>
     /// No live Oracle connection is needed: the connection is only used to derive a cache key
     /// (<see cref="Forget.Core.Abstractions.Strategies.ISqlDialectStrategy.GetConnectionId"/> merely parses the connection string), so the column-cast

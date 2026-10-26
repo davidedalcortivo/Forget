@@ -1,17 +1,17 @@
 namespace Forget.Tests.Oracle
 {
     /// <summary>
-    /// Locks the exact SQL text produced by Oracle's <c>SqlBuilderStrategy</c> — <c>FETCH FIRST ... ROWS ONLY</c>
+    /// Locks the exact SQL text produced by Oracle's <c>SqlBuilderStrategy</c>: <c>FETCH FIRST ... ROWS ONLY</c>
     /// pagination, <c>MERGE INTO ... USING ... ON (...) WHEN MATCHED/NOT MATCHED</c> for every upsert-shaped
     /// operation (there is no native <c>ON CONFLICT</c>/<c>ON DUPLICATE KEY</c> equivalent), <c>SELECT ... FROM
     /// DUAL</c> wherever a real table isn't otherwise on the FROM clause, <c>TO_CHAR(..., 'TM', 'NLS_NUMERIC_...')</c>
     /// for <c>Avg</c> so the result isn't locale-formatted, no trailing <c>;</c> (Oracle's terminator is just a
-    /// newline — a driver-supplied trailing semicolon breaks ODP.NET), and the PL/SQL block
+    /// newline; a driver-supplied trailing semicolon breaks ODP.NET), and the PL/SQL block
     /// <see cref="GetColumns_EmitsPlSqlBlockThatDiscoversColumnCastExpressions"/> uses to discover, at runtime, the
-    /// exact <c>CAST</c>/<c>TO_x</c> expression each column needs — the mechanism behind the multi-row insert
+    /// exact <c>CAST</c>/<c>TO_x</c> expression each column needs, which is the mechanism behind the multi-row insert
     /// discussed for this provider.
     /// <para>
-    /// Placeholder positions are filled with distinct marker tokens rather than realistic SQL fragments — these
+    /// Placeholder positions are filled with distinct marker tokens rather than realistic SQL fragments: these
     /// tests lock where a builder places its placeholders and what literal text surrounds them, not what a real
     /// predicate/value list looks like.
     /// </para>

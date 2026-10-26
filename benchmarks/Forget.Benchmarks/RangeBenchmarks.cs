@@ -77,7 +77,7 @@ namespace Forget.Benchmarks
         [Benchmark, BenchmarkCategory("GetByIdRange")]
         public IReadOnlyList<Product> GetByIdRange_Forget() => Connection.GetByIdRange<Product>(_ids);
 
-        // batchSize matches Count, so this is one round trip, like Dapper's and EF Core's own query — the batching
+        // batchSize matches Count, so this is one round trip, like Dapper's and EF Core's own query. The batching
         // GetByIdRange_Forget does above it is what a caller gets by default, and costs an extra round trip per
         // 500 ids (see benchmarks/README.md); this variant isolates that cost from Forget's own per-row work.
         [Benchmark, BenchmarkCategory("GetByIdRange")]

@@ -564,8 +564,8 @@ namespace Forget.Oracle.Extensions
         /// <param name="connection">The connection used to build the command.</param>
         /// <param name="values">
         /// An object whose public properties specify the columns to update and their new values. A property that is
-        /// the identifier — either one named "Id" (case-insensitive), or the property marked with
-        /// <see cref="KeyAttribute"/> — or is marked as database-generated or <see cref="NotMappedAttribute"/>,
+        /// the identifier (either one named "Id", case-insensitive, or the property marked with
+        /// <see cref="KeyAttribute"/>), or is marked as database-generated or <see cref="NotMappedAttribute"/>,
         /// is silently ignored rather than treated as a column to update.
         /// Every other property must correspond to an updatable property of <typeparamref name="TEntity"/>,
         /// and its type must fit that property's type: the same type, or a narrower numeric one (an <c>int</c> for a
@@ -603,8 +603,8 @@ namespace Forget.Oracle.Extensions
         /// <param name="connection">The connection used to build the command.</param>
         /// <param name="values">
         /// An object whose public properties specify the columns to update and their new values. A property that is
-        /// the identifier — either one named "Id" (case-insensitive), or the property marked with
-        /// <see cref="KeyAttribute"/> — or is marked as database-generated or <see cref="NotMappedAttribute"/>,
+        /// the identifier (either one named "Id", case-insensitive, or the property marked with
+        /// <see cref="KeyAttribute"/>), or is marked as database-generated or <see cref="NotMappedAttribute"/>,
         /// is silently ignored rather than treated as a column to update.
         /// Every other property must correspond to an updatable property of <typeparamref name="TEntity"/>,
         /// and its type must fit that property's type: the same type, or a narrower numeric one (an <c>int</c> for a
@@ -644,8 +644,8 @@ namespace Forget.Oracle.Extensions
         /// <param name="connection">The connection used to build the command.</param>
         /// <param name="values">
         /// An object whose public properties specify the columns to update and their new values. A property that is
-        /// the identifier — either one named "Id" (case-insensitive), or the property marked with
-        /// <see cref="KeyAttribute"/> — or is marked as database-generated or <see cref="NotMappedAttribute"/>,
+        /// the identifier (either one named "Id", case-insensitive, or the property marked with
+        /// <see cref="KeyAttribute"/>), or is marked as database-generated or <see cref="NotMappedAttribute"/>,
         /// is silently ignored rather than treated as a column to update.
         /// Every other property must correspond to an updatable property of <typeparamref name="TEntity"/>,
         /// and its type must fit that property's type: the same type, or a narrower numeric one (an <c>int</c> for a
@@ -839,8 +839,8 @@ namespace Forget.Oracle.Extensions
         /// any property marked <see cref="UpsertKeyAttribute"/>.
         /// <para>
         /// The generated command is a <c>MERGE</c> statement. An existing row is matched using the properties
-        /// marked with <see cref="UpsertKeyAttribute"/> — or the entity's identifier, if
-        /// none are marked — treating two <see langword="null"/> values in a key property as equal. On a match,
+        /// marked with <see cref="UpsertKeyAttribute"/> (or the entity's identifier, if
+        /// none are marked), treating two <see langword="null"/> values in a key property as equal. On a match,
         /// every property is updated except the identifier, any database-generated property, and the key
         /// properties themselves; otherwise, a new row is inserted using every property that is not
         /// database-generated.
@@ -1022,8 +1022,8 @@ namespace Forget.Oracle.Extensions
         /// <param name="connection">The connection used to build the commands.</param>
         /// <param name="entities">The entities whose rows are deleted, matched by their identifiers.</param>
         /// <param name="batchSize">
-        /// The maximum number of identifiers included in a single command, capped at 1,000 — Oracle's limit for a
-        /// single <c>IN</c> clause. When less than or equal to zero, the cap of 1,000 is used.
+        /// The maximum number of identifiers included in a single command, capped at 1,000 (Oracle's limit for a
+        /// single <c>IN</c> clause). When less than or equal to zero, the cap of 1,000 is used.
         /// </param>
         /// <returns>
         /// The <see cref="DbCommandInfo"/> instances for the delete, one per batch of up to
@@ -1051,8 +1051,8 @@ namespace Forget.Oracle.Extensions
         /// or a <c>short</c>, <c>int</c> or <c>long</c> for an integer key).
         /// </param>
         /// <param name="batchSize">
-        /// The maximum number of identifiers included in a single command, capped at 1,000 — Oracle's limit for a
-        /// single <c>IN</c> clause. When less than or equal to zero, the cap of 1,000 is used.
+        /// The maximum number of identifiers included in a single command, capped at 1,000 (Oracle's limit for a
+        /// single <c>IN</c> clause). When less than or equal to zero, the cap of 1,000 is used.
         /// </param>
         /// <returns>
         /// The <see cref="DbCommandInfo"/> instances for the delete, one per batch of up to
@@ -1088,8 +1088,8 @@ namespace Forget.Oracle.Extensions
         /// <see langword="null"/>.
         /// </param>
         /// <param name="batchSize">
-        /// The maximum number of identifiers included in a single command, capped at 1,000 — Oracle's limit for a
-        /// single <c>IN</c> clause. When less than or equal to zero, the cap of 1,000 is used.
+        /// The maximum number of identifiers included in a single command, capped at 1,000 (Oracle's limit for a
+        /// single <c>IN</c> clause). When less than or equal to zero, the cap of 1,000 is used.
         /// </param>
         /// <returns>
         /// The <see cref="DbCommandInfo"/> instances for the delete, one per batch of up to
@@ -1136,8 +1136,8 @@ namespace Forget.Oracle.Extensions
         /// any property marked <see cref="UpsertKeyAttribute"/>.
         /// <para>
         /// Each generated command is a <c>MERGE</c> statement. An existing row is matched using the properties
-        /// marked with <see cref="UpsertKeyAttribute"/> — or the entity's identifier, if
-        /// none are marked — treating two <see langword="null"/> values in a key property as equal. On a match,
+        /// marked with <see cref="UpsertKeyAttribute"/> (or the entity's identifier, if
+        /// none are marked), treating two <see langword="null"/> values in a key property as equal. On a match,
         /// every property is updated except the identifier, any database-generated property, and the key
         /// properties themselves; otherwise, a new row is inserted using every property that is not
         /// database-generated.

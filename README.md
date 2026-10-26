@@ -5,13 +5,13 @@
 [![Buy Me A Coffee](https://img.shields.io/badge/-Buy_Me_A_Coffee-ffdd00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/davidedalcortivo)
 
 A thin, provider-aware extension layer on top of [Dapper](https://github.com/DapperLib/Dapper): type-safe CRUD
-(single-row or multi-row), filtering, sorting, and paging against one mapped table at a time — with SQL
+(single-row or multi-row), filtering, sorting, and paging against one mapped table at a time, with SQL
 generated correctly for the engine you're actually running against, not a lowest-common-denominator translation.
 Supports **MySQL**, **Oracle**, **PostgreSQL**, and **SQL Server**.
 
 It sits between raw Dapper and a full ORM: you still map plain classes to tables with a handful of attributes, but
-you can forget hand-writing (and hand-maintaining, across 4 dialects) the same `SELECT`/`UPDATE`/`INSERT`/`MERGE`
-boilerplate for every entity.
+you can forget hand-writing (and hand-maintaining, across 4 dialects) the same
+`SELECT`/`UPDATE`/`INSERT`/`DELETE`/`MERGE` boilerplate for every entity.
 
 ## Why
 
@@ -25,8 +25,8 @@ boilerplate for every entity.
 | Multi-table joins / result-set mapping to several types | ✅ `splitOn`      | ❌ (see [What this isn't](#what-this-isnt)) | ✅                                           |
 | Change tracking, migrations, lazy loading            | ❌                | ❌                                           | ✅                                           |
 
-If you need joins across unrelated entities, keep using Dapper directly for that one query — Forget doesn't
-replace it, it removes the repetitive single-table code around it.
+If you need joins across unrelated entities, keep using Dapper directly for that one query. Forget doesn't
+replace it; it removes the repetitive single-table code around it.
 
 ## Install
 
@@ -72,11 +72,11 @@ public class Product
 }
 ```
 
-Then use the connection extension methods — every method below exists identically (same name, same overloads) on
+Then use the connection extension methods. Every method below exists identically (same name, same overloads) on
 all 4 providers, and each has both a synchronous and an asynchronous overload (`GetAll`/`GetAllAsync`,
 `Insert`/`InsertAsync`, and so on); only the `using` and the connection type change.
 `[UpsertKey]` (on `Sku` above) makes `Upsert`/`UpsertAsync` match rows by that column instead of the identity
-column — see [Upsert on a natural key](#upsert-on-a-natural-key-one-call-a-different-correct-statement-per-engine)
+column. See [Upsert on a natural key](#upsert-on-a-natural-key-one-call-a-different-correct-statement-per-engine)
 below for what actually runs:
 
 ```csharp
@@ -86,7 +86,7 @@ using Microsoft.Data.SqlClient;
 await using SqlConnection connection = new(connectionString);
 
 IReadOnlyList<Product> all = await connection.GetAllAsync<Product>();
-// Every method also has a synchronous overload with the same name minus "Async" - the rest of this example
+// Every method also has a synchronous overload with the same name minus "Async". The rest of this example
 // sticks to async, but this one works identically: IReadOnlyList<Product> all = connection.GetAll<Product>();
 
 Product? product = await connection.GetByIdAsync<Product>(id: 42);
@@ -109,12 +109,12 @@ IReadOnlyList<Product> cheapTools = await connection.GetAllAsync<Product>(
     p => p.Category == "Tools" && p.Price < 20 && p.IsActive);
 ```
 
-But a search endpoint rarely knows its filters at compile time — they come from a query string, a search form,
+But a search endpoint rarely knows its filters at compile time: they come from a query string, a search form,
 an API request body.
 Raw Dapper gives you nothing here beyond string concatenation, and EF Core needs you to build `Expression` trees
 by hand (or add `System.Linq.Dynamic.Core`).
-Forget's `FilterDescriptor`/`FilterGroup` build the exact same kind of filter from plain data — a property
-**name**, not a property **selector** — so it composes cleanly from untyped input:
+Forget's `FilterDescriptor`/`FilterGroup` build the exact same kind of filter from plain data (a property
+**name**, not a property **selector**), so it composes cleanly from untyped input:
 
 ```csharp
 // PropertyName and Value could come straight from Request.Query, validated against Product's real properties.
@@ -128,9 +128,9 @@ FilterGroup<Product> filter = new(
 IReadOnlyList<Product> results = await connection.GetAllAsync(filter);
 ```
 
-`GetAll`, `GetFirst`, `GetSingle`, `GetPage`, `Update`, `Delete`, `Exists`, `Count`, `Avg`, `Sum`, `Min`, and `Max`
-(and their respective asynchronous overloads) all accept either shape — pick whichever fits the call site, they
-translate to the same SQL.
+`GetAll`, `GetFirst`, `GetFirstOrDefault`, `GetSingle`, `GetSingleOrDefault`, `GetPage`, `Update`, `Delete`,
+`Exists`, `Count`, `Avg`, `Sum`, `Min`, and `Max` (and their respective asynchronous overloads) all accept either
+shape. Pick whichever fits the call site: they translate to the same SQL.
 
 ### What a predicate can contain
 
@@ -167,9 +167,50 @@ IReadOnlyList<Product> page = await connection.GetPageAsync<Product>(
     take: 10);
 ```
 
+## Common parameters
+
+Besides what each operation needs, the methods share a few optional parameters:
+
+| Parameter | Taken by | What it does |
+|-----------|----------|--------------|
+| `transaction` | Every method that runs SQL, except `LoadDbCache`/`LoadDbCacheAsync` | The transaction the call runs in, as the provider's own type: `MySqlTransaction`, `OracleTransaction`, `NpgsqlTransaction` or `SqlTransaction`. See [Transactions](#transactions). |
+| `commandTimeout` | Every method that runs SQL | The seconds each command may run before it times out. A multi-row method that needs several round trips gives each of them this timeout. `null` keeps the driver's default. |
+| `cancellationToken` | The asynchronous overloads | Cancels the call. |
+| `batchSize` | `GetByIdRange`, `UpdateRange`, `InsertRange`, `DeleteRange` and `UpsertRange`, and their `*RangeCommands` | The most rows (or ids) sent in one round trip, `500` by default. Zero or less sends them all in one round trip, as far as the engine allows: Forget never goes past SQL Server's limit of about 2,100 parameters per command (and 1,000 rows per `INSERT ... VALUES`), or Oracle's 1,000 ids per `IN` clause in `DeleteRange`, whatever you pass. |
+
+### Transactions
+
+Every call you pass a transaction to runs in it, and committing or rolling it back stays up to you. The synchronous
+`BeginTransaction()` returns the provider's own type on every driver. `BeginTransactionAsync()` does too on
+MySqlConnector and Npgsql, but returns `DbTransaction` on ODP.NET and SqlClient, so on those two it needs a cast:
+
+```csharp
+await connection.OpenAsync();
+await using SqlTransaction transaction = (SqlTransaction)await connection.BeginTransactionAsync();
+
+await connection.InsertAsync(new Product { Sku = "SKU-2", Name = "Gadget", Category = "Tools", Price = 4.50m },
+    transaction: transaction);
+await connection.UpdateAsync<Product>(new { IsActive = false }, p => p.Category == "Discontinued",
+    transaction: transaction);
+
+await transaction.CommitAsync();
+```
+
+A multi-row write (`UpdateRange`, `InsertRange`, `DeleteRange`, `UpsertRange`) can take several round trips, so if
+you don't pass a transaction, Forget opens one of its own to keep the call atomic. It commits the transaction after
+the last round trip and rolls it back if any of them fails, so a call that fails leaves none of its rows behind.
+`Upsert` on SQL Server does the same, because it runs two statements (see
+[Upsert on a natural key](#upsert-on-a-natural-key-one-call-a-different-correct-statement-per-engine)).
+
+The other calls never open one of their own. A call that runs a single statement doesn't need it, since the database
+applies a statement entirely or not at all. `GetByIdRange` can take several round trips, but it only reads, so there
+is nothing to roll back.
+
+A transaction that belongs to another connection is rejected with an `ArgumentException` before any SQL runs.
+
 ## Correctness details worth knowing about
 
-Every provider is designed individually at the query-generation level — the same C# call can, and usually does,
+Every provider is designed individually at the query-generation level: the same C# call can, and usually does,
 produce a genuinely different statement depending on which engine it runs against.
 What follows is a handful of concrete examples of that, not an exhaustive list of every place the 4 providers
 diverge.
@@ -177,8 +218,8 @@ diverge.
 A few smaller, mostly mechanical ones:
 
 - **MySQL** escapes `LIKE` patterns (for `Contains`/`StartsWith`/`EndsWith`) accounting for MySQL's own C-style
-  backslash escaping inside string literals — different from the other three engines, and easy to get wrong with
-  one shared `ESCAPE` clause.
+  backslash escaping inside string literals, which differs from the other three engines and is easy to get wrong
+  with one shared `ESCAPE` clause.
 - **PostgreSQL** translates `Enumerable.Contains`/`ComparisonOperator.In` to `= ANY(@p_0_)` when the collection is
   homogeneously typed (Npgsql needs a genuinely typed array for that). A list of mixed types is written out as
   `IN (@p_0_0, @p_0_1, ...)`, one parameter per element, as Dapper expands a list on the other three providers; on
@@ -197,10 +238,10 @@ What actually runs is deliberately *not* the same statement re-parameterized fou
 - **MySQL**: `INSERT INTO ... VALUES (...) AS new ON DUPLICATE KEY UPDATE col = new.col, ...`
 - **Oracle**: `MERGE INTO ... USING (SELECT ... FROM DUAL) SOURCE ON (...) WHEN MATCHED THEN UPDATE ... WHEN NOT MATCHED THEN INSERT ...`
   (a `MERGE` is not atomic against a concurrent insert of the same key: if two sessions upsert a key that doesn't
-  exist yet at the same moment, one of them can fail with `ORA-00001`. Forget doesn't retry — handle that error and
-  call again; the row exists by then, and it is updated. It never leaves a duplicate row.)
+  exist yet at the same moment, one of them can fail with `ORA-00001`. Forget doesn't retry, so handle that error
+  and call again; the row exists by then, and it is updated. It never leaves a duplicate row.)
 - **PostgreSQL**: `INSERT INTO ... VALUES (...) ON CONFLICT (...) DO UPDATE SET col = EXCLUDED.col, ...`
-- **SQL Server**: *not* `MERGE` — a documented, well-known source of concurrency correctness bugs.
+- **SQL Server**: *not* `MERGE`, which is a documented, well-known source of concurrency correctness bugs.
   Instead: `UPDATE ... WITH (UPDLOCK, HOLDLOCK) SET ... WHERE ...` followed by a conditional `INSERT` guarded by
   `IF @@ROWCOUNT = 0`, wrapped in a transaction Forget manages for you if you don't supply one.
 
@@ -209,7 +250,7 @@ unsafe under concurrency on at least one of them.
 
 Upserts from many connections at once, on the same new keys, are covered by tests on all 4 providers. Single-row
 upserts succeeded for every caller on MySQL, PostgreSQL and SQL Server, and so did multi-row upserts on MySQL and
-PostgreSQL. Two cases can fail, and in both Forget doesn't retry — handle the error and call again:
+PostgreSQL. Two cases can fail. Forget doesn't retry in either of them, so handle the error and call again:
 
 - **Oracle**: `ORA-00001`, as described above, and a multi-row upsert can also be chosen as the victim of a deadlock
   (`ORA-00060`).
@@ -221,7 +262,7 @@ No key ever ends up with two rows.
 
 Database numeric types can carry more precision than .NET's `decimal` can hold: MySQL's `DECIMAL` goes up to 65
 digits, Oracle's `NUMBER` up to 38 significant digits, PostgreSQL's `NUMERIC` is effectively unbounded, and SQL
-Server's `AVG` on a `decimal(p,s)` column returns `decimal(38,s)` — while `System.Decimal` only holds about
+Server's `AVG` on a `decimal(p,s)` column returns `decimal(38,s)`, while `System.Decimal` only holds about
 28-29.
 Averaging routinely produces exactly this kind of long, non-terminating result, and reading it as a native
 decimal scalar risks the ADO.NET driver itself failing before Forget ever gets a say.
@@ -229,7 +270,7 @@ decimal scalar risks the ADO.NET driver itself failing before Forget ever gets a
 So on all 4 providers, the database returns the average as text instead of a raw decimal, and `Avg`/`AvgAsync`
 then converts that text into a `decimal` in C# with its own parser: precision beyond what `decimal` can represent
 is rounded off, and only a magnitude that genuinely doesn't fit throws `OverflowException`.
-`Sum`/`SumAsync` doesn't go through any of this — summing a column doesn't introduce precision beyond what it
+`Sum`/`SumAsync` doesn't go through any of this: summing a column doesn't introduce precision beyond what it
 already had, so it reads the native decimal scalar directly.
 The exact SQL each provider uses to produce that text is visible via `AvgCommand`, if you want to see it.
 
@@ -252,14 +293,14 @@ SELECT :Sku_1 AS "Sku", :Name_1 AS "Name", :Category_1 AS "Category", :Price_1 A
 ```
 
 Written like this, though, it runs into `ORA-01790` ("expression must have same datatype as corresponding
-expression") the moment two rows disagree on the inferred type of a bound parameter in the same `SELECT` position —
-which happens constantly, since a `NULL` or a numeric literal in one row and a string in another are common in real
+expression") the moment two rows disagree on the inferred type of a bound parameter in the same `SELECT` position.
+That happens constantly, since a `NULL` or a numeric literal in one row and a string in another are common in real
 data.
 
 This isn't only an `InsertRange`/`InsertRangeAsync` problem: `UpdateRange`/`UpdateRangeAsync` and
 `UpsertRange`/`UpsertRangeAsync` build on the exact same `UNION ALL`/`DUAL` block as their source rowset
 (`UpdateRange`/`UpdateRangeAsync` feeds it into a `MERGE` with only a `WHEN MATCHED` branch;
-`UpsertRange`/`UpsertRangeAsync` into a full `MERGE` with both branches) — so all three needed solving, not just
+`UpsertRange`/`UpsertRangeAsync` into a full `MERGE` with both branches), so all three needed solving, not just
 one.
 Forget generates this shape automatically, but with every value cast to its column's real type first:
 
@@ -276,11 +317,11 @@ UNION ALL
 SELECT CAST(:Sku_1 AS VARCHAR2(50)) AS "Sku", CAST(:Name_1 AS VARCHAR2(100)) AS "Name", CAST(:Category_1 AS VARCHAR2(50)) AS "Category", CAST(:Price_1 AS NUMBER(18,2)) AS "Price", CAST(:IsActive_1 AS NUMBER(1,0)) AS "IsActive" FROM DUAL
 ```
 
-The cast expression for each column isn't hard-coded — on the first call for a given entity and connection,
+The cast expression for each column isn't hard-coded. On the first call for a given entity and connection,
 Forget queries Oracle's data dictionary (`ALL_TAB_COLUMNS`) for that table, and for each column *probes*,
 via `EXECUTE IMMEDIATE` against a set of candidate type strings (precision+scale, precision-only, length-only,
 bare type name, and a `TO_<type>(...)` conversion-function fallback), which cast expression the server actually
-accepts for that column right now — then caches the result.
+accepts for that column right now, and then caches the result.
 This means it stays correct across Oracle versions and unusual column type definitions without the library
 hard-coding assumptions about either.
 
@@ -313,18 +354,18 @@ SqlMapper.RemoveTypeMap(typeof(bool));
 SqlMapper.AddTypeHandler(new BooleanAsNumberHandler());
 ```
 
-The column stays a `NUMBER(1)`. Inserts, updates, upserts and filters such as `p.IsActive == flag` now bind 1 or 0, and
+The column stays a `NUMBER(1)`. Updates, inserts, upserts and filters such as `p.IsActive == flag` now bind 1 or 0, and
 reads turn the number back into a `bool`. The handler applies to every Dapper call in the process, so register it only
 where the application talks to such an Oracle; on 23ai and later it isn't needed.
 
 ### SQL Server: safe aggregation, and one place we didn't intervene
 
 Summing an `int`/`smallint`/`tinyint` column over enough rows can overflow that type's range, so `Sum`/`Avg` cast
-it to `BIGINT` first — the same value, just in a container wide enough not to overflow.
+it to `BIGINT` first: the same value, just in a container wide enough not to overflow.
 
 That cast doesn't (and can't, without inventing an arbitrary precision) give `Avg` fractional precision, though:
 T-SQL's own `AVG` returns the same exact numeric type as its input, so averaging an integer-typed column still
-returns a truncated whole number — `AVG` of `1, 2, 4` is `2`, not `2.33`, identical to what a hand-written
+returns a truncated whole number: `AVG` of `1, 2, 4` is `2`, not `2.33`, identical to what a hand-written
 `AVG(column)` query returns.
 We considered "fixing" this and decided not to. A translation bug, like an extra escape character that silently breaks
 a search, has one correct answer. Here there is none: any fractional precision would be an arbitrary choice, and it
@@ -384,7 +425,7 @@ Because it fails silently, with a plausible number and no exception, this behavi
   of bytes, or of enum values whose underlying type is byte (as ids, in an `In` filter or in `Contains`): it is bound as
   a list of `short`, because every driver binds a `byte[]` as one binary value. A `short` holds every byte, so the
   values compared are the same.
-- **Column metadata is read once.** A few operations need the table's column types — the multi-row writes on Oracle,
+- **Column metadata is read once.** A few operations need the table's column types: the multi-row writes on Oracle,
   `UpdateRange`/`UpdateRangeAsync` on PostgreSQL, and `Sum`/`SumAsync` and `Avg`/`AvgAsync` on SQL Server.
   Forget reads them the first time it needs them, or when you call `LoadDbCache`/`LoadDbCacheAsync` yourself, and
   keeps them until the process ends, per entity and per database. A name without a schema can mean another table for
@@ -415,19 +456,19 @@ the row back into an `int`, and PostgreSQL and SQL Server reject it. Hence the s
 Forget is deliberately single-table: there is no multi-mapping, no `splitOn`, no join-building across
 unrelated entities.
 Every generated statement targets exactly one table.
-For a query that spans several tables, drop down to Dapper directly on the same connection — Forget doesn't
-try to replace it, it exists so that most of your single-table data access code doesn't need to be Dapper's raw
+For a query that spans several tables, drop down to Dapper directly on the same connection. Forget doesn't
+try to replace it; it exists so that most of your single-table data access code doesn't need to be Dapper's raw
 SQL either.
 
-It also doesn't do change tracking, migrations, or lazy loading — if you need those, you likely want EF Core.
+It also doesn't do change tracking, migrations, or lazy loading. If you need those, you likely want EF Core.
 
 ## Performance notes
 
-- Per-entity reflection (property/attribute scanning) happens once per `TEntity`, on first use, guarded by the
-  CLR's own thread-safe static-constructor initialization — not on every call.
+- Per-entity reflection (property/attribute scanning) happens once per `TEntity` on first use, not on every call,
+  guarded by the CLR's own thread-safe static-constructor initialization.
 - Property access uses compiled expression-tree getters, not `PropertyInfo.GetValue` reflection.
 - Generated SQL is cached as a template per `(entity type, provider)` pair and rendered by substituting only the
-  parts that vary per call (the filter, the sort, the parameter values) — not rebuilt from scratch every time.
+  parts that vary per call (the filter, the sort, the parameter values), so it isn't rebuilt from scratch every time.
 
 See [benchmarks/README.md](benchmarks/README.md) for the full numbers against hand-written Dapper and EF Core, and
 [The Batch Size Bug](https://davidedalcortivo.github.io/Forget/the-batch-size-bug.html) for the story behind some of
@@ -435,9 +476,9 @@ them.
 
 ## Inspecting generated SQL without running it
 
-Every execution method (`GetAll`/`GetAllAsync`, `Upsert`/`UpsertAsync`, `InsertRange`/`InsertRangeAsync`, ...) has
+Every execution method (`GetAll`/`GetAllAsync`, `InsertRange`/`InsertRangeAsync`, `Upsert`/`UpsertAsync`, ...) has
 a matching `*Command`/`*Commands` method that builds and returns the SQL text and parameters without executing
-them — useful for logging, testing, or executing manually:
+them, which is useful for logging, testing, or executing manually:
 
 ```csharp
 DbCommandInfo command = connection.UpsertCommand(product);
@@ -452,4 +493,4 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## License
 
-Apache-2.0 — see [LICENSE](LICENSE).
+Apache-2.0 (see [LICENSE](LICENSE)).

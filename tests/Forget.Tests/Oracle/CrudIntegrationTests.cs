@@ -7,11 +7,11 @@ namespace Forget.Tests.Oracle
     /// Runs the public CRUD/filter/upsert/range API against a real, disposable Oracle container. Unlike
     /// <see cref="SqlBuilderStrategyTests"/> and <see cref="InsertRangeCommandsTests"/> (which lock the SQL text
     /// Forge generates, with hand-seeded column-cast metadata), these tests prove that text actually executes
-    /// correctly against a live engine — including the column-cast PL/SQL block discovering real cast expressions
+    /// correctly against a live engine, including the column-cast PL/SQL block discovering real cast expressions
     /// from <c>ALL_TAB_COLUMNS</c> and those expressions actually avoiding <c>ORA-01790</c> on the real
     /// <c>UNION ALL</c>/<c>DUAL</c> multi-row insert.
     /// <para>
-    /// <c>IsActive</c> is <c>int</c> (0/1), not <c>bool</c>, here — see <see cref="Widget"/> for why.
+    /// <c>IsActive</c> is <c>int</c> (0/1), not <c>bool</c>, here. See <see cref="Widget"/> for why.
     /// </para>
     /// <para>
     /// All tests share one container and table (started once by <see cref="OracleFixture"/>, which also runs the

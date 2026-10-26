@@ -78,7 +78,7 @@ namespace Forget.Tests.Core
             ISqlDialectStrategy dialect = (ISqlDialectStrategy)dialectObject;
 
             // The quote is intentionally left untouched: EscapeLike's result is always bound as a query parameter,
-            // never inlined as SQL text, so it needs no SQL-string-literal escaping - only the LIKE
+            // never inlined as SQL text, so it needs no SQL-string-literal escaping: only the LIKE
             // metacharacters (\, %, _) need protecting from being interpreted as wildcards.
             Assert.Equal("5\\%\\_'", dialect.EscapeLike("5%_'"));
             Assert.Equal("hello", dialect.EscapeLike("hello"));
@@ -92,7 +92,7 @@ namespace Forget.Tests.Core
 
             // MySQL applies C-style backslash escaping inside string literals by default, so the ESCAPE clause's
             // literal must contain two backslash characters for MySQL's own parser to collapse them into the one
-            // literal backslash actually meant as the escape character - unlike the other three providers, whose
+            // literal backslash actually meant as the escape character, unlike the other three providers, whose
             // string literals don't treat backslash specially.
             Assert.Equal("col LIKE pat ESCAPE '\\\\'", dialect.Like("col", "pat"));
         }

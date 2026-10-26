@@ -1,12 +1,12 @@
 namespace Forget.Tests.MySql
 {
     /// <summary>
-    /// Locks the exact SQL text produced by MySql's <c>SqlBuilderStrategy</c> — <c>LIMIT</c> instead of
+    /// Locks the exact SQL text produced by MySql's <c>SqlBuilderStrategy</c>: <c>LIMIT</c> instead of
     /// <c>OFFSET/FETCH</c> or <c>TOP</c>, <c>ON DUPLICATE KEY UPDATE</c> for upsert (no <c>MERGE</c>, no locking
     /// hints), a plain <c>EXISTS(...)</c> with no <c>CAST</c>/<c>DUAL</c> wrapper, and column-type discovery that is
     /// simply not implemented (<see cref="GetColumns_IsNotImplemented"/>) unlike Oracle's.
     /// <para>
-    /// Placeholder positions are filled with distinct marker tokens rather than realistic SQL fragments — these
+    /// Placeholder positions are filled with distinct marker tokens rather than realistic SQL fragments: these
     /// tests lock where a builder places its placeholders and what literal text surrounds them, not what a real
     /// predicate/value list looks like.
     /// </para>

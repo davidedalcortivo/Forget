@@ -21,9 +21,9 @@ namespace Forget.Core.Models
     /// single value of the property's own type, and accepts a list of bytes (bound as a list of <c>short</c> when the filter
     /// is translated, since the drivers bind a <c>byte[]</c> as one binary value), which any other operator refuses. Whether
     /// the combination of <see cref="Models.ComparisonOperator"/> and <see cref="Value"/> is
-    /// actually supported — for example, <see cref="ComparisonOperator.In"/> requires a non-string collection, while
+    /// actually supported (for example, <see cref="ComparisonOperator.In"/> requires a non-string collection, while
     /// <see cref="ComparisonOperator.Contains"/>, <see cref="ComparisonOperator.StartsWith"/> and
-    /// <see cref="ComparisonOperator.EndsWith"/> require a <see cref="string"/> value — is only checked when the
+    /// <see cref="ComparisonOperator.EndsWith"/> require a <see cref="string"/> value) is only checked when the
     /// filter is translated into SQL, where an unsupported combination throws <see cref="NotSupportedException"/>.
     /// </para>
     /// </remarks>

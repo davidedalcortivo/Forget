@@ -1,13 +1,13 @@
 namespace Forget.Tests.PostgreSql
 {
     /// <summary>
-    /// Locks the exact SQL text produced by PostgreSql's <c>SqlBuilderStrategy</c> — <c>LIMIT</c> pagination,
+    /// Locks the exact SQL text produced by PostgreSql's <c>SqlBuilderStrategy</c>: <c>LIMIT</c> pagination,
     /// <c>= ANY(...)</c> instead of <c>IN</c> for range filters, <c>ON CONFLICT (...) DO UPDATE SET</c> with the
     /// <c>EXCLUDED</c> pseudo-table for upsert, the <c>(row).column</c> composite-type unpacking
     /// <c>UpdateRangeSqlBuilder</c> uses to destructure a <c>VALUES</c> row, and the <c>::text</c> cast operator for
     /// <c>Avg</c> instead of a <c>CAST</c> function call.
     /// <para>
-    /// Placeholder positions are filled with distinct marker tokens rather than realistic SQL fragments — these
+    /// Placeholder positions are filled with distinct marker tokens rather than realistic SQL fragments: these
     /// tests lock where a builder places its placeholders and what literal text surrounds them, not what a real
     /// predicate/value list looks like.
     /// </para>

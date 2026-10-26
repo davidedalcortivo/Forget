@@ -567,8 +567,8 @@ namespace Forget.MySql.Extensions
         /// <param name="connection">The connection to execute the update on.</param>
         /// <param name="values">
         /// An object whose public properties specify the columns to update and their new values. A property that is
-        /// the identifier — either one named "Id" (case-insensitive), or the property marked with
-        /// <see cref="KeyAttribute"/> — or is marked as database-generated or <see cref="NotMappedAttribute"/>,
+        /// the identifier (either one named "Id", case-insensitive, or the property marked with
+        /// <see cref="KeyAttribute"/>), or is marked as database-generated or <see cref="NotMappedAttribute"/>,
         /// is silently ignored rather than treated as a column to update.
         /// Every other property must correspond to an updatable property of <typeparamref name="TEntity"/>,
         /// and its type must fit that property's type: the same type, or a narrower numeric one (an <c>int</c> for a
@@ -609,8 +609,8 @@ namespace Forget.MySql.Extensions
         /// <param name="connection">The connection to execute the update on.</param>
         /// <param name="values">
         /// An object whose public properties specify the columns to update and their new values. A property that is
-        /// the identifier — either one named "Id" (case-insensitive), or the property marked with
-        /// <see cref="KeyAttribute"/> — or is marked as database-generated or <see cref="NotMappedAttribute"/>,
+        /// the identifier (either one named "Id", case-insensitive, or the property marked with
+        /// <see cref="KeyAttribute"/>), or is marked as database-generated or <see cref="NotMappedAttribute"/>,
         /// is silently ignored rather than treated as a column to update.
         /// Every other property must correspond to an updatable property of <typeparamref name="TEntity"/>,
         /// and its type must fit that property's type: the same type, or a narrower numeric one (an <c>int</c> for a
@@ -653,8 +653,8 @@ namespace Forget.MySql.Extensions
         /// <param name="connection">The connection to execute the update on.</param>
         /// <param name="values">
         /// An object whose public properties specify the columns to update and their new values. A property that is
-        /// the identifier — either one named "Id" (case-insensitive), or the property marked with
-        /// <see cref="KeyAttribute"/> — or is marked as database-generated or <see cref="NotMappedAttribute"/>,
+        /// the identifier (either one named "Id", case-insensitive, or the property marked with
+        /// <see cref="KeyAttribute"/>), or is marked as database-generated or <see cref="NotMappedAttribute"/>,
         /// is silently ignored rather than treated as a column to update.
         /// Every other property must correspond to an updatable property of <typeparamref name="TEntity"/>,
         /// and its type must fit that property's type: the same type, or a narrower numeric one (an <c>int</c> for a
@@ -994,7 +994,7 @@ namespace Forget.MySql.Extensions
         /// <returns>The total number of rows affected across all round trips.</returns>
         /// <remarks>
         /// When no <paramref name="transaction"/> is provided, this method begins one, commits it on success, and
-        /// rolls it back if execution fails — ensuring that the entire operation remains atomic regardless of
+        /// rolls it back if execution fails. This keeps the entire operation atomic regardless of
         /// how many statements or round trips are required. Passing an explicit <paramref name="transaction"/>
         /// opts out of this; committing or rolling back is then the caller's responsibility.
         /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,
@@ -1029,7 +1029,7 @@ namespace Forget.MySql.Extensions
         /// unless it is itself database-generated.
         /// <para>
         /// When no <paramref name="transaction"/> is provided, this method begins one, commits it on success, and
-        /// rolls it back if execution fails — ensuring that the entire operation remains atomic regardless of
+        /// rolls it back if execution fails. This keeps the entire operation atomic regardless of
         /// how many statements or round trips are required. Passing an explicit <paramref name="transaction"/>
         /// opts out of this; committing or rolling back is then the caller's responsibility.
         /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,
@@ -1061,7 +1061,7 @@ namespace Forget.MySql.Extensions
         /// <returns>The total number of rows affected across all round trips.</returns>
         /// <remarks>
         /// When no <paramref name="transaction"/> is provided, this method begins one, commits it on success, and
-        /// rolls it back if execution fails — ensuring that the entire operation remains atomic regardless of
+        /// rolls it back if execution fails. This keeps the entire operation atomic regardless of
         /// how many statements or round trips are required. Passing an explicit <paramref name="transaction"/>
         /// opts out of this; committing or rolling back is then the caller's responsibility.
         /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,
@@ -1097,7 +1097,7 @@ namespace Forget.MySql.Extensions
         /// <returns>The total number of rows affected across all round trips.</returns>
         /// <remarks>
         /// When no <paramref name="transaction"/> is provided, this method begins one, commits it on success, and
-        /// rolls it back if execution fails — ensuring that the entire operation remains atomic regardless of
+        /// rolls it back if execution fails. This keeps the entire operation atomic regardless of
         /// how many statements or round trips are required. Passing an explicit <paramref name="transaction"/>
         /// opts out of this; committing or rolling back is then the caller's responsibility.
         /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,
@@ -1147,7 +1147,7 @@ namespace Forget.MySql.Extensions
         /// </para>
         /// <para>
         /// When no <paramref name="transaction"/> is provided, this method begins one, commits it on success, and
-        /// rolls it back if execution fails — ensuring that the entire operation remains atomic regardless of
+        /// rolls it back if execution fails. This keeps the entire operation atomic regardless of
         /// how many statements or round trips are required. Passing an explicit <paramref name="transaction"/>
         /// opts out of this; committing or rolling back is then the caller's responsibility.
         /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,
@@ -1196,7 +1196,7 @@ namespace Forget.MySql.Extensions
         /// </para>
         /// <para>
         /// When no <paramref name="transaction"/> is provided, this method begins one, commits it on success, and
-        /// rolls it back if execution fails — ensuring that the entire operation remains atomic regardless of
+        /// rolls it back if execution fails. This keeps the entire operation atomic regardless of
         /// how many statements or round trips are required. Passing an explicit <paramref name="transaction"/>
         /// opts out of this; committing or rolling back is then the caller's responsibility.
         /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,

@@ -6,7 +6,7 @@ namespace Forget.Tests.SqlServer
     /// <summary>
     /// Runs the public CRUD/filter/upsert API against a real, disposable SqlServer container. Unlike
     /// <see cref="SqlBuilderStrategyTests"/> (which locks the SQL text Forge generates), these tests prove that
-    /// text actually executes correctly against a live engine — real NULL semantics, real <c>LIKE</c> escaping,
+    /// text actually executes correctly against a live engine: real NULL semantics, real <c>LIKE</c> escaping,
     /// real behavior of the <c>UPDLOCK/HOLDLOCK</c> + <c>IF @@ROWCOUNT = 0</c> upsert.
     /// <para>
     /// All tests share one container and table (started once by <see cref="SqlServerFixture"/>) and stay isolated
@@ -168,7 +168,7 @@ namespace Forget.Tests.SqlServer
         public async Task AvgAsync_OnIntegerColumn_ReturnsTruncatedResultMatchingNativeTSqlSemantics()
         {
             // True average of 1, 2, 4 is 2.333... . T-SQL's own AVG returns the same exact numeric type as its
-            // input, so AVG of an int-typed expression truncates to a whole number - identical to what a
+            // input, so AVG of an int-typed expression truncates to a whole number, identical to what a
             // hand-written `AVG(Quantity)` query returns. Forget does not alter that native behavior (see
             // the remarks on LoadDbCacheAsync); this test locks it in as documented, intentional behavior rather
             // than leaving it as an untested accident.

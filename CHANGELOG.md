@@ -5,6 +5,24 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.4.4] - 2026-10-26
+
+No code changes: the documentation.
+
+### Changed
+
+- README: a new "Common parameters" section has a table of the parameters most methods share (`transaction`,
+  `commandTimeout`, `cancellationToken`, `batchSize`), with which methods take each one and what it does. Its
+  "Transactions" subsection explains the transaction type of each provider, the cast `BeginTransactionAsync` needs on
+  ODP.NET and SqlClient, the transaction Forget opens on its own around a multi-row write and an `Upsert` on SQL
+  Server, and the `ArgumentException` for a transaction that belongs to another connection.
+- README: the methods that accept both an expression and a `FilterDescriptor`/`FilterGroup` include
+  `GetFirstOrDefault` and `GetSingleOrDefault`, and the introduction lists `DELETE` among the statements Forget writes
+  for you.
+- README, benchmarks README and XML documentation: the sentences that used a dash to set off an aside are rewritten
+  with commas, colons, parentheses or separate sentences. The meaning is unchanged.
+- README and benchmarks README: lists of operations follow one order (read, update, insert, delete, upsert).
+
 ## [2.4.3] - 2026-10-24
 
 No code changes: the documentation.
@@ -453,6 +471,7 @@ Initial release.
   syntax constraints (e.g. Oracle's `UNION ALL`/`DUAL`-based multi-row insert with automatic per-column cast
   discovery, since Oracle has no native `VALUES (...), (...)` syntax).
 
+[2.4.4]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.4.4
 [2.4.3]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.4.3
 [2.4.2]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.4.2
 [2.4.1]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.4.1

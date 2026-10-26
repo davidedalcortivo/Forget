@@ -29,7 +29,7 @@ namespace Forget.SqlServer.Extensions
         /// <param name="commandTimeout">The number of seconds to wait before timing out, or <see langword="null"/> to use the default timeout.</param>
         /// <remarks>
         /// SQL Server needs to know a column's actual data type to decide whether computing <c>Avg</c>/<c>AvgAsync</c> or
-        /// <c>Sum</c>/<c>SumAsync</c> over it needs a safety cast first — for example, a narrow integer type (<c>int</c>,
+        /// <c>Sum</c>/<c>SumAsync</c> over it needs a safety cast first. For example, a narrow integer type (<c>int</c>,
         /// <c>smallint</c>, or <c>tinyint</c>) may need to be cast to <c>bigint</c> before summing, to avoid integer overflow during
         /// the aggregation. The first call for a given <typeparamref name="TEntity"/> and connection queries SQL Server's system catalogs
         /// and caches the result; later calls for the same combination return immediately without hitting the database again.
@@ -578,8 +578,8 @@ namespace Forget.SqlServer.Extensions
         /// <param name="connection">The connection to execute the update on.</param>
         /// <param name="values">
         /// An object whose public properties specify the columns to update and their new values. A property that is
-        /// the identifier — either one named "Id" (case-insensitive), or the property marked with
-        /// <see cref="KeyAttribute"/> — or is marked as database-generated or <see cref="NotMappedAttribute"/>,
+        /// the identifier (either one named "Id", case-insensitive, or the property marked with
+        /// <see cref="KeyAttribute"/>), or is marked as database-generated or <see cref="NotMappedAttribute"/>,
         /// is silently ignored rather than treated as a column to update.
         /// Every other property must correspond to an updatable property of <typeparamref name="TEntity"/>,
         /// and its type must fit that property's type: the same type, or a narrower numeric one (an <c>int</c> for a
@@ -620,8 +620,8 @@ namespace Forget.SqlServer.Extensions
         /// <param name="connection">The connection to execute the update on.</param>
         /// <param name="values">
         /// An object whose public properties specify the columns to update and their new values. A property that is
-        /// the identifier — either one named "Id" (case-insensitive), or the property marked with
-        /// <see cref="KeyAttribute"/> — or is marked as database-generated or <see cref="NotMappedAttribute"/>,
+        /// the identifier (either one named "Id", case-insensitive, or the property marked with
+        /// <see cref="KeyAttribute"/>), or is marked as database-generated or <see cref="NotMappedAttribute"/>,
         /// is silently ignored rather than treated as a column to update.
         /// Every other property must correspond to an updatable property of <typeparamref name="TEntity"/>,
         /// and its type must fit that property's type: the same type, or a narrower numeric one (an <c>int</c> for a
@@ -664,8 +664,8 @@ namespace Forget.SqlServer.Extensions
         /// <param name="connection">The connection to execute the update on.</param>
         /// <param name="values">
         /// An object whose public properties specify the columns to update and their new values. A property that is
-        /// the identifier — either one named "Id" (case-insensitive), or the property marked with
-        /// <see cref="KeyAttribute"/> — or is marked as database-generated or <see cref="NotMappedAttribute"/>,
+        /// the identifier (either one named "Id", case-insensitive, or the property marked with
+        /// <see cref="KeyAttribute"/>), or is marked as database-generated or <see cref="NotMappedAttribute"/>,
         /// is silently ignored rather than treated as a column to update.
         /// Every other property must correspond to an updatable property of <typeparamref name="TEntity"/>,
         /// and its type must fit that property's type: the same type, or a narrower numeric one (an <c>int</c> for a
@@ -887,8 +887,8 @@ namespace Forget.SqlServer.Extensions
         /// <para>
         /// Unlike this library's other providers, this executes two separate statements rather than a single atomic
         /// one: an <c>UPDATE</c> that matches an existing row using the properties marked with
-        /// <see cref="UpsertKeyAttribute"/> — or the entity's identifier, if none are
-        /// marked — treating two <see langword="null"/> values in a key property as equal, followed by an
+        /// <see cref="UpsertKeyAttribute"/> (or the entity's identifier, if none are
+        /// marked), treating two <see langword="null"/> values in a key property as equal, followed by an
         /// <c>INSERT</c> that runs only if the <c>UPDATE</c> affected no rows. On a match, every property is
         /// updated except the identifier, any database-generated property, and the key properties themselves;
         /// otherwise, a new row is inserted using every property that is not database-generated.
@@ -896,7 +896,7 @@ namespace Forget.SqlServer.Extensions
         /// <para>
         /// Because correctness under concurrent access depends on both statements running in the same transaction,
         /// when <paramref name="transaction"/> is <see langword="null"/>, this method begins one, commits it on
-        /// success, and rolls it back if execution fails — passing an explicit <paramref name="transaction"/> opts
+        /// success, and rolls it back if execution fails. Passing an explicit <paramref name="transaction"/> opts
         /// out of this, making it the caller's responsibility instead. If <paramref name="connection"/> is closed
         /// when this method is called and it owns the transaction, it also opens and closes the connection for the
         /// duration of the operation.
@@ -1026,7 +1026,7 @@ namespace Forget.SqlServer.Extensions
         /// table are left untouched, and no new rows are inserted.
         /// <para>
         /// When no <paramref name="transaction"/> is provided, this method begins one, commits it on success, and
-        /// rolls it back if execution fails — ensuring that the entire operation remains atomic regardless of
+        /// rolls it back if execution fails. This keeps the entire operation atomic regardless of
         /// how many statements or round trips are required. Passing an explicit <paramref name="transaction"/>
         /// opts out of this; committing or rolling back is then the caller's responsibility.
         /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,
@@ -1066,7 +1066,7 @@ namespace Forget.SqlServer.Extensions
         /// unless it is itself database-generated.
         /// <para>
         /// When no <paramref name="transaction"/> is provided, this method begins one, commits it on success, and
-        /// rolls it back if execution fails — ensuring that the entire operation remains atomic regardless of
+        /// rolls it back if execution fails. This keeps the entire operation atomic regardless of
         /// how many statements or round trips are required. Passing an explicit <paramref name="transaction"/>
         /// opts out of this; committing or rolling back is then the caller's responsibility.
         /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,
@@ -1102,7 +1102,7 @@ namespace Forget.SqlServer.Extensions
         /// <returns>The total number of rows affected across all round trips.</returns>
         /// <remarks>
         /// When no <paramref name="transaction"/> is provided, this method begins one, commits it on success, and
-        /// rolls it back if execution fails — ensuring that the entire operation remains atomic regardless of
+        /// rolls it back if execution fails. This keeps the entire operation atomic regardless of
         /// how many statements or round trips are required. Passing an explicit <paramref name="transaction"/>
         /// opts out of this; committing or rolling back is then the caller's responsibility.
         /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,
@@ -1140,7 +1140,7 @@ namespace Forget.SqlServer.Extensions
         /// <returns>The total number of rows affected across all round trips.</returns>
         /// <remarks>
         /// When no <paramref name="transaction"/> is provided, this method begins one, commits it on success, and
-        /// rolls it back if execution fails — ensuring that the entire operation remains atomic regardless of
+        /// rolls it back if execution fails. This keeps the entire operation atomic regardless of
         /// how many statements or round trips are required. Passing an explicit <paramref name="transaction"/>
         /// opts out of this; committing or rolling back is then the caller's responsibility.
         /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,
@@ -1192,7 +1192,7 @@ namespace Forget.SqlServer.Extensions
         /// </para>
         /// <para>
         /// When no <paramref name="transaction"/> is provided, this method begins one, commits it on success, and
-        /// rolls it back if execution fails — ensuring that the entire operation remains atomic regardless of
+        /// rolls it back if execution fails. This keeps the entire operation atomic regardless of
         /// how many statements or round trips are required. Passing an explicit <paramref name="transaction"/>
         /// opts out of this; committing or rolling back is then the caller's responsibility.
         /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,
@@ -1240,15 +1240,15 @@ namespace Forget.SqlServer.Extensions
         /// Unlike this library's other providers, each round trip executes two separate statements rather than a
         /// single atomic one: an <c>UPDATE ... FROM</c> that joins the target table to a <c>VALUES</c>-derived
         /// source table, matching rows using the properties marked with
-        /// <see cref="UpsertKeyAttribute"/> — or the entity's identifier, if none are
-        /// marked — treating two <see langword="null"/> values in a key property as equal, followed by an
+        /// <see cref="UpsertKeyAttribute"/> (or the entity's identifier, if none are
+        /// marked), treating two <see langword="null"/> values in a key property as equal, followed by an
         /// <c>INSERT ... WHERE NOT EXISTS</c> that inserts only the entities with no matching row. On a match,
         /// every property is updated except the identifier, any database-generated property, and the key
         /// properties themselves.
         /// </para>
         /// <para>
         /// When no <paramref name="transaction"/> is provided, this method begins one, commits it on success, and
-        /// rolls it back if execution fails — ensuring that the entire operation remains atomic regardless of
+        /// rolls it back if execution fails. This keeps the entire operation atomic regardless of
         /// how many statements or round trips are required. Passing an explicit <paramref name="transaction"/>
         /// opts out of this; committing or rolling back is then the caller's responsibility.
         /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,
@@ -1570,13 +1570,13 @@ namespace Forget.SqlServer.Extensions
         /// <returns>The average, or <see langword="null"/> if no row exists.</returns>
         /// <remarks>
         /// This automatically ensures the database's metadata for <typeparamref name="TEntity"/> is loaded
-        /// on <paramref name="connection"/> before building any commands, so — unlike
-        /// <see cref="AvgCommand{TEntity}(SqlConnection, Expression{Func{TEntity, decimal?}})"/> (and its overloads) — calling
+        /// on <paramref name="connection"/> before building any commands, so, unlike
+        /// <see cref="AvgCommand{TEntity}(SqlConnection, Expression{Func{TEntity, decimal?}})"/> (and its overloads), calling
         /// <c>LoadDbCache</c> or <c>LoadDbCacheAsync</c> first is not required.
         /// <para>
         /// When the averaged column is <c>int</c>/<c>smallint</c>/<c>tinyint</c>/<c>bigint</c>-typed: SQL Server's
         /// own <c>AVG</c> returns the same exact numeric type as its input, so this still returns a truncated,
-        /// whole-number result — identical to what a hand-written <c>AVG(column)</c> query returns. This library
+        /// whole-number result, identical to what a hand-written <c>AVG(column)</c> query returns. This library
         /// does not alter that native behavior.
         /// </para>
         /// </remarks>
@@ -1610,13 +1610,13 @@ namespace Forget.SqlServer.Extensions
         /// <returns>The average, or <see langword="null"/> if no row matches.</returns>
         /// <remarks>
         /// This automatically ensures the database's metadata for <typeparamref name="TEntity"/> is loaded
-        /// on <paramref name="connection"/> before building any commands, so — unlike
-        /// <see cref="AvgCommand{TEntity}(SqlConnection, Expression{Func{TEntity, decimal?}})"/> (and its overloads) — calling
+        /// on <paramref name="connection"/> before building any commands, so, unlike
+        /// <see cref="AvgCommand{TEntity}(SqlConnection, Expression{Func{TEntity, decimal?}})"/> (and its overloads), calling
         /// <c>LoadDbCache</c> or <c>LoadDbCacheAsync</c> first is not required.
         /// <para>
         /// When the averaged column is <c>int</c>/<c>smallint</c>/<c>tinyint</c>/<c>bigint</c>-typed: SQL Server's
         /// own <c>AVG</c> returns the same exact numeric type as its input, so this still returns a truncated,
-        /// whole-number result — identical to what a hand-written <c>AVG(column)</c> query returns. This library
+        /// whole-number result, identical to what a hand-written <c>AVG(column)</c> query returns. This library
         /// does not alter that native behavior.
         /// </para>
         /// </remarks>
@@ -1653,13 +1653,13 @@ namespace Forget.SqlServer.Extensions
         /// <returns>The average, or <see langword="null"/> if no row matches.</returns>
         /// <remarks>
         /// This automatically ensures the database's metadata for <typeparamref name="TEntity"/> is loaded
-        /// on <paramref name="connection"/> before building any commands, so — unlike
-        /// <see cref="AvgCommand{TEntity}(SqlConnection, Expression{Func{TEntity, decimal?}})"/> (and its overloads) — calling
+        /// on <paramref name="connection"/> before building any commands, so, unlike
+        /// <see cref="AvgCommand{TEntity}(SqlConnection, Expression{Func{TEntity, decimal?}})"/> (and its overloads), calling
         /// <c>LoadDbCache</c> or <c>LoadDbCacheAsync</c> first is not required.
         /// <para>
         /// When the averaged column is <c>int</c>/<c>smallint</c>/<c>tinyint</c>/<c>bigint</c>-typed: SQL Server's
         /// own <c>AVG</c> returns the same exact numeric type as its input, so this still returns a truncated,
-        /// whole-number result — identical to what a hand-written <c>AVG(column)</c> query returns. This library
+        /// whole-number result, identical to what a hand-written <c>AVG(column)</c> query returns. This library
         /// does not alter that native behavior.
         /// </para>
         /// </remarks>
@@ -1693,13 +1693,13 @@ namespace Forget.SqlServer.Extensions
         /// <returns>The average, or <see langword="null"/> if no row exists.</returns>
         /// <remarks>
         /// This automatically ensures the database's metadata for <typeparamref name="TEntity"/> is loaded
-        /// on <paramref name="connection"/> before building any commands, so — unlike
-        /// <see cref="AvgCommand{TEntity}(SqlConnection, Expression{Func{TEntity, decimal?}})"/> (and its overloads) — calling
+        /// on <paramref name="connection"/> before building any commands, so, unlike
+        /// <see cref="AvgCommand{TEntity}(SqlConnection, Expression{Func{TEntity, decimal?}})"/> (and its overloads), calling
         /// <c>LoadDbCache</c> or <c>LoadDbCacheAsync</c> first is not required.
         /// <para>
         /// When the averaged column is <c>int</c>/<c>smallint</c>/<c>tinyint</c>/<c>bigint</c>-typed: SQL Server's
         /// own <c>AVG</c> returns the same exact numeric type as its input, so this still returns a truncated,
-        /// whole-number result — identical to what a hand-written <c>AVG(column)</c> query returns. This library
+        /// whole-number result, identical to what a hand-written <c>AVG(column)</c> query returns. This library
         /// does not alter that native behavior.
         /// </para>
         /// </remarks>
@@ -1733,13 +1733,13 @@ namespace Forget.SqlServer.Extensions
         /// <returns>The average, or <see langword="null"/> if no row matches.</returns>
         /// <remarks>
         /// This automatically ensures the database's metadata for <typeparamref name="TEntity"/> is loaded
-        /// on <paramref name="connection"/> before building any commands, so — unlike
-        /// <see cref="AvgCommand{TEntity}(SqlConnection, Expression{Func{TEntity, decimal?}})"/> (and its overloads) — calling
+        /// on <paramref name="connection"/> before building any commands, so, unlike
+        /// <see cref="AvgCommand{TEntity}(SqlConnection, Expression{Func{TEntity, decimal?}})"/> (and its overloads), calling
         /// <c>LoadDbCache</c> or <c>LoadDbCacheAsync</c> first is not required.
         /// <para>
         /// When the averaged column is <c>int</c>/<c>smallint</c>/<c>tinyint</c>/<c>bigint</c>-typed: SQL Server's
         /// own <c>AVG</c> returns the same exact numeric type as its input, so this still returns a truncated,
-        /// whole-number result — identical to what a hand-written <c>AVG(column)</c> query returns. This library
+        /// whole-number result, identical to what a hand-written <c>AVG(column)</c> query returns. This library
         /// does not alter that native behavior.
         /// </para>
         /// </remarks>
@@ -1776,13 +1776,13 @@ namespace Forget.SqlServer.Extensions
         /// <returns>The average, or <see langword="null"/> if no row matches.</returns>
         /// <remarks>
         /// This automatically ensures the database's metadata for <typeparamref name="TEntity"/> is loaded
-        /// on <paramref name="connection"/> before building any commands, so — unlike
-        /// <see cref="AvgCommand{TEntity}(SqlConnection, Expression{Func{TEntity, decimal?}})"/> (and its overloads) — calling
+        /// on <paramref name="connection"/> before building any commands, so, unlike
+        /// <see cref="AvgCommand{TEntity}(SqlConnection, Expression{Func{TEntity, decimal?}})"/> (and its overloads), calling
         /// <c>LoadDbCache</c> or <c>LoadDbCacheAsync</c> first is not required.
         /// <para>
         /// When the averaged column is <c>int</c>/<c>smallint</c>/<c>tinyint</c>/<c>bigint</c>-typed: SQL Server's
         /// own <c>AVG</c> returns the same exact numeric type as its input, so this still returns a truncated,
-        /// whole-number result — identical to what a hand-written <c>AVG(column)</c> query returns. This library
+        /// whole-number result, identical to what a hand-written <c>AVG(column)</c> query returns. This library
         /// does not alter that native behavior.
         /// </para>
         /// </remarks>
@@ -1816,8 +1816,8 @@ namespace Forget.SqlServer.Extensions
         /// <returns>The sum, or <see langword="null"/> if no row exists.</returns>
         /// <remarks>
         /// This automatically ensures the database's metadata for <typeparamref name="TEntity"/> is loaded
-        /// on <paramref name="connection"/> before building any commands, so — unlike
-        /// <see cref="SumCommand{TEntity}(SqlConnection, Expression{Func{TEntity, decimal?}})"/> (and its overloads) — calling
+        /// on <paramref name="connection"/> before building any commands, so, unlike
+        /// <see cref="SumCommand{TEntity}(SqlConnection, Expression{Func{TEntity, decimal?}})"/> (and its overloads), calling
         /// <c>LoadDbCache</c> or <c>LoadDbCacheAsync</c> first is not required.
         /// </remarks>
         /// <exception cref="ArgumentNullException">
@@ -1849,8 +1849,8 @@ namespace Forget.SqlServer.Extensions
         /// <returns>The sum, or <see langword="null"/> if no row matches.</returns>
         /// <remarks>
         /// This automatically ensures the database's metadata for <typeparamref name="TEntity"/> is loaded
-        /// on <paramref name="connection"/> before building any commands, so — unlike
-        /// <see cref="SumCommand{TEntity}(SqlConnection, Expression{Func{TEntity, decimal?}})"/> (and its overloads) — calling
+        /// on <paramref name="connection"/> before building any commands, so, unlike
+        /// <see cref="SumCommand{TEntity}(SqlConnection, Expression{Func{TEntity, decimal?}})"/> (and its overloads), calling
         /// <c>LoadDbCache</c> or <c>LoadDbCacheAsync</c> first is not required.
         /// </remarks>
         /// <exception cref="ArgumentNullException">
@@ -1885,8 +1885,8 @@ namespace Forget.SqlServer.Extensions
         /// <returns>The sum, or <see langword="null"/> if no row matches.</returns>
         /// <remarks>
         /// This automatically ensures the database's metadata for <typeparamref name="TEntity"/> is loaded
-        /// on <paramref name="connection"/> before building any commands, so — unlike
-        /// <see cref="SumCommand{TEntity}(SqlConnection, Expression{Func{TEntity, decimal?}})"/> (and its overloads) — calling
+        /// on <paramref name="connection"/> before building any commands, so, unlike
+        /// <see cref="SumCommand{TEntity}(SqlConnection, Expression{Func{TEntity, decimal?}})"/> (and its overloads), calling
         /// <c>LoadDbCache</c> or <c>LoadDbCacheAsync</c> first is not required.
         /// </remarks>
         /// <exception cref="ArgumentNullException">
@@ -1918,8 +1918,8 @@ namespace Forget.SqlServer.Extensions
         /// <returns>The sum, or <see langword="null"/> if no row exists.</returns>
         /// <remarks>
         /// This automatically ensures the database's metadata for <typeparamref name="TEntity"/> is loaded
-        /// on <paramref name="connection"/> before building any commands, so — unlike
-        /// <see cref="SumCommand{TEntity}(SqlConnection, Expression{Func{TEntity, decimal?}})"/> (and its overloads) — calling
+        /// on <paramref name="connection"/> before building any commands, so, unlike
+        /// <see cref="SumCommand{TEntity}(SqlConnection, Expression{Func{TEntity, decimal?}})"/> (and its overloads), calling
         /// <c>LoadDbCache</c> or <c>LoadDbCacheAsync</c> first is not required.
         /// </remarks>
         /// <exception cref="ArgumentNullException">
@@ -1951,8 +1951,8 @@ namespace Forget.SqlServer.Extensions
         /// <returns>The sum, or <see langword="null"/> if no row matches.</returns>
         /// <remarks>
         /// This automatically ensures the database's metadata for <typeparamref name="TEntity"/> is loaded
-        /// on <paramref name="connection"/> before building any commands, so — unlike
-        /// <see cref="SumCommand{TEntity}(SqlConnection, Expression{Func{TEntity, decimal?}})"/> (and its overloads) — calling
+        /// on <paramref name="connection"/> before building any commands, so, unlike
+        /// <see cref="SumCommand{TEntity}(SqlConnection, Expression{Func{TEntity, decimal?}})"/> (and its overloads), calling
         /// <c>LoadDbCache</c> or <c>LoadDbCacheAsync</c> first is not required.
         /// </remarks>
         /// <exception cref="ArgumentNullException">
@@ -1987,8 +1987,8 @@ namespace Forget.SqlServer.Extensions
         /// <returns>The sum, or <see langword="null"/> if no row matches.</returns>
         /// <remarks>
         /// This automatically ensures the database's metadata for <typeparamref name="TEntity"/> is loaded
-        /// on <paramref name="connection"/> before building any commands, so — unlike
-        /// <see cref="SumCommand{TEntity}(SqlConnection, Expression{Func{TEntity, decimal?}})"/> (and its overloads) — calling
+        /// on <paramref name="connection"/> before building any commands, so, unlike
+        /// <see cref="SumCommand{TEntity}(SqlConnection, Expression{Func{TEntity, decimal?}})"/> (and its overloads), calling
         /// <c>LoadDbCache</c> or <c>LoadDbCacheAsync</c> first is not required.
         /// </remarks>
         /// <exception cref="ArgumentNullException">

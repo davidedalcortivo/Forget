@@ -7,8 +7,8 @@ using Forget.Core.Utilities;
 namespace Forget.Tests.Core
 {
     /// <summary>
-    /// Exercises <see cref="FilterNodeTranslator{TEntity}"/> — the <see cref="FilterDescriptor{TEntity}"/>/
-    /// <see cref="FilterGroup{TEntity}"/> tree API — against every provider's real dialect strategy. Several cases
+    /// Exercises <see cref="FilterNodeTranslator{TEntity}"/> (the <see cref="FilterDescriptor{TEntity}"/>/
+    /// <see cref="FilterGroup{TEntity}"/> tree API) against every provider's real dialect strategy. Several cases
     /// mirror the equivalent <see cref="ExpressionTranslatorTests"/> case, to lock the two APIs producing the same
     /// shape of SQL for equivalent semantics.
     /// </summary>
@@ -123,7 +123,7 @@ namespace Forget.Tests.Core
         public void In_WithHeterogeneousRuntimeTypes_FallsBackToObjectArrayInsteadOfThrowing(string dialectName, object dialectObject)
         {
             // Tag's declared type is `object`, so EnsureValue only requires each element to be assignable to
-            // `object` - it does not require them to share one concrete runtime type. Building a strongly-typed
+            // `object`; it does not require them to share one concrete runtime type. Building a strongly-typed
             // array from the first element (an int) would throw InvalidCastException on the string that follows;
             // the translator must recognize the mix, keep a plain object[] parameter, which Dapper expands into
             // independently-typed parameters (on PostgreSql, where Dapper does not, the translator writes them out

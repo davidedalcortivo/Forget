@@ -573,8 +573,8 @@ namespace Forget.PostgreSql.Extensions
         /// <param name="connection">The connection to execute the update on.</param>
         /// <param name="values">
         /// An object whose public properties specify the columns to update and their new values. A property that is
-        /// the identifier — either one named "Id" (case-insensitive), or the property marked with
-        /// <see cref="KeyAttribute"/> — or is marked as database-generated or <see cref="NotMappedAttribute"/>,
+        /// the identifier (either one named "Id", case-insensitive, or the property marked with
+        /// <see cref="KeyAttribute"/>), or is marked as database-generated or <see cref="NotMappedAttribute"/>,
         /// is silently ignored rather than treated as a column to update.
         /// Every other property must correspond to an updatable property of <typeparamref name="TEntity"/>,
         /// and its type must fit that property's type: the same type, or a narrower numeric one (an <c>int</c> for a
@@ -615,8 +615,8 @@ namespace Forget.PostgreSql.Extensions
         /// <param name="connection">The connection to execute the update on.</param>
         /// <param name="values">
         /// An object whose public properties specify the columns to update and their new values. A property that is
-        /// the identifier — either one named "Id" (case-insensitive), or the property marked with
-        /// <see cref="KeyAttribute"/> — or is marked as database-generated or <see cref="NotMappedAttribute"/>,
+        /// the identifier (either one named "Id", case-insensitive, or the property marked with
+        /// <see cref="KeyAttribute"/>), or is marked as database-generated or <see cref="NotMappedAttribute"/>,
         /// is silently ignored rather than treated as a column to update.
         /// Every other property must correspond to an updatable property of <typeparamref name="TEntity"/>,
         /// and its type must fit that property's type: the same type, or a narrower numeric one (an <c>int</c> for a
@@ -659,8 +659,8 @@ namespace Forget.PostgreSql.Extensions
         /// <param name="connection">The connection to execute the update on.</param>
         /// <param name="values">
         /// An object whose public properties specify the columns to update and their new values. A property that is
-        /// the identifier — either one named "Id" (case-insensitive), or the property marked with
-        /// <see cref="KeyAttribute"/> — or is marked as database-generated or <see cref="NotMappedAttribute"/>,
+        /// the identifier (either one named "Id", case-insensitive, or the property marked with
+        /// <see cref="KeyAttribute"/>), or is marked as database-generated or <see cref="NotMappedAttribute"/>,
         /// is silently ignored rather than treated as a column to update.
         /// Every other property must correspond to an updatable property of <typeparamref name="TEntity"/>,
         /// and its type must fit that property's type: the same type, or a narrower numeric one (an <c>int</c> for a
@@ -878,8 +878,8 @@ namespace Forget.PostgreSql.Extensions
         /// any property marked <see cref="UpsertKeyAttribute"/>.
         /// <para>
         /// This executes an <c>INSERT ... ON CONFLICT (...) DO UPDATE</c> statement, where the conflict target is
-        /// the properties marked with <see cref="UpsertKeyAttribute"/> — or the entity's
-        /// identifier, if none are marked. PostgreSQL requires those columns to already be covered by a matching
+        /// the properties marked with <see cref="UpsertKeyAttribute"/> (or the entity's
+        /// identifier, if none are marked). PostgreSQL requires those columns to already be covered by a matching
         /// <c>UNIQUE</c> or exclusion constraint in the database; if none exists, this method fails with a database
         /// error rather than silently inserting a duplicate. On a match, every property is updated except the
         /// identifier, any database-generated property, and the key properties themselves; otherwise, a new row is
@@ -1007,13 +1007,13 @@ namespace Forget.PostgreSql.Extensions
         /// are left untouched, and no new rows are inserted.
         /// <para>
         /// This automatically ensures the database's metadata for <typeparamref name="TEntity"/> is loaded
-        /// on <paramref name="connection"/> before building any commands, so — unlike
-        /// <see cref="UpdateRangeCommands{TEntity}(NpgsqlConnection, IEnumerable{TEntity}, int)"/> — calling
+        /// on <paramref name="connection"/> before building any commands, so, unlike
+        /// <see cref="UpdateRangeCommands{TEntity}(NpgsqlConnection, IEnumerable{TEntity}, int)"/>, calling
         /// <c>LoadDbCache</c> or <c>LoadDbCacheAsync</c> first is not required.
         /// </para>
         /// <para>
         /// When no <paramref name="transaction"/> is provided, this method begins one, commits it on success, and
-        /// rolls it back if execution fails — ensuring that the entire operation remains atomic regardless of
+        /// rolls it back if execution fails. This keeps the entire operation atomic regardless of
         /// how many statements or round trips are required. Passing an explicit <paramref name="transaction"/>
         /// opts out of this; committing or rolling back is then the caller's responsibility.
         /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,
@@ -1050,7 +1050,7 @@ namespace Forget.PostgreSql.Extensions
         /// unless it is itself database-generated.
         /// <para>
         /// When no <paramref name="transaction"/> is provided, this method begins one, commits it on success, and
-        /// rolls it back if execution fails — ensuring that the entire operation remains atomic regardless of
+        /// rolls it back if execution fails. This keeps the entire operation atomic regardless of
         /// how many statements or round trips are required. Passing an explicit <paramref name="transaction"/>
         /// opts out of this; committing or rolling back is then the caller's responsibility.
         /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,
@@ -1082,7 +1082,7 @@ namespace Forget.PostgreSql.Extensions
         /// <returns>The total number of rows affected across all round trips.</returns>
         /// <remarks>
         /// When no <paramref name="transaction"/> is provided, this method begins one, commits it on success, and
-        /// rolls it back if execution fails — ensuring that the entire operation remains atomic regardless of
+        /// rolls it back if execution fails. This keeps the entire operation atomic regardless of
         /// how many statements or round trips are required. Passing an explicit <paramref name="transaction"/>
         /// opts out of this; committing or rolling back is then the caller's responsibility.
         /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,
@@ -1118,7 +1118,7 @@ namespace Forget.PostgreSql.Extensions
         /// <returns>The total number of rows affected across all round trips.</returns>
         /// <remarks>
         /// When no <paramref name="transaction"/> is provided, this method begins one, commits it on success, and
-        /// rolls it back if execution fails — ensuring that the entire operation remains atomic regardless of
+        /// rolls it back if execution fails. This keeps the entire operation atomic regardless of
         /// how many statements or round trips are required. Passing an explicit <paramref name="transaction"/>
         /// opts out of this; committing or rolling back is then the caller's responsibility.
         /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,
@@ -1168,7 +1168,7 @@ namespace Forget.PostgreSql.Extensions
         /// </para>
         /// <para>
         /// When no <paramref name="transaction"/> is provided, this method begins one, commits it on success, and
-        /// rolls it back if execution fails — ensuring that the entire operation remains atomic regardless of
+        /// rolls it back if execution fails. This keeps the entire operation atomic regardless of
         /// how many statements or round trips are required. Passing an explicit <paramref name="transaction"/>
         /// opts out of this; committing or rolling back is then the caller's responsibility.
         /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,
@@ -1209,8 +1209,8 @@ namespace Forget.PostgreSql.Extensions
         /// any property marked <see cref="UpsertKeyAttribute"/>.
         /// <para>
         /// Each round trip executes an <c>INSERT ... ON CONFLICT (...) DO UPDATE</c> statement, where the conflict
-        /// target is the properties marked with <see cref="UpsertKeyAttribute"/> — or the
-        /// entity's identifier, if none are marked. PostgreSQL requires those columns to already be covered by a
+        /// target is the properties marked with <see cref="UpsertKeyAttribute"/> (or the
+        /// entity's identifier, if none are marked). PostgreSQL requires those columns to already be covered by a
         /// matching <c>UNIQUE</c> or exclusion constraint in the database; if none exists, this method fails with a
         /// database error rather than silently inserting a duplicate. On a match, every property is updated except
         /// the identifier, any database-generated property, and the key properties themselves; otherwise, a new row
@@ -1221,7 +1221,7 @@ namespace Forget.PostgreSql.Extensions
         /// </para>
         /// <para>
         /// When no <paramref name="transaction"/> is provided, this method begins one, commits it on success, and
-        /// rolls it back if execution fails — ensuring that the entire operation remains atomic regardless of
+        /// rolls it back if execution fails. This keeps the entire operation atomic regardless of
         /// how many statements or round trips are required. Passing an explicit <paramref name="transaction"/>
         /// opts out of this; committing or rolling back is then the caller's responsibility.
         /// If <paramref name="connection"/> is closed when this method is called and it owns the transaction,

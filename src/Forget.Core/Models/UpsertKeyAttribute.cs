@@ -12,7 +12,7 @@
     /// upsert key instead.
     /// </para>
     /// <para>
-    /// The exact matching semantics — in particular, how <see langword="null"/> values are compared — depend on the
+    /// The exact matching semantics (in particular, how <see langword="null"/> values are compared) depend on the
     /// database provider in use.
     /// </para>
     /// </remarks>

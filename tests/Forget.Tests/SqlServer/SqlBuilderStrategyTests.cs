@@ -4,14 +4,14 @@ using Forget.SqlServer.Strategies;
 namespace Forget.Tests.SqlServer
 {
     /// <summary>
-    /// Locks the exact SQL text produced by SqlServer's <see cref="SqlBuilderStrategy"/> — the T-SQL specific shapes
+    /// Locks the exact SQL text produced by SqlServer's <see cref="SqlBuilderStrategy"/>: the T-SQL specific shapes
     /// (<c>TOP</c>, <c>MERGE</c>-style upsert via <c>UPDLOCK/HOLDLOCK</c> and <c>IF @@ROWCOUNT</c>, table-valued
     /// <c>VALUES</c> constructors for range operations, <c>CAST(... AS BIT)</c> for <c>Exists</c>) that make this
     /// provider's builder genuinely different from the others, not just differently quoted.
     /// <para>
     /// Placeholder positions are filled with distinct marker tokens (<c>&lt;&lt;WHERE&gt;&gt;</c>, etc.) rather than
     /// realistic SQL fragments: these tests lock where a builder places its placeholders and what literal text
-    /// surrounds them, not what a real predicate/value list looks like — that is covered by
+    /// surrounds them, not what a real predicate/value list looks like. That is covered by
     /// <see cref="Core.ExpressionTranslatorTests"/> and <see cref="Core.FilterNodeTranslatorTests"/>.
     /// </para>
     /// </summary>
