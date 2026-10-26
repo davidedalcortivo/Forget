@@ -204,7 +204,7 @@ the last round trip and rolls it back if any of them fails, so a call that fails
 
 The other calls never open one of their own. A call that runs a single statement doesn't need it, since the database
 applies a statement entirely or not at all. `GetByIdRange` can take several round trips, but it only reads, so there
-is nothing to roll back.
+is nothing to commit or roll back.
 
 A transaction that belongs to another connection is rejected with an `ArgumentException` before any SQL runs.
 
