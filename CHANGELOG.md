@@ -5,6 +5,27 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.4.5] - 2026-10-31
+
+No code changes: a dependency fix.
+
+### Fixed
+
+- Forget.SqlServer 2.4.2, 2.4.3 and 2.4.4 could not be installed in a project that targets .NET 9 or .NET 10: the
+  restore failed with NU1605, a downgrade of System.Security.Cryptography.Pkcs from 9.0.18 to 8.0.2. On those
+  frameworks Microsoft.Data.SqlClient asks for 9.0.18 or later, and the 8.0.2 that Forget.SqlServer depended on took
+  precedence. Forget.SqlServer now depends on System.Security.Cryptography.Pkcs 10.0.14, which installs on .NET 8, 9
+  and 10 and is not affected by CVE-2026-84008 and CVE-2026-70162. If you stay on 2.4.2, 2.4.3 or 2.4.4 with .NET 9
+  or 10, add `<PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />` to your project.
+
+### Changed
+
+- Forget.Oracle depends on System.Security.Cryptography.Pkcs 10.0.14 too (it was 8.0.2), so both providers use the
+  same version. It already installed on .NET 8, 9 and 10.
+- The tests run on .NET 8 and .NET 10, so a dependency that cannot be restored on .NET 10 now fails the build.
+  CONTRIBUTING says that building and testing need the .NET 10 SDK and the .NET 8 runtime (it said the .NET 8 SDK).
+- The description of the Forget.Core package no longer uses a hyphen as a dash.
+
 ## [2.4.4] - 2026-10-26
 
 No code changes: the documentation.
@@ -471,6 +492,7 @@ Initial release.
   syntax constraints (e.g. Oracle's `UNION ALL`/`DUAL`-based multi-row insert with automatic per-column cast
   discovery, since Oracle has no native `VALUES (...), (...)` syntax).
 
+[2.4.5]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.4.5
 [2.4.4]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.4.4
 [2.4.3]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.4.3
 [2.4.2]: https://github.com/davidedalcortivo/Forget/releases/tag/v2.4.2

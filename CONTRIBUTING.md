@@ -14,8 +14,9 @@ is worth more than a large pull request that arrives without a conversation firs
 
 ## Building and testing
 
-You need the .NET 8 SDK and Docker. The integration tests start real databases with Testcontainers (MySQL 8.4,
-Oracle XE 21, PostgreSQL 16 and SQL Server 2022), so the first run pulls the images, and Oracle is the slow one.
+You need the .NET 10 SDK, the .NET 8 runtime (the tests run on both .NET 8 and .NET 10) and Docker. The integration
+tests start real databases with Testcontainers (MySQL 8.4, Oracle XE 21, PostgreSQL 16 and SQL Server 2022), so the
+first run pulls the images, and Oracle is the slow one.
 
 ```bash
 dotnet build
